@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            allowMultiple="false"
+            class="views.JIPView"
+            icon="icons/jip-logo-90.gif"
+            id="JipPlugin.view1"
+            name="Snapshot Manager"
+            restorable="true">
+         <description>
+            JIP Snapshot Manager Version 1.0  
+© 2008  
+License:  
+http://jiprof.sourceforge.net//
+         </description>
+      </view>
+   </extension>
+
+</plugin>

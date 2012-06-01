@@ -1,0 +1,144 @@
+27 May 2012:
+
+So I have finished porting over what exists in the original JIP interface,
+and am now ready to brainstorm and tackle any potential UI problems. I list
+the following:
+	1) Suppose we want to know where a session snapshot is stored (my solution
+	right now is to list the entire path, but there must be a better way that does
+	not introduce a million widgets (perhaps adding it to the context menu?)
+	2) Suppose we want to persist snapshots across sessions. If we do that we would
+	need to add clear all functionality. We should probably do that anyway.
+	3) Suppose every time we select a snapshot to run from the file system we add it
+	to the session snapshots. Do we want to add and remove individual snapshots from
+	the list?
+	4) Suppose somebody deletes the file corresponding to the snapshot while we are
+	working in eclipse. What is our policy regarding how the session snapshots should
+	be updated. Should we have a refresh button?
+	-----5) I need to fix the fact that the same context menu appears on both tables.
+	6) I need to make it so that certain options in the context menu are faded out when
+	nothing is selected in that table.
+
+Easiest way to get two views to communicate is to attach them to the same model-controller pair.
+Later on I can optimize this so that certain model controller pairs only pretend to send a message
+to the model.
+
+26 May 2012:
+
+JipSnapmanFrame.java -- ported
+BrowsePathAction.java -- ported
+
+// used for event and error logging
+// cannot straight port: will need to be rethought
+BaseSnapshotAction.java
+ErrorDisplayAction.java
+LogAction.java
+
+StartSnapshotAction.java -- ported minus event logging
+FinishSnapshotAction.java -- ported minus event logging
+ViewSnapshotAction.java -- don't need to port
+
+SnapshotEvent.java -- ported
+SnapshotEventListener.java -- ported
+SnapshotEventManager.java -- ported
+
+JipSMHyperlinkListener.java -- not essential ( for about help ); port later
+
+LogsModel.java 				-- ported as ILogsModel
+NumbersOnlyDocument.java	-- do not need to port
+Snapshot.java 				-- ported
+SnapshotInfoModel.java 		-- ported
+SnapshotListModel.java		-- ported
+SnapshotPathModel.java 		-- ported
+SnapshotsTakenModel.java	
+
+Some of the above are "ported" but not used.
+
+Let's do this!!
+
+-----1) Changed type of Dialog inside the DetailsDialog to DirectoryDialog
+(previously was FileDialog).
+-----2) Added a title to the ConfigureSnaphotDialog
+-----3) Ported FinishSnapshotAction
+-----4) Display snapshots
+-----5) Cleaned up port to not include unnecessary classes from original
+-----6) Add default values to configurationDialog
+-----7) Add an MVC connection for the snapshots table.
+
+-----8) Make snapshots available for selection.
+
+9) Add color to text output
+
+10) Add event logging
+11) Add about panel
+
+12) Add jip visualization link
+
+25 May 2012:
+
+TODO: Implement the system for displaying messages to the log console (maybe a view later).
+
+1) Start by directly calling the logs model and getting it to display (initial port).
+2) Continue by setting up the event handling and notification system. I may be able
+to reuse the snapshot manager code.
+
+The three main tasks remaining to be done are:
+	1) the event logging subsystem; most of this has been ported: I need to do the 
+	component setup and connection (building) at startup; also, I'm still not clear
+	on how exceptions are given to the event log
+	2) test the start functionality
+	3) test the finish functionality
+
+22 May 2012:
+
+So today I got a rough draft of a working SWT MVC set up. The example centers
+around the ConfigureAction as the Controller. I am doing what I can to
+decouple the controller/model from the view; I am getting there, but decoupling
+the controller from the model appears to be a little bit more difficult.
+
+The next thing to do, now that the messages are being passed around, is
+perform input validation on the snapshot entries, and add the message passing
+which deactivates certain toolbar buttons based on the state of the system
+( I believe this code is present in the reference implementation, and forms the
+last part of the browse action).
+
+After that I will more or less know enough to study the rest of the code and
+port the functionality over. I should have enough time to read more into the
+eclipse plugin book and see if there aren't better ways to do what I am doing.
+
+21 May 2012:
+
+I have completed almost all of the GUI elements. Now I need to port over the system
+functionality. I have copied over the models, because those I should be able to work
+with wholesale. The next part is to add the connection between the GUI and the
+model itself, with as little new code as possible.
+
+Once the port is done perhaps I can refactor.
+
+Stay calm and carry on: I will start by porting the BrowsePathAction class.
+
+Miniature MVC for starters: setting the snapshot data:
+	1) controller gets a reference to a view; this is used whenever the
+	controller is notified of a change in a model
+	2) controller obtains a reference to a model; this is used to change
+	something when the view indicates
+	3) controller registers itself as a listener on the model's state
+	
+In the case of the ConfigurationDialog, we have the dialog as the view;
+the action as the controller, and some model as the model. I know this is
+different from the design of the original implementation, but it should be
+straightforward and can be carried out. Later on I will need to change to the
+"command" approach.
+
+20 May 2012:
+
+I want to both get things done and learn new techniques. Once I have figured out
+how to do something, I need to immediately look up how to do it better.
+
+Later on I may try out the SWTXML project on Google code.
+
+Today, since I have laid out the primary design of the user interface, I will now
+refactor. I may need to refactor once more once the MVC is decided on.
+
+One of the things I will need to learn is how to use resources, so that the 
+contents and the layout of the GUI can be separated. 
+
