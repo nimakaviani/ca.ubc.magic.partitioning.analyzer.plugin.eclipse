@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>JipPlugin</name>
+	<name>plugin</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -25,4 +25,21 @@
 		<nature>org.eclipse.pde.PluginNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>EDU</name>
+			<type>2</type>
+			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego/src/EDU</location>
+		</link>
+		<link>
+			<name>oswego</name>
+			<type>2</type>
+			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego</location>
+		</link>
+		<link>
+			<name>other_src</name>
+			<type>2</type>
+			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego/src</location>
+		</link>
+	</linkedResources>
 </projectDescription>

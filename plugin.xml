@@ -1,22 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+
    <extension
          point="org.eclipse.ui.views">
       <view
             allowMultiple="false"
-            class="views.JIPView"
+            class="snapshots.views.SnapshotView"
             icon="icons/jip-logo-90.gif"
-            id="JipPlugin.view1"
-            name="Snapshot Manager"
-            restorable="true">
-         <description>
-            JIP Snapshot Manager Version 1.0  
-© 2008  
-License:  
-http://jiprof.sourceforge.net//
-         </description>
+            id="plugin.views.snapshot_view"
+            name="Snapshot View">
       </view>
+      <view
+            class="partitioner.views.ModelView"
+            icon="icons/sample.gif"
+            id="plugin.views.model_view"
+            name="Model View"
+            restorable="true">
+      </view>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            class="partitioner.views.ModelCreationEditor"
+            contributorClass="partitioner.views.ModelCreationEditorContributor"
+            default="false"
+            id="plugin.views.model_creation_editor"
+            name="Model Creation Editor">
+      </editor>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectives">
+      <perspective
+            class="plugin.AnalysisPerspectiveFactory"
+            fixed="false"
+            id="plugin.AnalysisPerspective"
+            name="Analysis Perspective">
+      </perspective>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            allPopups="false"
+            locationURI="popup:plugin.views.snapshot_view">
+         <command
+               commandId="plugin.addSnapshotFolder"
+               id="AddSnapshotFolder"
+               style="push">
+         </command>
+         <command
+               commandId="plugin.ClearFolders"
+               id="ClearFolders"
+               style="push">
+         </command>
+         <command
+               commandId="plugin.RemoveSnapshotFolder"
+               id="RemoveSnapshotsFolder"
+               style="push">
+         </command>
+      </menuContribution>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            class="addSnapshotFolder"
+            commandId="plugin.addSnapshotFolder">
+      </handler>
+      <handler
+            class="RemoveSnapshotFolder"
+            commandId="plugin.RemoveSnapshotFolder">
+      </handler>
+      <handler
+            class="ClearFolders"
+            commandId="plugin.ClearFolders">
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            id="plugin.addSnapshotFolder"
+            name="Add Snapshot Folder">
+      </command>
+      <command
+            id="plugin.RemoveSnapshotFolder"
+            name="Remove Folder">
+      </command>
+      <command
+            id="plugin.ClearFolders"
+            name="Clear Contents">
+      </command>
    </extension>
 
 </plugin>
