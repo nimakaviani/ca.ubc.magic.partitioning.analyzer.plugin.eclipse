@@ -29,45 +29,90 @@ import snapshots.model.PropertyChangeDelegate;
 
 // TODO: make the default paths on a click to browse dependent on the
 //		 current path 
-// TODO: this object now needs to be made thread safe
-//		try to split the parts that are accessed from multiple threads into
-//		a separate class; distinguish between read-from-multiple and
-//		written-from-multiple
 public class 
 PartitionerGUIStateModel 
 implements IModel
 {
-	private PropertyChangeDelegate property_change_delegate
-		= new PropertyChangeDelegate();
+	private PropertyChangeDelegate property_change_delegate;
 	
-	private ModuleCoarsenerType mModuleType 
-		= ModuleCoarsenerType.BUNDLE;
+	private ModuleCoarsenerType mModuleType; 
 
-	private String profiler_trace  
-		= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/Profile-20120504-190723.xml";
-	private String module_exposer
-		= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/moduleconstraints-aries3.xml";
-	private String host_configuration 
-		= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/host-magic.xml";
+	private volatile	String profiler_trace;  
+	private volatile 	String module_exposer;
+	private volatile 	String host_configuration; 
 	
 	private ModuleModelHandler mmHandler;
-	private SimulationFramework mSimFramework  
-		= new SimulationFramework(Boolean.FALSE);;
+	private SimulationFramework mSimFramework; 
 	
-	 private ModuleModel 			mModuleModel;
-	 private HostModel   			mHostModel;    
-	 private EntityConstraintModel 	mConstraintModel;
+	// the following is set once in the SwingWorker thread
+	private volatile ModuleModel 			mModuleModel;
+	// the following is set once in the SwingWorker thread
+	private volatile HostModel   			mHostModel; 
+	private volatile EntityConstraintModel	mConstraintModel;
 
-	private boolean enable_module_exposure;
-	private boolean enable_synthetic_node;
-	private boolean preset_module_graph;
+	 // volatile due to visibility concerns
+	 private volatile boolean enable_module_exposure;
+	 private volatile boolean enable_synthetic_node;
+	 private volatile boolean preset_module_graph;
 	
-	 Map<String, IFilter> mFilterMap 
-	 	= new HashMap<String, IFilter>();;
+	 Map<String, IFilter> mFilterMap; 
 	 	
 	String active_host_filter;
 	String interaction_model;
 	String execution_model;
+	
+	public
+	PartitionerGUIStateModel()
+	{
+		this.profiler_trace
+			= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/Profile-20120504-190723.xml";
+		this.module_exposer	
+			= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/moduleconstraints-aries3.xml";
+		this.host_configuration
+			= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/host-magic.xml";
+       	
+		this.mSimFramework
+       		= new SimulationFramework(Boolean.FALSE);
+		
+		this.mModuleType	
+			= ModuleCoarsenerType.BUNDLE;
+		
+		this.property_change_delegate
+			= new PropertyChangeDelegate();		
+		
+		this.mFilterMap
+	 		= new HashMap<String, IFilter>();
+		
+		this.initializeForActivation();
+	}
+	
+	public void 
+	initializeForActivation() 
+	{
+	   	initFilters();
+	   	initCostModels();
+	}
+	
+	private void 
+    initFilters() 
+    { 
+    	mFilterMap 
+    		= new HashMap<String, IFilter>();
+    	this.active_host_filter
+    		= null;
+    }
+	
+	 private void 
+    initCostModels()
+    {
+    	// TODO: ask Nima if there are defaults for these
+    	// also, keep an eye out for any clues that the following should
+    	// reference non-String objects
+    	this.interaction_model 
+    		= null;
+    	this.execution_model 
+    		= null;
+    }
 	
 	public String
 	getHostConfigurationPath()
@@ -81,7 +126,6 @@ implements IModel
 		return this.module_exposer;
 	}
 	
-	// TODO called from swingworker
 	public String
 	getProfilerTracePath()
 	{
@@ -103,14 +147,10 @@ implements IModel
 			old_coarsener, 
 			model_coarsener
 		);
-		
-		this.mModuleModel
-		 	= null;
-		
 	}
 	
 	public void
-	setProfilerTrace
+	setProfilerTracePath
 	( String profiler_trace )
 	{
 		String old_trace = this.profiler_trace;
@@ -199,34 +239,6 @@ implements IModel
 		);
 	}
 	
-    private void 
-    initFilters() 
-    { 
-    	mFilterMap 
-    		= new HashMap<String, IFilter>();
-    	this.active_host_filter
-    		= null;
-    }
-    
-    private void 
-    initCostModels()
-    {
-    	// TODO: ask Nima if there are defaults for these
-    	// also, keep an eye out for any clues that the following should
-    	// reference non-String objects
-    	this.interaction_model 
-    		= null;
-    	this.execution_model 
-    		= null;
-    }
-    
-    private void 
-    initModuleCoarseners()
-    {
-    	this.mModuleType 
-    		= ModuleCoarsenerType.BUNDLE;
-    }
-	
 	@Override
 	public void 
 	addPropertyChangeListener
@@ -244,36 +256,53 @@ implements IModel
 		this.property_change_delegate.removePropertyChangeListener(l);
 	}
 
-	// called from swingworker
+	////////////////////////////////////////////////////////////////////////////////////
+	///	The following functions are called from a swing worker
+	/// 		-> several variables are used to communicate across the functions:
+	///				-> mModuleModel, set in createModuleModel()
+	///				-> mModuleType, read twice
+	///				-> mHostModel, set in initializeHostModel
+	///			we should be safe from concurrency problems given that mModuleModel
+	///			and mHostModel are set once and never modified
+	////////////////////////////////////////////////////////////////////////////////////
 	public void 
 	createModuleModel
 	( InputStream in ) 
 	{
 		try{
-		  // If the Profile XML file belongs to a real trace of the application
+			// don't assign to class variables until we know that no exception
+			// is being thrown
+			EntityConstraintModel new_constraint_model 
+				= null;
+			ModuleModel module_model
+				= null;
+			ModuleModelHandler module_handler
+				= null;
+			
+			// If the Profile XML file belongs to a real trace of the application
 	        // (i.e., the "Preset Module Placement" checkbox is checked),
 	        // create the ModuleModel from the collected traces.
-	        if ( !PartitionerGUIStateModel.this.preset_module_graph ){     
-	            if( PartitionerGUIStateModel.this.enable_module_exposure ){
+	        if ( !this.preset_module_graph ){     
+	            if( this.enable_module_exposure ){
 	                // parsing the entity constraints to be 
 	            	// exposed in the dependency graph
 	                EntityConstraintParser ccParser 
 	                	= new EntityConstraintParser();
-	                PartitionerGUIStateModel.this.mConstraintModel 
+	                
+	                // for concurrency we create a temporary
+	                // constraint model and assign at the end
+	                new_constraint_model
 	                	= ccParser.parse(
-	                		PartitionerGUIStateModel.this.module_exposer
-	                	);
-	            }else {
-	                PartitionerGUIStateModel.this.mConstraintModel 
-	                	= null;
+	                		this.module_exposer
+		                );
 	            }
 	            
 	            // here we set the list of extra switch constraints 
 	            // that would affect the parsing of the model
-	            if (  PartitionerGUIStateModel.this.mConstraintModel != null ){
-	            	 PartitionerGUIStateModel.this.mConstraintModel
+	            if (  new_constraint_model != null ){
+	            	 new_constraint_model
 	            	 	.getConstraintSwitches().setSyntheticNodeActivated(
-	            	 			PartitionerGUIStateModel.this.enable_synthetic_node   
+	            	 		this.enable_synthetic_node   
 	            	 	);
 	            }
 	            
@@ -281,10 +310,10 @@ implements IModel
 	            	= JipParser.parse(in);             
 	            IModuleCoarsener moduleCoarsener 
 	            	= ModuleCoarsenerFactory.getModuleCoarsener(
-	            		PartitionerGUIStateModel.this.mModuleType, 
-	            		PartitionerGUIStateModel.this.mConstraintModel
+	            		this.mModuleType, 
+	            		new_constraint_model
 	            	);                                 
-	            PartitionerGUIStateModel.this.mModuleModel 
+	            module_model
 	            	= moduleCoarsener.getModuleModelFromParser(jipRun);
 	        }
 	        // If the Profile XML file carries only the hypothetical information for
@@ -294,68 +323,61 @@ implements IModel
 	        else {
 	            ModuleModelParser mmParser 
 	            	= new ModuleModelParser();
-	            PartitionerGUIStateModel.this.mmHandler 
+	            module_handler
 	            	= mmParser.parse(in);
-	            PartitionerGUIStateModel.this.mModuleModel 
-	            	= mmHandler.getModuleModel();
+	            module_model
+	            	= module_handler.getModuleModel();
 	        }
+	        
+	        this.mConstraintModel 
+	        	= new_constraint_model;
+	        this.mModuleModel
+	        	= module_model;
+	        this.mmHandler
+	        	= module_handler;
+	        
 		} catch( Exception ex ){
 			ex.printStackTrace();
 		}
 	}
 
-	// called from swingworker
 	public void 
 	finished() 
 	{
-		if( PartitionerGUIStateModel.this.mModuleModel == null ){
+		final ModuleModel module_model 
+			= this.mModuleModel;
+		
+		if( module_model == null ){
 			throw new RuntimeException("No module model can be retrieved.");                                              
 		}
 		
 		// After parsing the input of a profiling trace, a template is added
 		// to the simulation framework to be later on used to create multiple
 		// instances of the test units for testing against the distribution.
-		assert PartitionerGUIStateModel.this.mSimFramework != null : "mSimFramework needs to be initialized!";
-		assert PartitionerGUIStateModel.this.mModuleModel != null : "mModuleModel needs to be initialized!";
-		assert PartitionerGUIStateModel.this.mModuleType != null : "mModuleType needs to be initialized!";
+		SimulationFramework simulation_framework 
+			= this.mSimFramework;
+		ModuleCoarsenerType module_type
+			= this.mModuleType;
 		
-		PartitionerGUIStateModel.this.mSimFramework.addTemplate(
+		assert simulation_framework != null : "mSimFramework needs to be initialized!";
+		assert module_type != null : "mModuleType needs to be initialized!";
+		
+		simulation_framework.addTemplate(
 			new SimulationUnit(
-				PartitionerGUIStateModel.this.mModuleModel.getName(), 
-				PartitionerGUIStateModel.this.mModuleType.getText(), 
-				new DistributionModel(mModuleModel, mHostModel))
+				module_model.getName(), 
+				module_type.getText(), 
+				new DistributionModel(module_model, mHostModel))
 			);
 	}
 	
-	// called from swing worker-> obtains the reference itself
-	// big problem
-	public ModuleModel
-	getModuleModel()
-	{
-		return this.mModuleModel;
-	}
-
 	public void 
-	initializeForActivation() 
+	initializeHostModel() 
 	{
-	 	this.mHostModel 
-	   		= null;
-	   	this.mModuleModel 
-	   		= null;
-	   	this.mConstraintModel 
-	   		= null;
-   
-	   	// reset the filters for the system during each parsing of a new
-	   	// profiling input and also reset the cost models after each
-	   	// iteration of profiling
-	   	initFilters();
-	   	initCostModels();
-	   	initModuleCoarseners();
-	
-	   	// parsing the configuration for hosts involved in the system
+	 	// parsing the configuration for hosts involved in the system
 	   	HostParser hostParser 
 	   		= new HostParser();
-	   	try {
+	   	
+		try {
 			this.mHostModel 
 				= hostParser.parse(
 					this.getHostConfigurationPath()
@@ -363,6 +385,14 @@ implements IModel
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	// called from swing worker-> obtains the reference itself
+	// big problem
+	public ModuleModel
+	getModuleModel()
+	{
+		return this.mModuleModel;
 	}
 
 	public static String

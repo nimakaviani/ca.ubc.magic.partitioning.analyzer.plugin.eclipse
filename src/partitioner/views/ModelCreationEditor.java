@@ -8,6 +8,7 @@ import java.beans.PropertyChangeEvent;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -85,8 +86,8 @@ implements IView
 	private Form form;
 	
     VisualizePartitioning currentVP;
-    List<VisualizePartitioning> vpList 
-    	= new ArrayList<VisualizePartitioning>();
+    //List<VisualizePartitioning> vpList 
+    //	= new ArrayList<VisualizePartitioning>();
     private JDesktopPane desktopPane;
     private Frame frame;
 	
@@ -592,10 +593,8 @@ implements IView
 		composite.setLayout(new FillLayout());
 		
 		try {
-			UIManager.setLookAndFeel(
-				UIManager.getSystemLookAndFeelClassName() 
-			);
-		} catch (Exception e) {
+			this.setSwingLookAndFeel();
+		} catch( InvocationTargetException | InterruptedException e ) {
 			e.printStackTrace();
 		}
 		
@@ -632,6 +631,24 @@ implements IView
 		super.setPageText(index, "Model Analysis");
 	}
 	
+	private void 
+	setSwingLookAndFeel() 
+	throws InvocationTargetException, InterruptedException 
+	{
+		SwingUtilities.invokeAndWait(
+			new Runnable(){
+				public void run(){
+					try {
+						UIManager.setLookAndFeel(
+							UIManager.getSystemLookAndFeelClassName() 
+						);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			});
+	}
+
 	private void
 	createApplet
 	( Frame frame ) 
@@ -724,20 +741,31 @@ implements IView
 	// TODO: also, be careful about tasks which need to take place on the awt
 	// thread
 	{
-		try{       
-			if( partitioner_gui_state_model.getProfilerTracePath() == null 
-				|| partitioner_gui_state_model.getProfilerTracePath()
-					.equals("") )
+		try{ 
+			// for concurrency, we cache the references we will work with
+			final String profiler_trace_path
+				 = this.partitioner_gui_state_model.getProfilerTracePath();
+			final PartitionerGUIStateModel gui_state_model 
+				= this.partitioner_gui_state_model;
+			
+			if(  	profiler_trace_path == null 
+					|| profiler_trace_path.equals("") )
 			{
 				throw new Exception("No profiler dump data is provided.");   
 			}
-           	if( partitioner_gui_state_model.getHostConfigurationPath()
+			
+           	if( gui_state_model.getHostConfigurationPath()
            			.equals("") )
            	{
            		throw new Exception ("No host layout is provided.");
            	}
            	
-           	this.partitioner_gui_state_model.initializeForActivation();
+           	// the gui_state_model is initialized with a few strings
+           	// but not completely
+           	// 
+           	// if we only create one model per oject, we can call this in the 
+           	// constructor
+           	gui_state_model.initializeHostModel();
            
            	// reading the input stream for the profiling XML document 
            	// provided to the tool.
@@ -748,34 +776,30 @@ implements IView
            			construct()
            			{
            				try{
+           					// for concurrency, we want the two arguments to match
            					final InputStream in 
            						=  new BufferedInputStream(
            							new ProgressMonitorInputStream(
            								null,
            								"Reading " 
-           								+  ModelCreationEditor.this.partitioner_gui_state_model
-           									.getProfilerTracePath(),           								
+           								+  profiler_trace_path,           								
            								new FileInputStream(
-           									ModelCreationEditor.this.partitioner_gui_state_model
-           										.getProfilerTracePath()
+           									profiler_trace_path
            								)
            							)
            						);
                         
-           					ModelCreationEditor.this.partitioner_gui_state_model
-           						.createModuleModel(in);
+           					gui_state_model.createModuleModel(in);
            					in.close();
            				} catch(Exception e){
            					e.printStackTrace();
-	                      //statusMessageLabel.setText("Error: " + e.getMessage());                      
            				}
            				return "Done!";
            			}
 	               
 					@Override
 					public void finished(){
-						ModelCreationEditor.this.partitioner_gui_state_model
-							.finished();
+						gui_state_model.finished();
 						// visualize the model for the parsed module model
 						visualizeModuleModel();  
 					}
@@ -786,8 +810,7 @@ implements IView
 						ModelCreationEditor.this.currentVP 
 							= new VisualizePartitioning(
 						        "Visualization for graph: " 
-						        + ModelCreationEditor.this.partitioner_gui_state_model
-						        	.getModuleModel().getName(), 
+						        + gui_state_model.getModuleModel().getName(), 
 						        true, true, true, true
 						    );
 						ModelCreationEditor.this.vpList.add(
@@ -800,7 +823,7 @@ implements IView
 						ModelCreationEditor.this.desktopPane.setVisible(true);
 						
 						ModelCreationEditor.this.currentVP.drawModules(
-								ModelCreationEditor.this.partitioner_gui_state_model
+								gui_state_model
 									.getModuleModel().getModuleExchangeMap()
 						);  
 						ModelCreationEditor.this.currentVP.setLocation(
@@ -818,7 +841,6 @@ implements IView
 						} catch (Exception e) {
 							e.printStackTrace();
 						};
-					
 					}
            		};
 	        worker.start();

@@ -33,7 +33,7 @@ Constants
 	public static final String GUI_MODULE_COARSENER 		
 		= "ModuleCoarsener";
 	public static final String GUI_PROFILER_TRACE   		
-		= "ProfilerTrace";
+		= "ProfilerTracePath";
 	public static final String GUI_MODULE_EXPOSER 			
 		= "ModuleExposer";
 	public static final String GUI_HOST_CONFIGURATION 		

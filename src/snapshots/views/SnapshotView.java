@@ -879,15 +879,7 @@ implements ILabelProvider
  
   public void 
   dispose() 
-  {
-	  
-    if (dir != null){
-      dir.dispose();
-    }
-    if (file != null){
-      file.dispose();
-    }
-  }
+  {}
 
   public boolean 
   isLabelProperty
