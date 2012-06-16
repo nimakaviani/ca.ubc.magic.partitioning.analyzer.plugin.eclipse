@@ -110,6 +110,7 @@ implements IView
 		snapshot_tree_viewer.setLabelProvider( new FileTreeLabelProvider() );
 		snapshot_tree_viewer.getTree().setLayoutData(grid_data);
 		snapshot_tree_viewer.getTree().pack();
+		// the following line generates an error
 		snapshot_tree_viewer.setInput("hello");
 		snapshot_tree_viewer.addTreeListener( 
 			new ITreeViewerListener()
@@ -799,10 +800,12 @@ implements ITreeContentProvider
 		// Nothing to dispose
 	}
 
+	@Override
 	public void 
 	inputChanged
 	( Viewer arg0, Object arg1, Object arg2 ) 
 	{
+		
 	}
 }
 
@@ -820,15 +823,6 @@ implements ILabelProvider
   {
 	this.listeners 
 		= new ArrayList<ILabelProviderListener>();
-
-    this.file 
-    	= PlatformUI.getWorkbench()
-    	.getSharedImages()
-    	.getImage(ISharedImages.IMG_OBJ_FILE); 
-    this.dir 
-    	= PlatformUI.getWorkbench()
-    	.getSharedImages()
-    	.getImage(ISharedImages.IMG_OBJ_FOLDER); 
   }
 
   /* keep as an example
@@ -850,6 +844,22 @@ implements ILabelProvider
   getImage
   ( Object arg0 ) 
   {
+	  // we need to take the following lazy approach because
+	  // if we close the view and we have disposed of the 
+	  // resources; 
+	  if( this.file == null){
+		  this.file 
+	    	= PlatformUI.getWorkbench()
+	    	.getSharedImages()
+	    	.getImage(ISharedImages.IMG_OBJ_FILE); 
+	  }
+	  if( this.dir == null ){
+		  this.dir 
+	    	= PlatformUI.getWorkbench()
+	    	.getSharedImages()
+	    	.getImage(ISharedImages.IMG_OBJ_FOLDER); 
+	  }
+	  
     return ((File) arg0).isDirectory() ? dir : file;
   }
 
@@ -870,6 +880,7 @@ implements ILabelProvider
   public void 
   dispose() 
   {
+	  
     if (dir != null){
       dir.dispose();
     }
