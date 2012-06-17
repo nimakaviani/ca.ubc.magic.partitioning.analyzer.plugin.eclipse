@@ -2,7 +2,6 @@ package partitioner.views;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.EventQueue;
 import java.awt.Frame;
 import java.beans.PropertyChangeEvent;
 import java.io.BufferedInputStream;
@@ -13,15 +12,12 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
 
-import javax.swing.JApplet;
-import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.ProgressMonitorInputStream;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jface.dialogs.IDialogPage;
 import org.eclipse.jface.dialogs.IPageChangedListener;
 import org.eclipse.jface.dialogs.PageChangedEvent;
 import org.eclipse.swt.SWT;
@@ -68,12 +64,7 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
-import edu.uci.ics.jung.algorithms.layout.CircleLayout;
 
-// classes extending IEditorPart contain the Java
-// code defining the editor's behaviour
-// TODO: the internal swing worker accesses class fields, so this object
-// must be thread safe too.
 public class 
 ModelCreationEditor 
 extends MultiPageEditorPart 
@@ -90,9 +81,7 @@ implements IView
     VisualizePartitioning currentVP;
     Object current_vp_lock = new Object();
     
-   // private JDesktopPane desktopPane;
     private Frame 	frame;
-   // private JApplet inner_frame;
 	
 	private ControllerDelegate controller;
 	private Label profiler_trace_text;
@@ -102,6 +91,13 @@ implements IView
 	private Text host_config_text;
 	private Text module_exposer_text;
 	
+	Section actions_composite;
+	Button synthetic_node_button;
+	Button exposure_button;
+	
+	Button mod_exposer_browse_button;
+	Button host_config_browse;
+	Combo set_coarsener_combo;
 	
 	public 
 	ModelCreationEditor() 
@@ -111,7 +107,6 @@ implements IView
 	public void
 	doSave
 	( IProgressMonitor monitor ) 
-	// save the contents of this editor
 	{}
 
 	@Override
@@ -125,14 +120,10 @@ implements IView
 	( IEditorSite site, IEditorInput input )
 	throws PartInitException 
 	{
-		// typically we also want to perform a sanity check on the
-		// input parameter (using instanceof)
 		super.init(site, input);
 		this.controller = new ControllerDelegate();
 		this.controller.addModel(this.partitioner_gui_state_model);
 		this.controller.addView(this);
-	//	this.desktopPane
-	//		= new JDesktopPane();
 	}
 
 	@Override
@@ -308,19 +299,37 @@ implements IView
 		this.initializeConfigurationWidgets( configure_client );
 		td 
 			= new TableWrapData(TableWrapData.FILL);
-		set_paths_composite.setLayoutData(td);
-		set_paths_composite.addExpansionListener(new ExpansionAdapter() {
-			public void expansionStateChanged(ExpansionEvent e) {
-				//form.reflow(true);
-			}
-		});
+		configure_composite.setLayoutData(td);
 		configure_composite.setClient(configure_client);
+		
+		this.actions_composite
+			= this.toolkit.createSection(
+				form.getBody(),
+				Section.TITLE_BAR 
+					| Section.EXPANDED 
+					| Section.DESCRIPTION
+					| Section.TWISTIE
+			);
+		actions_composite.setText("Actions");
+		actions_composite.setDescription(
+			"Activate the model"
+		);
+		
+		Composite actions_client
+			= this.toolkit.createComposite(actions_composite);
+		td 
+			= new TableWrapData(TableWrapData.FILL);
+		actions_composite.setLayoutData(td);
+		actions_composite.setClient(actions_client);	
+		
+		this.initializeActionsGrid(actions_client);
+		this.initializeActionsWidgets(actions_client);
 		
 		int index
 			= super.addPage( form );
 		super.setPageText( index, "Model Configuration" );
 	}
-	
+
 	private void 
 	initializeSetPathsBarGrid
 	(Composite parent) 
@@ -364,7 +373,7 @@ implements IView
 		grid_data.widthHint = 300;
 		this.module_exposer_text.setLayoutData(grid_data);
 		
-		Button mod_exposer_browse_button 
+		mod_exposer_browse_button 
 			= toolkit.createButton(parent, "Browse", SWT.PUSH);
 		mod_exposer_browse_button.addSelectionListener( 
 				new SelectionAdapter(){
@@ -412,7 +421,7 @@ implements IView
 		grid_data.widthHint = 300;
 		host_config_text.setLayoutData(grid_data);
 		
-		Button host_config_browse 
+		this.host_config_browse 
 			= toolkit.createButton(parent, "Browse", SWT.PUSH);
 		
 		host_config_browse.addSelectionListener( new SelectionAdapter(){
@@ -480,15 +489,15 @@ implements IView
 
 		this.initialize_coarsener_combo_box(parent);
 		
-		final Button exposure_button
+		this.exposure_button
 			= toolkit.createButton(
 				parent, 
 				"Activate Module Exposure", 
 				SWT.CHECK
 			);
 		GridData grid_data 
-			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-		grid_data.horizontalSpan = 2;
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
+		grid_data.horizontalSpan = 1;
 		exposure_button.setLayoutData(grid_data);
 		
 		exposure_button.addSelectionListener(
@@ -507,11 +516,18 @@ implements IView
 			}
 		);
 		
-		final Button synthetic_node_button
+		final Label dummy_label
+			= toolkit.createLabel(parent, "", SWT.NONE);
+		grid_data 
+			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
+		grid_data.horizontalSpan = 1;
+		dummy_label.setLayoutData( grid_data );
+		
+		this.synthetic_node_button
 			= toolkit.createButton(parent, "Add Synthetic Node", SWT.CHECK);
 		grid_data 
 			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-		grid_data.horizontalSpan = 2;
+		grid_data.horizontalSpan = 1;
 		synthetic_node_button.setLayoutData( grid_data );
 		
 		synthetic_node_button.addSelectionListener(
@@ -529,6 +545,7 @@ implements IView
 				}
 			}
 		);
+		/*
 		final Button preset_module_graph_button
 			= toolkit.createButton(parent, "Preset Module Graph", SWT.CHECK);
 		grid_data 
@@ -552,15 +569,62 @@ implements IView
 					);
 				}
 			}
-		);
+		);*/
+	}
 	
+	private void 
+	initializeActionsWidgets
+	( Composite parent ) 
+	{
+		final GridLayout model_configuration_page_grid_layout
+			= new GridLayout();
+		model_configuration_page_grid_layout.numColumns 
+			= 2;
+		parent.setLayout( model_configuration_page_grid_layout );
+	}
+
+	private void 
+	initializeActionsGrid
+	( Composite parent ) 
+	{
+		final Button exposure_button
+			= toolkit.createButton(
+				parent, 
+				"Generate Model", 
+				SWT.PUSH
+			);
+		GridData grid_data 
+			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
+		grid_data.horizontalSpan = 1;
+		exposure_button.setLayoutData(grid_data);
+		
+		exposure_button.addSelectionListener(
+			new SelectionAdapter()
+			{
+				@Override
+				public void
+				widgetSelected
+				( SelectionEvent e )
+				{
+					ModelCreationEditor.this.setVisualizationAction();
+					ModelCreationEditor.this.actions_composite.setVisible(false);
+					
+					ModelCreationEditor.this.synthetic_node_button.setEnabled(false);
+					ModelCreationEditor.this.exposure_button.setEnabled(false);
+					
+					ModelCreationEditor.this.mod_exposer_browse_button.setVisible(false);
+					ModelCreationEditor.this.host_config_browse.setVisible(false);
+					ModelCreationEditor.this.set_coarsener_combo.setEnabled(false);
+				}
+			}
+		);
 	}
 
 	private void
 	initialize_coarsener_combo_box
 	( Composite parent ) 
 	{
-		final Combo set_coarsener_combo
+		this.set_coarsener_combo
 			= new Combo(parent, SWT.NONE);
 		
         for( final ModuleCoarsenerType mcType 
@@ -690,7 +754,7 @@ implements IView
 				return path.substring(i+1);
 			}
 		}
-		return null;
+		return "";
 	}
 
 	@Override
@@ -730,7 +794,6 @@ implements IView
 			break;
 		default:
 			System.out.println("Swallowing message.");
-			this.setVisualizationAction();
 		};
 	}
 	
@@ -824,7 +887,6 @@ implements IView
 										SwingUtilities.updateComponentTreeUI(
 											ModelCreationEditor.this.frame
 										);
-										
 										
 									} catch (Exception e) {
 										e.printStackTrace();

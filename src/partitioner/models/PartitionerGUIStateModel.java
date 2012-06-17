@@ -314,7 +314,7 @@ implements IModel
 	            		new_constraint_model
 	            	);                                 
 	            module_model
-	            	= moduleCoarsener.getModuleModelFromParser(jipRun);
+	            	= moduleCoarsener.getModuleModelFromParser( jipRun );
 	        }
 	        // If the Profile XML file carries only the hypothetical information for
 	        // potential module placements use the ModuleModelParser together with
@@ -347,6 +347,7 @@ implements IModel
 		final ModuleModel module_model 
 			= this.mModuleModel;
 		
+		// this threw and exception
 		if( module_model == null ){
 			throw new RuntimeException("No module model can be retrieved.");                                              
 		}

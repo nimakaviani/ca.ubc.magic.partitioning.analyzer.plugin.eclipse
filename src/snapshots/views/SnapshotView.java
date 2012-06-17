@@ -5,7 +5,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,6 +135,8 @@ implements IView
 						= selection.toArray();
 					if(objects.length > 0){
 						if( objects[0] instanceof VirtualModelFileInput){
+							System.out.println("Opening model");
+									
 							IWorkbenchWindow window 
 								= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 							IWorkbenchPage page = window.getActivePage();

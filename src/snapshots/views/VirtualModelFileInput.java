@@ -100,16 +100,15 @@ implements IStorageEditorInput
 	@Override
 	public boolean
 	equals
-	( Object other )
+	( Object file)
+	// this is used by the IWorkBenchPage.openEditor function
+	// to determine when two editors are the same
 	{
-		if(other instanceof VirtualModelFileInput){
-			VirtualModelFileInput other_file
-				= (VirtualModelFileInput) other;
-			return this == other;
-		} 
+		if(file instanceof VirtualModelFileInput){
+			return file == this;
+		}
 		else {
 			return false;
 		}
 	}
-	
 }
