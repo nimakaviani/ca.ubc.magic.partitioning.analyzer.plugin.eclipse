@@ -9,11 +9,9 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
 
 import javax.swing.JApplet;
 import javax.swing.JDesktopPane;
@@ -23,6 +21,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.dialogs.IDialogPage;
+import org.eclipse.jface.dialogs.IPageChangedListener;
+import org.eclipse.jface.dialogs.PageChangedEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -67,6 +68,7 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
+import edu.uci.ics.jung.algorithms.layout.CircleLayout;
 
 // classes extending IEditorPart contain the Java
 // code defining the editor's behaviour
@@ -86,10 +88,11 @@ implements IView
 	private Form form;
 	
     VisualizePartitioning currentVP;
-    //List<VisualizePartitioning> vpList 
-    //	= new ArrayList<VisualizePartitioning>();
-    private JDesktopPane desktopPane;
-    private Frame frame;
+    Object current_vp_lock = new Object();
+    
+   // private JDesktopPane desktopPane;
+    private Frame 	frame;
+   // private JApplet inner_frame;
 	
 	private ControllerDelegate controller;
 	private Label profiler_trace_text;
@@ -128,8 +131,8 @@ implements IView
 		this.controller = new ControllerDelegate();
 		this.controller.addModel(this.partitioner_gui_state_model);
 		this.controller.addView(this);
-		this.desktopPane
-			= new JDesktopPane();
+	//	this.desktopPane
+	//		= new JDesktopPane();
 	}
 
 	@Override
@@ -220,7 +223,26 @@ implements IView
 				= new Hashtable<String, String>();
 			properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
 			context.registerService(EventHandler.class, handler, properties);
-
+			
+			
+			this.addPageChangedListener( new IPageChangedListener(){
+				@Override
+				public void 
+				pageChanged
+				( PageChangedEvent event ) 
+				{
+					switch(ModelCreationEditor.this.getActivePage()){
+					case MODEL_ANALYSIS_PAGE:
+						if(ModelCreationEditor.this.currentVP != null){
+							//ModelCreationEditor.this.currentVP.setLayoutClass(CircleLayout.class);
+						}
+						break;
+					default:
+						System.out.println("User switched pages");
+						break;
+					}
+				}
+			});
 	}
 
 	private void 
@@ -618,7 +640,6 @@ implements IView
 					ModelCreationEditor.this.frame.setBackground(
 						Color.white
 					);
-					ModelCreationEditor.this.createApplet(frame);
 					ModelCreationEditor.this.frame.pack();
 					ModelCreationEditor.this.frame.setVisible(true);
 					SwingUtilities.updateComponentTreeUI(frame);	
@@ -647,40 +668,6 @@ implements IView
 					}
 				}
 			});
-	}
-
-	private void
-	createApplet
-	( Frame frame ) 
-	{
-		assert EventQueue.isDispatchThread();    // On AWT event thread
-		
-		// first widget inside the frame must be a heavyweight container 
-		// and must implement RootContainer: JApplet is the only available 
-		// choice since it is the only heavyweight Swing container that 
-		// can be embedded
-		JApplet inner_frame 
-			= new JApplet();
-		
-		// recommended by example code on website
-		inner_frame.setFocusCycleRoot(false);
-		inner_frame.setSize(frame.getSize());
-		frame.add(inner_frame);
-		
-	    this.desktopPane.setBorder(
-	    	javax.swing.BorderFactory.createEtchedBorder(
-	    		new Color(226, 221, 221), 
-	    		new Color(154, 150, 150)
-	    	)
-	    );
-        this.desktopPane.setName("desktopPane"); // NOI18N
-        this.desktopPane.setPreferredSize(new java.awt.Dimension(300, 300));
-        inner_frame.add(this.desktopPane, java.awt.BorderLayout.CENTER);
-	    // test code do not keep!
-	    // this.example_test_code(frame);
-	    
-	    this.desktopPane.setVisible(true);
-	    inner_frame.setVisible(true);
 	}
 
 	private void
@@ -731,16 +718,20 @@ implements IView
 			break;
 		default:
 			System.out.println("Swallowing message.");
-			this.setVisualizationAction( new Object() );
+			this.setVisualizationAction();
 		};
 	}
 	
 	public void
-	setVisualizationAction
-	( Object unused )
-	// TODO: also, be careful about tasks which need to take place on the awt
-	// thread
+	setVisualizationAction()
 	{
+		// david - make sure we are not in the middle of creating a new model
+		synchronized(ModelCreationEditor.this.current_vp_lock){
+			if(this.currentVP != null){
+				return;
+			}
+		}
+		
 		try{ 
 			// for concurrency, we cache the references we will work with
 			final String profiler_trace_path
@@ -760,11 +751,6 @@ implements IView
            		throw new Exception ("No host layout is provided.");
            	}
            	
-           	// the gui_state_model is initialized with a few strings
-           	// but not completely
-           	// 
-           	// if we only create one model per oject, we can call this in the 
-           	// constructor
            	gui_state_model.initializeHostModel();
            
            	// reading the input stream for the profiling XML document 
@@ -807,45 +793,49 @@ implements IView
 					private void 
 					visualizeModuleModel() 
 					{
-						ModelCreationEditor.this.currentVP 
-							= new VisualizePartitioning(
-						        "Visualization for graph: " 
-						        + gui_state_model.getModuleModel().getName(), 
-						        true, true, true, true
-						    );
-						ModelCreationEditor.this.vpList.add(
-							ModelCreationEditor.this.currentVP
-						);
-						
-						ModelCreationEditor.this.desktopPane.add(
-							ModelCreationEditor.this.currentVP
-						);     
-						ModelCreationEditor.this.desktopPane.setVisible(true);
-						
-						ModelCreationEditor.this.currentVP.drawModules(
-								gui_state_model
-									.getModuleModel().getModuleExchangeMap()
-						);  
-						ModelCreationEditor.this.currentVP.setLocation(
-							30 * vpList.indexOf(currentVP), 
-							30 * vpList.indexOf(currentVP)
-						);
-						ModelCreationEditor.this.currentVP.setVisible(true);
-						
-						try {
-							ModelCreationEditor.this.currentVP.setMaximum(true);
-							ModelCreationEditor.this.frame.pack();
-							SwingUtilities.updateComponentTreeUI(
-								ModelCreationEditor.this.frame
-							);
-						} catch (Exception e) {
-							e.printStackTrace();
-						};
+						SwingUtilities.invokeLater( new Runnable(){
+							@Override
+							public void
+							run()
+							{
+								synchronized(ModelCreationEditor.this.current_vp_lock){
+									ModelCreationEditor.this.currentVP
+										= new VisualizePartitioning( frame );
+		
+									ModelCreationEditor.this.currentVP.drawModules(
+											gui_state_model
+												.getModuleModel().getModuleExchangeMap()
+									);  
+									
+									try {
+										ModelCreationEditor.this.frame.pack();
+										SwingUtilities.updateComponentTreeUI(
+											ModelCreationEditor.this.frame
+										);
+										
+										
+									} catch (Exception e) {
+										e.printStackTrace();
+									};
+								}
+							}
+						});
 					}
            		};
 	        worker.start();
         }catch(Exception e){    
         	e.printStackTrace();
         }
+	}
+	
+	@Override
+	public void 
+	dispose()
+	{
+		synchronized(this.current_vp_lock){
+			if(this.currentVP != null){
+				this.currentVP.destroy();
+			}
+		}
 	}
 }

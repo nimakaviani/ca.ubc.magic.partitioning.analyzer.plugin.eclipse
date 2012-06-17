@@ -39,6 +39,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GradientPaint;
 import java.awt.Paint;
 import java.awt.event.KeyEvent;
@@ -48,6 +49,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import javax.swing.JApplet;
 import javax.swing.JComboBox;
 import javax.swing.JRootPane;
 import org.apache.commons.collections15.Transformer;
@@ -59,183 +62,45 @@ import org.apache.commons.collections15.Transformer;
 @SuppressWarnings({ "serial", "rawtypes" })
 public class 
 VisualizePartitioning 
-extends javax.swing.JInternalFrame 
+//extends javax.swing.JInternalFrame
+extends JApplet
 implements Transformer
 {
-    public String 
-    transform
-    ( Object m ) 
-    {
-        if (m instanceof Module){
-            return (
-            	(Module)m).getName() + ((showVertexWeight) 
-            	? " (" + ((Module)m).costToString()+")" 
-            	: ""
-            );
-        }else if (m instanceof InteractionData){
-            return ( 
-            	showEdgeWeight 
-            	? (Long.toString(((InteractionData)m).getTotalData()) 
-            		+ " X " 
-            		+ Long.toString(((InteractionData)m).getTotalCount())) 
-            	: ""
-            );
-        }
-        return "";
-    }
-
+	// Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel algorithmLabel;
+    private javax.swing.JPanel controlPanel;
+    private javax.swing.JCheckBox edgeWeightCheckbox;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JComboBox layoutComboBox;
+    private javax.swing.JLabel layoutLabel;
+    private javax.swing.JComboBox modeComboBox;
+    private javax.swing.JLabel modeLabel;
+    private javax.swing.JLabel solutionLabel;
+    private javax.swing.JCheckBox vertexWeightCheckbox;
+    // End of variables declaration//GEN-END:variables
+    private Graph <Module, InteractionData> g = null;
+    private VisualizationViewer<Module, InteractionData> vv = null;
+    private AbstractLayout<Module, InteractionData> layout;
+    private Map<ModulePair, InteractionData> mModuleMap = null;
+        
+    private DefaultModalGraphMouse graphMouse;
+    
+    private boolean showVertexWeight = Boolean.FALSE;
+    private boolean showEdgeWeight = Boolean.FALSE;
+    
     public 
     VisualizePartitioning
-    ( 	String title, 
-    	boolean resizeable,
-    	boolean closeable, 
-    	boolean maximizable, 
-    	boolean iconifable)
+    ( Frame frame)
     {
-        super(title, resizeable, closeable, maximizable, iconifable);
-        
+    	// recommended by example code on website
+		this.setFocusCycleRoot(false);
+		this.setSize(689,600);
+		frame.add(this);
+    			
         initComponents();
         initGraph();
     }
     
-    public final void 
-    initGraph()
-    {
-        this.g 
-        	= getNewGraphInstance();
-        this.layout 
-        	= new FRLayout2<Module, InteractionData>(this.g);
-        this.vv 
-        	= new VisualizationViewer<Module, InteractionData>(
-        		layout,
-                this.getSize()
-        	);
-        JRootPane rp 
-        	= this.getRootPane();
-        rp.putClientProperty("defeatSystemEventQueueCheck", Boolean.TRUE);
-        this.vv.setPreferredSize(new Dimension(687, 300));
-        this.vv.getModel().getRelaxer().setSleepTime(500);
-        this.vv.setGraphMouse(new DefaultModalGraphMouse<Number,Number>());
-        this.vv.getRenderer().getVertexLabelRenderer().setPosition(Renderer.VertexLabel.Position.CNTR);
-        this.vv.getRenderer().setVertexRenderer(new PartitionChangedRenderer());              
-        this.vv.getRenderContext().setVertexLabelTransformer(this);
-        this.vv.getRenderContext().setEdgeLabelTransformer(this);
-        this.vv.setForeground(Color.BLUE);                
-        
-        this.graphMouse = new DefaultModalGraphMouse();        
-        this.graphMouse.setMode(ModalGraphMouse.Mode.TRANSFORMING);
-        this.vv.setGraphMouse(this.graphMouse);        
-        
-        this.vv.addKeyListener(new java.awt.event.KeyListener(){
-            public void keyPressed(KeyEvent keyEvent) {
-                if (keyEvent.getKeyChar() == 's' || keyEvent.getKeyChar() == 'S'){
-                    ModalGraphMouse.Mode m = ModalGraphMouse.Mode.valueOf(((String) modeComboBox.getSelectedItem()));
-                    if(m == ModalGraphMouse.Mode.PICKING){
-                    graphMouse.setMode(ModalGraphMouse.Mode.TRANSFORMING);
-                    modeComboBox.setSelectedIndex(0);
-                    } else if (m == ModalGraphMouse.Mode.TRANSFORMING){
-                    graphMouse.setMode(ModalGraphMouse.Mode.PICKING);
-                    modeComboBox.setSelectedIndex(1);
-                    }
-                }
-            }
-            public void keyReleased(KeyEvent keyEvent) {}
-            public void keyTyped(KeyEvent keyEvent) {}
-        });
-                
-        getContentPane().add(vv, BorderLayout.CENTER);
-        
-        validate();        
-        this.vv.repaint();
-    }
-
-    private Graph <Module, InteractionData> getNewGraphInstance() {
-        Graph <Module, InteractionData> ig = 
-                Graphs.<Module, InteractionData>synchronizedUndirectedGraph(new
-                        UndirectedSparseGraph<Module, InteractionData>());
-        ObservableGraph<Module, InteractionData> og = new 
-                ObservableGraph<Module, InteractionData>(ig);
-        return og;
-    }
-    
-    public void drawModules(Map<ModulePair, InteractionData> moduleMap){
-        mModuleMap = moduleMap;
-        Set<Module> moduleSet = new HashSet<Module>();
-        for (Entry<ModulePair, InteractionData> entry : moduleMap.entrySet()){
-            for (Module m : entry.getKey().getModules())
-                if (!moduleSet.contains(m)){                    
-                    g.addVertex(m);
-                    moduleSet.add(m);
-                }
-            g.addEdge(entry.getValue(), 
-                Arrays.asList(entry.getKey().getModules()), EdgeType.UNDIRECTED);
-        }
-        layout.initialize();
-        layout.lock(false);
-    }       
-    
-    public void redrawModules(Map<ModulePair, InteractionData> moduleMap){
-        mModuleMap = moduleMap;        
-        g = getNewGraphInstance();
-        drawModules(mModuleMap);
-//        PartitionChangedTransformer pct = new PartitionChangedTransformer();
-        rerenderGraph();
-    }    
-    
-    private void rerenderGraph(){
-        vv.getRenderer().setVertexRenderer(new PartitionChangedRenderer());              
-        vv.repaint();
-    }
-    
-    private class PartitionChangedTransformer implements Transformer<Module, Paint> {
-
-        public Paint transform(Module m) {
-            Color p = null;
-            if (m.getPartitionId() == 1 || m.getPartitionId() == -1){
-                p = Color.red;
-                
-            }else {
-                p = Color.green;
-            }
-            return new GradientPaint(0, 0, p, 20, 0, Color.blue, true);
-        }           
-    }
-    
-    private class PartitionChangedRenderer implements Renderer.Vertex<Module, InteractionData> {
-
-        public void paintVertex(RenderContext<Module, InteractionData> rc, 
-                Layout<Module, InteractionData> layout, Module m) {
-            
-            Color typeColor = Color.white;
-            Color partitionColor = Color.red;
-            
-            if (m.getPartitionId() == 1 || m.getPartitionId() == -1){
-                partitionColor = Color.red;
-                
-            }else {
-                partitionColor = Color.green;
-            }
-             
-             switch (m.getType()){
-                case COMPONENT:
-                    typeColor = Color.white;
-                    break;
-                case CLASS:
-                    typeColor = Color.yellow;
-                    break;
-                case METHOD:
-                    typeColor = Color.gray;
-                    break;
-                case DEFAULT:
-                    typeColor = partitionColor;
-            }
-            
-             GradientVertexRenderer vr = 
-                     new GradientVertexRenderer<Module, InteractionData>(typeColor, partitionColor, false);
-             vr.paintVertex(rc, layout, m);
-        }
-    }
-
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -365,8 +230,178 @@ implements Transformer
 
         getContentPane().add(controlPanel, java.awt.BorderLayout.NORTH);
 
-        pack();
+        //pack();
     }// </editor-fold>//GEN-END:initComponents
+    
+    public final void 
+    initGraph()
+    {
+    	  this.g 
+	    	= getNewGraphInstance();
+	    this.layout 
+	    	//= new FRLayout2<Module, InteractionData>(this.g);
+	    	= new SpringLayout<Module,InteractionData>(this.g);
+	    this.vv 
+	    	= new VisualizationViewer<Module, InteractionData>(
+	    		layout,
+	            this.getSize()
+	    	);
+	    
+        JRootPane rp 
+        	= this.getRootPane();
+        rp.putClientProperty("defeatSystemEventQueueCheck", Boolean.TRUE);
+        this.vv.setPreferredSize(new Dimension(687, 300));
+        assert this.vv.getModel() != null;
+        assert this.vv.getModel().getRelaxer() != null;
+        
+        this.vv.getModel().getRelaxer().setSleepTime(500);
+        this.vv.setGraphMouse(new DefaultModalGraphMouse<Number,Number>());
+        this.vv.getRenderer().getVertexLabelRenderer().setPosition(Renderer.VertexLabel.Position.CNTR);
+        this.vv.getRenderer().setVertexRenderer(new PartitionChangedRenderer());              
+        this.vv.getRenderContext().setVertexLabelTransformer(this);
+        this.vv.getRenderContext().setEdgeLabelTransformer(this);
+        this.vv.setForeground(Color.BLUE);                
+        
+        this.graphMouse = new DefaultModalGraphMouse();        
+        this.graphMouse.setMode(ModalGraphMouse.Mode.TRANSFORMING);
+        this.vv.setGraphMouse(this.graphMouse);        
+        
+        this.vv.addKeyListener(new java.awt.event.KeyListener(){
+            public void keyPressed(KeyEvent keyEvent) {
+                if (keyEvent.getKeyChar() == 's' || keyEvent.getKeyChar() == 'S'){
+                    ModalGraphMouse.Mode m = ModalGraphMouse.Mode.valueOf(((String) modeComboBox.getSelectedItem()));
+                    if(m == ModalGraphMouse.Mode.PICKING){
+                    graphMouse.setMode(ModalGraphMouse.Mode.TRANSFORMING);
+                    modeComboBox.setSelectedIndex(0);
+                    } else if (m == ModalGraphMouse.Mode.TRANSFORMING){
+                    graphMouse.setMode(ModalGraphMouse.Mode.PICKING);
+                    modeComboBox.setSelectedIndex(1);
+                    }
+                }
+            }
+            public void keyReleased(KeyEvent keyEvent) {}
+            public void keyTyped(KeyEvent keyEvent) {}
+        });
+                
+        getContentPane().add(vv, BorderLayout.CENTER);
+        
+        validate();      
+        
+        this.vv.repaint();
+        
+        this.setLayoutClass(CircleLayout.class);
+    }
+    
+    public String 
+    transform
+    ( Object m ) 
+    {
+        if (m instanceof Module){
+            return (
+            	(Module)m).getName() + ((showVertexWeight) 
+            	? " (" + ((Module)m).costToString()+")" 
+            	: ""
+            );
+        }else if (m instanceof InteractionData){
+            return ( 
+            	showEdgeWeight 
+            	? (Long.toString(((InteractionData)m).getTotalData()) 
+            		+ " X " 
+            		+ Long.toString(((InteractionData)m).getTotalCount())) 
+            	: ""
+            );
+        }
+        return "";
+    }
+
+    private Graph <Module, InteractionData> getNewGraphInstance() {
+        Graph <Module, InteractionData> ig = 
+                Graphs.<Module, InteractionData>synchronizedUndirectedGraph(new
+                        UndirectedSparseGraph<Module, InteractionData>());
+        ObservableGraph<Module, InteractionData> og = new 
+                ObservableGraph<Module, InteractionData>(ig);
+        return og;
+    }
+    
+    public void drawModules(Map<ModulePair, InteractionData> moduleMap){
+        mModuleMap = moduleMap;
+        Set<Module> moduleSet = new HashSet<Module>();
+        for (Entry<ModulePair, InteractionData> entry : moduleMap.entrySet()){
+            for (Module m : entry.getKey().getModules())
+                if (!moduleSet.contains(m)){                    
+                    g.addVertex(m);
+                    moduleSet.add(m);
+                }
+            g.addEdge(entry.getValue(), 
+                Arrays.asList(entry.getKey().getModules()), EdgeType.UNDIRECTED);
+        }
+        layout.initialize();
+        layout.lock(false);
+    }       
+    
+    public void redrawModules(Map<ModulePair, InteractionData> moduleMap){
+        mModuleMap = moduleMap;        
+        g = getNewGraphInstance();
+        drawModules(mModuleMap);
+//        PartitionChangedTransformer pct = new PartitionChangedTransformer();
+        rerenderGraph();
+    }    
+    
+    private void rerenderGraph(){
+        vv.getRenderer().setVertexRenderer(new PartitionChangedRenderer());              
+        vv.repaint();
+    }
+    
+    private class PartitionChangedTransformer implements Transformer<Module, Paint> {
+
+        public Paint transform(Module m) {
+            Color p = null;
+            if (m.getPartitionId() == 1 || m.getPartitionId() == -1){
+                p = Color.red;
+                
+            }else {
+                p = Color.green;
+            }
+            return new GradientPaint(0, 0, p, 20, 0, Color.blue, true);
+        }           
+    }
+    
+    private class PartitionChangedRenderer implements Renderer.Vertex<Module, InteractionData> {
+
+        public void paintVertex(RenderContext<Module, InteractionData> rc, 
+                Layout<Module, InteractionData> layout, Module m) {
+            
+            Color typeColor = Color.white;
+            Color partitionColor = Color.red;
+            
+            if (m.getPartitionId() == 1 || m.getPartitionId() == -1){
+                partitionColor = Color.red;
+                
+            }else {
+                partitionColor = Color.green;
+            }
+             
+             switch (m.getType()){
+                case COMPONENT:
+                    typeColor = Color.white;
+                    break;
+                case CLASS:
+                    typeColor = Color.yellow;
+                    break;
+                case METHOD:
+                    typeColor = Color.gray;
+                    break;
+                case DEFAULT:
+                    typeColor = partitionColor;
+            }
+            
+             GradientVertexRenderer vr = 
+                     new GradientVertexRenderer<Module, InteractionData>(typeColor, partitionColor, false);
+             vr.paintVertex(rc, layout, m);
+        }
+    }
+
+    
 
     private void modeComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboBoxActionPerformed
         JComboBox cb = (JComboBox)evt.getSource();
@@ -391,10 +426,18 @@ implements Transformer
         else if (ISOMLayout.class.getName().contains(className))
             layoutClass = ISOMLayout.class;        
         else
-            throw new RuntimeException("Layout class not found.");        
-        Class<? extends Layout<Module, InteractionData>> layoutC = 
+            throw new RuntimeException("Layout class not found.");   
+        
+        this.setLayoutClass(layoutClass);
+    }//GEN-LAST:event_layoutComboBoxActionPerformed
+
+    public void 
+    setLayoutClass
+    ( Class layoutClass ) 
+    {
+    	 Class<? extends Layout<Module, InteractionData>> layoutC = 
             (Class<? extends Layout<Module, InteractionData>>) layoutClass;
-//            Class lay = layoutC;
+//    	            Class lay = layoutC;
         try
         {
             Constructor<? extends Layout<Module, InteractionData>> constructor = layoutC
@@ -417,9 +460,9 @@ implements Transformer
         {
             e.printStackTrace();
         }        
-    }//GEN-LAST:event_layoutComboBoxActionPerformed
+	}
 
-    private void vertexWeightCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vertexWeightCheckboxActionPerformed
+	private void vertexWeightCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_vertexWeightCheckboxActionPerformed
         if (vertexWeightCheckbox.isSelected())
             showVertexWeight = Boolean.TRUE;
         else 
@@ -446,27 +489,4 @@ implements Transformer
     public void setSolution(String text){
         solutionLabel.setText(text);
     }
-    
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel algorithmLabel;
-    private javax.swing.JPanel controlPanel;
-    private javax.swing.JCheckBox edgeWeightCheckbox;
-    private javax.swing.JSeparator jSeparator1;
-    private javax.swing.JComboBox layoutComboBox;
-    private javax.swing.JLabel layoutLabel;
-    private javax.swing.JComboBox modeComboBox;
-    private javax.swing.JLabel modeLabel;
-    private javax.swing.JLabel solutionLabel;
-    private javax.swing.JCheckBox vertexWeightCheckbox;
-    // End of variables declaration//GEN-END:variables
-    private Graph <Module, InteractionData> g = null;
-    private VisualizationViewer<Module, InteractionData> vv = null;
-    private AbstractLayout<Module, InteractionData> layout;
-    private Map<ModulePair, InteractionData> mModuleMap = null;
-        
-    private DefaultModalGraphMouse graphMouse;
-    
-    private boolean showVertexWeight = Boolean.FALSE;
-    private boolean showEdgeWeight = Boolean.FALSE;
-        
 }
