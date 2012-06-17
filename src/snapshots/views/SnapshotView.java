@@ -3,8 +3,13 @@ package snapshots.views;
 import java.beans.PropertyChangeEvent;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.swt.widgets.Button;
@@ -15,10 +20,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.part.*;
-import org.eclipse.core.filesystem.EFS;
-import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IAction;
@@ -68,6 +70,7 @@ implements IView
 		= new ControllerDelegate();
 	EventLogTable		log_console_table;
 	private	TreeViewer	snapshot_tree_viewer;
+	private FileTreeContentProvider file_tree_content_provider;
 
 	public 
 	SnapshotView() 
@@ -104,33 +107,18 @@ implements IView
 			= new TreeViewer(tree_group, SWT.FILL);
 		grid_data 
 			= new GridData(GridData.FILL_BOTH);
+		
+		this.file_tree_content_provider
+			= new FileTreeContentProvider(this.getPreviousPath(), this.snapshot_tree_viewer); 
 		snapshot_tree_viewer.setContentProvider( 
-			new FileTreeContentProvider(this.getPreviousPath()) 
+				this.file_tree_content_provider
 		);
+		
 		snapshot_tree_viewer.setLabelProvider( new FileTreeLabelProvider() );
 		snapshot_tree_viewer.getTree().setLayoutData(grid_data);
 		snapshot_tree_viewer.getTree().pack();
 		// the following line generates an error
 		snapshot_tree_viewer.setInput("hello");
-		snapshot_tree_viewer.addTreeListener( 
-			new ITreeViewerListener()
-			{
-				@Override
-				public void 
-				treeCollapsed
-				( TreeExpansionEvent event ) 
-				{
-					snapshot_tree_viewer.setInput("hello");
-				}
-				@Override
-				public void 
-				treeExpanded
-				( TreeExpansionEvent event ) 
-				{
-					
-				}
-			}
-		);
 		
 		// from example code found in the eclipse plugins book
 		// pp. 202
@@ -147,7 +135,20 @@ implements IView
 					Object[] objects 
 						= selection.toArray();
 					if(objects.length > 0){
-						if( objects[0] instanceof File ){
+						if( objects[0] instanceof VirtualModelFileInput){
+							IWorkbenchWindow window 
+								= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+							IWorkbenchPage page = window.getActivePage();
+							try {
+								page.openEditor(
+									(VirtualModelFileInput) objects[0],
+									"plugin.views.model_creation_editor"
+								);
+							} catch (PartInitException e1) {
+								e1.printStackTrace();
+							}
+						}
+						else if( objects[0] instanceof File ){
 							File potential_directory
 								= (File) objects[0];
 							if(potential_directory.isDirectory()){
@@ -155,32 +156,27 @@ implements IView
 							}
 							else if(!potential_directory.isDirectory()){
 								
-								// 	problem: I am not sure how to set the behaviour here
-								// 	on a double-click we want an editor to open up if
-								// 	there is no editor for the snapshot; if there is already
-								// 	an editor open we want to switch focus to that editor
-								//
-								// 	that is not what is happening. 
-								
 								// files not in the workspace are not IFiles
 								// the following example code is from 
 								// http://www.eclipsezone.com/eclipse/forums/t102821.html
 								File file = new File(potential_directory.getAbsolutePath());
 								if( file.exists() && file.isFile() ){
-									IFileStore  file_store 
-										= EFS.getLocalFileSystem().getStore(file.toURI());
-									FileStoreEditorInput editor_input 
-										= new FileStoreEditorInput( file_store);
-									IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+									VirtualModelFileInput input 
+										= SnapshotView.this.file_tree_content_provider
+											.addVirtualModelInput( file.getAbsolutePath() );
+									IWorkbenchWindow window 
+										= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 									IWorkbenchPage page = window.getActivePage();
 									try {
 										page.openEditor(
-											editor_input, 
+											input,
 											"plugin.views.model_creation_editor"
 										);
 									} catch (PartInitException e1) {
 										e1.printStackTrace();
 									}
+									
+									SnapshotView.this.refresh();
 								}
 							}
 						}
@@ -212,59 +208,6 @@ implements IView
 		
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
-		
-		/*
-		// experiment
-				// code from 
-				// http://stackoverflow.com/questions/8786089/how-to-get-path-of-current-selected-file-in-eclipse-plugin-development
-				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()
-		        .addPartListener(new IPartListener() {
-
-		            @Override
-		            public void partOpened(IWorkbenchPart part) {
-		                // TODO Auto-generated method stub
-
-		            }
-
-		            @Override
-		            public void partDeactivated(IWorkbenchPart part) {
-		                // TODO Auto-generated method stub
-
-		            }
-
-		            @Override
-		            public void 
-		            partClosed
-		            ( IWorkbenchPart part ) 
-		            {
-		                // TODO Auto-generated method stub
-
-		            }
-
-		            @Override
-		            public void partBroughtToTop(IWorkbenchPart part) {
-		                if (part instanceof IEditorPart) {
-		                	IEditorInput editor_input = ((IEditorPart) part).getEditorInput();
-		                	assert editor_input != null : "first null";
-		                    if (((IEditorPart) part).getEditorInput() instanceof IFileEditorInput) {
-		                    	IFileEditorInput file_editor_input = (IFileEditorInput) editor_input;
-		                    	assert file_editor_input.getFile() != null : "Second null";
-		                        IFile file 
-		                        	= ((IFileEditorInput) ((EditorPart) part)
-		                                .getEditorInput()).getFile();
-		                        assert file != null : "Third null";
-		                        System.out.println(file.getLocation());
-		                    }
-		                }
-
-		            }
-
-		            @Override
-		            public void partActivated(IWorkbenchPart part) {
-		                // TODO Auto-generated method stub
-
-		            }
-		        });*/
 	}
 	
 	private void 
@@ -538,7 +481,6 @@ implements IView
 			System.out.println(this.host_text.getText());
 			break;
 		case Constants.SNAPSHOT_PROPERTY:
-			//this.snapshots_table.refresh();
 			System.err.println("inside snapshotview model property change");
 			this.snapshot_tree_viewer.setInput("hello");
 			this.snapshot_tree_viewer.refresh();
@@ -552,8 +494,13 @@ implements IView
 	
 	public void
 	refresh()
+	// the following code is from:
+	// http://cvalcarcel.wordpress.com/tag/setexpandedelements/
 	{
+		Object[] treePaths 
+			= this.snapshot_tree_viewer.getExpandedElements();
 		this.snapshot_tree_viewer.refresh();
+		this.snapshot_tree_viewer.setExpandedElements(treePaths);
 	}
 	
 	private void 
@@ -717,16 +664,55 @@ implements ITreeContentProvider
 {
 	Set<File> snapshot_folders
 		= new CopyOnWriteArraySet<File>();
+	Map<String, Integer> snapshots_map
+		= new HashMap<String, Integer>();
+	Map<String, Set<File>> snapshot_models;
 	
 	public
 	FileTreeContentProvider
-	( String path )
+	( String path, TreeViewer tree_viewer )
 	{
 		File default_directory
 			= new File(path);
 		this.snapshot_folders.add( default_directory );
+		this.snapshot_models
+			= new HashMap<String, Set<File>>();
 	}
 	
+	public VirtualModelFileInput 
+	addVirtualModelInput
+	( String string ) 
+	{
+		int count = 1;
+		Set<File> models = null;
+		
+		// if contained, 
+		if( this.snapshot_models.containsKey(string) ){
+			count = this.snapshots_map.get(string) + 1;
+			models = this.snapshot_models.get(string);
+		}
+		else {
+			models = new TreeSet<File>( 
+				new Comparator<File>(){
+					@Override
+					public int compare(File arg0, File arg1) {
+						return arg0.getName().compareTo(arg1.getName());
+					}
+				});
+			this.snapshot_models.put(string, models);
+		}
+		
+		VirtualModelFile virtual_file 
+			= new VirtualModelFile(string, "Model " + count);
+		VirtualModelFileInput return_value
+			= new VirtualModelFileInput(string, virtual_file);
+	
+		models.add(return_value);
+		this.snapshots_map.put(string, count);
+		
+		return return_value;
+	}
+
 	public void 
 	add
 	( String path ) 
@@ -760,15 +746,20 @@ implements ITreeContentProvider
 		File[] children = parent.listFiles();
 		if(children != null){
 			for(File f : children){
-				if(f.getName().endsWith(".xml") || f.getName().endsWith(".XML")){
+				if(f.getName().endsWith(".xml") || f.getName().endsWith(".XML") || f.isDirectory()){
 					xml_files.add(f);
 				}
 			}
 			return xml_files.toArray();
 		}
-		else {
-			return null;
+		else if(parent.isFile()){
+			Set<File> child_list 
+				= this.snapshot_models.get(parent.getAbsolutePath());
+			if(child_list != null){
+				children = child_list.toArray(new File[0]);
+			}
 		}
+		return children;
 	}
 	
 	public Object 
@@ -805,7 +796,6 @@ implements ITreeContentProvider
 	inputChanged
 	( Viewer arg0, Object arg1, Object arg2 ) 
 	{
-		
 	}
 }
 
@@ -844,9 +834,6 @@ implements ILabelProvider
   getImage
   ( Object arg0 ) 
   {
-	  // we need to take the following lazy approach because
-	  // if we close the view and we have disposed of the 
-	  // resources; 
 	  if( this.file == null){
 		  this.file 
 	    	= PlatformUI.getWorkbench()

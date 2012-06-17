@@ -224,23 +224,12 @@ implements IView
 			properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
 			context.registerService(EventHandler.class, handler, properties);
 			
-			
 			this.addPageChangedListener( new IPageChangedListener(){
 				@Override
 				public void 
 				pageChanged
 				( PageChangedEvent event ) 
 				{
-					switch(ModelCreationEditor.this.getActivePage()){
-					case MODEL_ANALYSIS_PAGE:
-						if(ModelCreationEditor.this.currentVP != null){
-							//ModelCreationEditor.this.currentVP.setLayoutClass(CircleLayout.class);
-						}
-						break;
-					default:
-						System.out.println("User switched pages");
-						break;
-					}
 				}
 			});
 	}
@@ -678,7 +667,30 @@ implements IView
 		IEditorInput input
 			= super.getEditorInput();
 		super.setPartName( input.getName() );
-		super.setTitleToolTip( input.getToolTipText() );
+		
+		super.setTitleToolTip(this.getTitleToolTip());
+		
+	}
+	
+	@Override
+	public String
+	getTitleToolTip()
+	{
+		IEditorInput input
+			= super.getEditorInput();
+		
+		String path = input.getToolTipText();
+		int count = 0;
+		for(int i = 0; i < path.length(); ++i){
+			if(path.charAt(i) == ' '){
+				count++;
+			}
+			if( count == 2){
+				System.out.println(path.substring(i+1));
+				return path.substring(i+1);
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -762,7 +774,7 @@ implements IView
            			construct()
            			{
            				try{
-           					// for concurrency, we want the two arguments to match
+           					System.out.println(profiler_trace_path);
            					final InputStream in 
            						=  new BufferedInputStream(
            							new ProgressMonitorInputStream(
