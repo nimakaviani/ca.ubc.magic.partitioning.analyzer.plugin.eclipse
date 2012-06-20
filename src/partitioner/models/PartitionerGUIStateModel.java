@@ -10,7 +10,11 @@ import plugin.Constants;
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
+import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory;
+import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleCoarsener;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
@@ -21,6 +25,9 @@ import ca.ubc.magic.profiler.parser.JipParser;
 import ca.ubc.magic.profiler.parser.JipRun;
 import ca.ubc.magic.profiler.parser.ModuleModelHandler;
 import ca.ubc.magic.profiler.parser.ModuleModelParser;
+import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
+import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
+import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
@@ -36,6 +43,9 @@ implements IModel
 	private PropertyChangeDelegate property_change_delegate;
 	
 	private ModuleCoarsenerType mModuleType; 
+	private PartitionerType partitioner_type;
+	private InteractionCostType interaction_cost_type;
+	private ExecutionCostType execution_cost_type;
 
 	private volatile	String profiler_trace;  
 	private volatile 	String module_exposer;
@@ -50,17 +60,20 @@ implements IModel
 	private volatile HostModel   			mHostModel; 
 	private volatile EntityConstraintModel	mConstraintModel;
 
-	 // volatile due to visibility concerns
-	 private volatile boolean enable_module_exposure;
-	 private volatile boolean enable_synthetic_node;
-	 private volatile boolean preset_module_graph;
+	// volatile due to visibility concerns
+	private volatile boolean enable_module_exposure;
+	private volatile boolean enable_synthetic_node;
+	private volatile boolean preset_module_graph;
+	 
+	private volatile boolean perform_partitioning;
 	
-	 Map<String, IFilter> mFilterMap; 
+	private Map<String, IFilter> mFilterMap; 
 	 	
-	String active_host_filter;
-	String interaction_model;
-	String execution_model;
-	
+	private String active_host_filter;
+	private String interaction_model;
+	private String execution_model;
+	private String partitioner_solution;
+
 	public
 	PartitionerGUIStateModel()
 	{
@@ -76,6 +89,12 @@ implements IModel
 		
 		this.mModuleType	
 			= ModuleCoarsenerType.BUNDLE;
+		this.interaction_cost_type
+			= InteractionCostType.IGNORE;
+		this.execution_cost_type
+			= ExecutionCostType.EXECUTION_TIME;
+		this.partitioner_type
+			= PartitionerType.MIN_MAX_PREFLOW_PUSH;
 		
 		this.property_change_delegate
 			= new PropertyChangeDelegate();		
@@ -239,6 +258,104 @@ implements IModel
 		);
 	}
 	
+	public void
+	setPerformPartitioning
+	( Boolean perform_partitioning )
+	{
+		boolean old_perform
+			= this.perform_partitioning;
+		this.perform_partitioning
+			= perform_partitioning;
+		
+		this.property_change_delegate.firePropertyChange(
+			Constants.GUI_PERFORM_PARTITIONING,
+			old_perform,
+			perform_partitioning
+		);
+	}
+	
+	public void
+	setPartitionerType
+	( PartitionerType partitioner_type )
+	{
+		PartitionerType old_partitioner
+			= this.partitioner_type;
+		this.partitioner_type
+			= partitioner_type;
+		
+		this.property_change_delegate.firePropertyChange(
+			Constants.GUI_PARTITIONER_TYPE,
+			old_partitioner,
+			partitioner_type
+		);
+	}
+	
+	public void
+	setInteractionCost
+	( InteractionCostType interaction_cost )
+	{
+		InteractionCostType old_interaction
+			= this.interaction_cost_type;
+		this.interaction_cost_type
+			= interaction_cost;
+		
+		this.property_change_delegate.firePropertyChange(
+			Constants.GUI_INTERACTION_COST,
+			old_interaction,
+			interaction_cost
+		);
+	}
+	
+	public void
+	setExecutionCost
+	( ExecutionCostType execution_cost )
+	{
+		ExecutionCostType old_execution
+			= this.execution_cost_type;
+		this.execution_cost_type
+			= execution_cost;
+		
+		this.property_change_delegate.firePropertyChange(
+			Constants.GUI_EXECUTION_COST,
+			old_execution,
+			execution_cost
+		);
+	}
+	
+    /*
+	 private void initDynamicComponents() {
+       // Initializing the InteractionCostType menu from the menu bar
+       for (InteractionCostType type : InteractionFactory.InteractionCostType.values()){
+           JCheckBoxMenuItem interactionTypeItem = new JCheckBoxMenuItem(type.getText());
+           interactionTypeItem.addActionListener(new java.awt.event.ActionListener() {
+               public void actionPerformed(java.awt.event.ActionEvent evt) {
+                   if (mHostModel != null){
+                       mHostModel.setInteractionCostModel(
+                               InteractionFactory.getInteractionCostModel(
+                               InteractionCostType.fromString(((JCheckBoxMenuItem) evt.getSource()).getText())));
+                   }
+               }
+           });
+           interactionModelMenu.add(interactionTypeItem);
+       }*/
+
+   /*
+ // Initializing the ExecutionCostType menu from the menu bar
+ for (ExecutionCostType type : ExecutionFactory.ExecutionCostType.values()){
+     JCheckBoxMenuItem execTypeItem = new JCheckBoxMenuItem(type.getText());
+     execTypeItem.addActionListener(new java.awt.event.ActionListener() {
+         public void actionPerformed(java.awt.event.ActionEvent evt) {
+             if (mHostModel != null){
+                 mHostModel.setExecutionCostModel(
+                         ExecutionFactory.getInteractionCostModel(
+                         ExecutionCostType.fromString(((JCheckBoxMenuItem) evt.getSource()).getText())));
+             }
+         }
+     });
+     executionModelMenu.add(execTypeItem);
+ }
+ */
+	
 	@Override
 	public void 
 	addPropertyChangeListener
@@ -254,6 +371,33 @@ implements IModel
 	( PropertyChangeListener l ) 
 	{
 		this.property_change_delegate.removePropertyChangeListener(l);
+	}
+	
+	public void 
+	initializeHostModel() 
+	{
+	 	// parsing the configuration for hosts involved in the system
+	   	HostParser hostParser 
+	   		= new HostParser();
+	   	
+		try {
+			this.mHostModel 
+				= hostParser.parse(
+					this.getHostConfigurationPath()
+				);
+			this.mHostModel.setInteractionCostModel(
+				InteractionFactory.getInteractionCostModel(
+					this.interaction_cost_type
+				)
+			);
+			this.mHostModel.setExecutionCostModel(
+				ExecutionFactory.getInteractionCostModel(
+					this.execution_cost_type
+				)
+			);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -369,25 +513,12 @@ implements IModel
 				module_type.getText(), 
 				new DistributionModel(module_model, mHostModel))
 			);
-	}
-	
-	public void 
-	initializeHostModel() 
-	{
-	 	// parsing the configuration for hosts involved in the system
-	   	HostParser hostParser 
-	   		= new HostParser();
-	   	
-		try {
-			this.mHostModel 
-				= hostParser.parse(
-					this.getHostConfigurationPath()
-				);
-		} catch (Exception e) {
-			e.printStackTrace();
+		
+		if(this.perform_partitioning){
+			this.runPartitioningAlgorithm();
 		}
 	}
-
+	
 	// called from swing worker-> obtains the reference itself
 	// big problem
 	public ModuleModel
@@ -415,5 +546,73 @@ implements IModel
 		}
 		
 		return sb.toString();
+	}
+	
+	// called from swing worker 
+	// TODO: thread safety concerns have been reintroduced in full force
+	private void 
+	runPartitioningAlgorithm() 
+	{
+		
+		try{
+            if (this.mHostModel.getInteractionCostModel() == null)
+                throw new RuntimeException("No Interaction Cost Model is set");   
+             if (this.mHostModel.getExecutionCostModel() == null)
+                throw new RuntimeException("No Execution Cost Model is set"); 
+            
+            assert( this.partitioner_type != null)
+            	: "The partitioner algorithm should not be null";
+            
+            IPartitioner partitioner 
+            	= PartitionerFactory.getPartitioner(
+            		this.partitioner_type
+            	);        
+
+            if (this.mModuleModel.isSimulation()){
+                partitioner.init(
+                	this.mmHandler.getModuleModel(), 
+                	this.mHostModel, 
+                	this.mmHandler.getModuleHostPlacementList()
+                );
+            } else if (!this.mModuleModel.isSimulation()){                    
+                partitioner.init(this.mModuleModel, this.mHostModel);                    
+            }
+            
+            for (IFilter f : this.mFilterMap.values()){
+                partitioner.addFilter(f);    
+            }
+            partitioner.partition();
+            
+            // david - it may be better to store the entire IPartitioner instead
+            this.partitioner_solution
+            	= partitioner.getSolution();
+        }catch( Exception ex ){
+        	ex.printStackTrace();
+        }
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////
+	///	TODO: 
+	///		- The following functions are quite a bit of interface for a 
+	///		single piece of functionality perhaps it would be better to display 
+	///		this information elsewhere, and simplify the code; ask Nima.
+	//////////////////////////////////////////////////////////////////////////////////////////
+	
+	public boolean 
+	isPartitioningEnabled() 
+	{
+		return this.perform_partitioning;
+	}
+
+	public String 
+	getAlgorithmString() 
+	{
+		return this.partitioner_type.getText();
+	}
+
+	public String 
+	getSolution() 
+	{
+		return this.partitioner_solution;
 	}
 }

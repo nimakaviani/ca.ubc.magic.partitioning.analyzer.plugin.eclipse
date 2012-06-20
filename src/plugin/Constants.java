@@ -44,6 +44,14 @@ Constants
 		= "SyntheticNode";
 	public static final String GUI_SET_PRESET_MODULE_GRAPH 	
 		= "PresetModuleGraph";
+	public static final String GUI_PERFORM_PARTITIONING 
+		= "PerformPartitioning";
+	public static final String GUI_PARTITIONER_TYPE 
+		= "PartitionerType";
+	public static final String GUI_INTERACTION_COST 
+		= "InteractionCost";
+	public static final String GUI_EXECUTION_COST
+		= "ExecutionCost";
 	
 	public static final String PERSPECTIVE_SNAPSHOTS_VIEW_ID
 		= "plugin.views.snapshot_view";

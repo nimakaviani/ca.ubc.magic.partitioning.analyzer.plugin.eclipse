@@ -70,7 +70,7 @@ implements IStorageEditorInput
 	@Override
 	public Object 
 	getAdapter
-	( Class adapter )
+	( @SuppressWarnings("rawtypes") Class adapter )
 	{
 		return null;
 	}

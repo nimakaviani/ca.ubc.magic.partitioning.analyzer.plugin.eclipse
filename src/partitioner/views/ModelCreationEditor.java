@@ -9,7 +9,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.Hashtable;
 
 import javax.swing.JFrame;
@@ -60,9 +59,14 @@ import plugin.Constants;
 import snapshots.controller.ControllerDelegate;
 import snapshots.views.IView;
 
+import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
+import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
+import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 
 public class 
@@ -91,14 +95,19 @@ implements IView
 	private Text host_config_text;
 	private Text module_exposer_text;
 	
-	Section actions_composite;
-	Button synthetic_node_button;
-	Button exposure_button;
+	private Section actions_composite;
+	private Button synthetic_node_button;
+	private Button exposure_button;
 	
-	Button mod_exposer_browse_button;
-	Button host_config_browse;
-	Combo set_coarsener_combo;
+	private Button mod_exposer_browse_button;
+	private Button host_config_browse;
+	private Combo set_coarsener_combo;
 	
+	private Button perform_partitioning_button;
+	private Combo partitioning_algorithm_combo;
+	private Combo interaction_model_combo;
+	private Combo execution_model_combo;
+
 	public 
 	ModelCreationEditor() 
 	{}
@@ -302,6 +311,28 @@ implements IView
 		configure_composite.setLayoutData(td);
 		configure_composite.setClient(configure_client);
 		
+		Section partitioning_composite
+			= this.toolkit.createSection(
+				form.getBody(),
+				Section.TITLE_BAR 
+					|Section.EXPANDED 
+					| Section.DESCRIPTION 
+					| Section.TWISTIE
+			);
+		partitioning_composite.setText("Partition");
+		partitioning_composite.setDescription(
+			"Configure the cost model and the partitioning algorithm."
+		);
+		
+		Composite partitioning_client
+			= this.toolkit.createComposite(partitioning_composite);
+		this.initializePartitioningGrid(partitioning_client);
+		this.initializePartitioningWidgets( partitioning_client );
+		td 
+			= new TableWrapData(TableWrapData.FILL);
+		partitioning_composite.setLayoutData(td);
+		partitioning_composite.setClient(partitioning_client);
+		
 		this.actions_composite
 			= this.toolkit.createSection(
 				form.getBody(),
@@ -310,7 +341,7 @@ implements IView
 					| Section.DESCRIPTION
 					| Section.TWISTIE
 			);
-		actions_composite.setText("Actions");
+		actions_composite.setText("Activate");
 		actions_composite.setDescription(
 			"Activate the model"
 		);
@@ -328,6 +359,8 @@ implements IView
 		int index
 			= super.addPage( form );
 		super.setPageText( index, "Model Configuration" );
+		
+		this.set_partitioning_widgets_enabled(false);
 	}
 
 	private void 
@@ -478,9 +511,6 @@ implements IView
 		parent.setLayout( model_configuration_page_grid_layout );
 	}
 	
-	private HashMap<String, ModuleCoarsenerType> coarsener_hash
-		= new HashMap<String, ModuleCoarsenerType>();
-	
 	private void 
 	initializeConfigurationWidgets
 	( Composite parent ) 
@@ -516,12 +546,7 @@ implements IView
 			}
 		);
 		
-		final Label dummy_label
-			= toolkit.createLabel(parent, "", SWT.NONE);
-		grid_data 
-			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-		grid_data.horizontalSpan = 1;
-		dummy_label.setLayoutData( grid_data );
+		this.createDummyLabel(parent);
 		
 		this.synthetic_node_button
 			= toolkit.createButton(parent, "Add Synthetic Node", SWT.CHECK);
@@ -572,6 +597,81 @@ implements IView
 		);*/
 	}
 	
+	private Label 
+	createDummyLabel
+	( Composite parent ) 
+	{
+		Label return_value = null;
+		
+		if(this.toolkit != null){
+			return_value
+				= toolkit.createLabel(parent, "", SWT.NONE);
+			GridData grid_data 
+				= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
+			grid_data.horizontalSpan = 1;
+			return_value.setLayoutData( grid_data );
+		}
+		
+		return return_value;
+	}
+
+	private void 
+	initializePartitioningGrid
+	( Composite parent ) 
+	{
+		final GridLayout model_configuration_page_grid_layout
+			= new GridLayout();
+		model_configuration_page_grid_layout.numColumns 
+			= 2;
+		parent.setLayout( model_configuration_page_grid_layout );
+	}
+
+	private void 
+	initializePartitioningWidgets
+	( Composite parent ) 
+	{
+		this.perform_partitioning_button
+			= toolkit.createButton(
+				parent, 
+				"Perform Partitioning", 
+				SWT.CHECK
+			);
+		GridData grid_data 
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
+		grid_data.horizontalSpan = 1;
+		perform_partitioning_button.setLayoutData(grid_data);
+		
+		perform_partitioning_button.addSelectionListener(
+			new SelectionAdapter()
+			{
+				@Override
+				public void
+				widgetSelected
+				( SelectionEvent e )
+				{
+					ModelCreationEditor.this.controller.setModelProperty(
+						Constants.GUI_PERFORM_PARTITIONING, 
+						new Boolean(
+							ModelCreationEditor.this
+								.perform_partitioning_button.getSelection()
+						)
+					);
+				}
+			}
+		);
+		
+		this.createDummyLabel(parent);
+	
+		this.toolkit.createLabel(parent, "Execution Cost Model: ");
+		this.initialize_execution_model_combo_box(parent);
+		
+		this.toolkit.createLabel(parent, "Interaction Cost Model: ");
+		this.initialize_interaction_model_combo_box(parent);
+		
+		this.toolkit.createLabel(parent, "Partitioning Algorithm");
+		this.initilize_partitioning_algorithm_combo_box(parent);
+	}
+	
 	private void 
 	initializeActionsWidgets
 	( Composite parent ) 
@@ -615,9 +715,25 @@ implements IView
 					ModelCreationEditor.this.mod_exposer_browse_button.setVisible(false);
 					ModelCreationEditor.this.host_config_browse.setVisible(false);
 					ModelCreationEditor.this.set_coarsener_combo.setEnabled(false);
+					
+					ModelCreationEditor.this
+						.perform_partitioning_button.setEnabled(false);
+					ModelCreationEditor.this.set_partitioning_widgets_enabled(false);
 				}
 			}
 		);
+	}
+	
+	private void
+	set_partitioning_widgets_enabled
+	( boolean enabled )
+	{
+		ModelCreationEditor.this
+			.partitioning_algorithm_combo.setEnabled(enabled);
+		ModelCreationEditor.this
+			.execution_model_combo.setEnabled(enabled);
+		ModelCreationEditor.this
+			.interaction_model_combo.setEnabled(enabled);
 	}
 
 	private void
@@ -630,7 +746,6 @@ implements IView
         for( final ModuleCoarsenerType mcType 
         		: ModuleCoarsenerFactory.ModuleCoarsenerType.values())
         {
-        	this.coarsener_hash.put(mcType.getText(), mcType);
             set_coarsener_combo.add(mcType.getText());
         }
 		
@@ -641,14 +756,117 @@ implements IView
 				{
 					ModelCreationEditor.this.controller.setModelProperty(
 						Constants.GUI_MODULE_COARSENER,
-						ModelCreationEditor.this.coarsener_hash
-							.get(set_coarsener_combo.getText())
+						ModuleCoarsenerType.fromString(
+							set_coarsener_combo.getText()
+						)
 					);
 				}
 			}
 		);
 		
 		set_coarsener_combo.select(0);
+	}
+	
+	private void 
+	initilize_partitioning_algorithm_combo_box
+	( Composite parent ) 
+	{
+		this.partitioning_algorithm_combo
+			= new Combo(parent, SWT.NONE);
+		
+	    for( final PartitionerType partitioner_type 
+	    		: PartitionerFactory.PartitionerType.values())
+	    {
+	    	this.partitioning_algorithm_combo.add(
+	    		partitioner_type.getText()
+	    	);
+	    }
+		
+	    this.partitioning_algorithm_combo.addSelectionListener( 
+			new SelectionAdapter(){
+				public void 
+				widgetSelected( SelectionEvent se )
+				{
+					ModelCreationEditor.this.controller.setModelProperty(
+						Constants.GUI_PARTITIONER_TYPE,
+						PartitionerType.fromString(
+							ModelCreationEditor.this.
+								partitioning_algorithm_combo.getText()
+						)
+					);
+				}
+			}
+		);
+		
+	    this.partitioning_algorithm_combo.select(0);
+	}
+
+	private void 
+	initialize_interaction_model_combo_box
+	( Composite parent ) 
+	{
+		this.interaction_model_combo
+			= new Combo(parent, SWT.NONE);
+		
+	    for( final InteractionCostType interaction_cost_type 
+	    		: InteractionFactory.InteractionCostType.values())
+	    {
+	    	this.interaction_model_combo.add(
+	    		interaction_cost_type.getText()
+	    	);
+	    }
+		
+	    this.interaction_model_combo.addSelectionListener( 
+			new SelectionAdapter(){
+				public void 
+				widgetSelected( SelectionEvent se )
+				{
+					ModelCreationEditor.this.controller.setModelProperty(
+						Constants.GUI_INTERACTION_COST,
+						InteractionCostType.fromString(
+							ModelCreationEditor.this.
+							interaction_model_combo.getText()
+						)
+					);
+				}
+			}
+		);
+	
+	    this.interaction_model_combo.select(0);
+	}
+
+	private void 
+	initialize_execution_model_combo_box
+	( Composite parent ) 
+	{
+		this.execution_model_combo
+			= new Combo(parent, SWT.NONE);
+		
+	    for( final ExecutionCostType execution_cost_type 
+	    		: ExecutionCostType.values())
+	    {
+	    	this.execution_model_combo.add(
+	    		execution_cost_type.getText()
+	    	);
+	    }
+		
+	    this.execution_model_combo.addSelectionListener( 
+			new SelectionAdapter(){
+				public void 
+				widgetSelected( SelectionEvent se )
+				{
+					ModelCreationEditor.this.controller.setModelProperty(
+						Constants.GUI_EXECUTION_COST,
+						ExecutionCostType.fromString(
+							ModelCreationEditor.this.
+								execution_model_combo.getText()
+						)
+					);
+				}
+			}
+		);
+	
+	    this.execution_model_combo.select(0);
 	}
 
 	private void 
@@ -792,6 +1010,11 @@ implements IView
 				)
 			);
 			break;
+		case Constants.GUI_PERFORM_PARTITIONING:
+			boolean enabled 
+				= (boolean) evt.getNewValue();
+			this.set_partitioning_widgets_enabled( enabled );
+			break;
 		default:
 			System.out.println("Swallowing message.");
 		};
@@ -891,6 +1114,15 @@ implements IView
 									} catch (Exception e) {
 										e.printStackTrace();
 									};
+									
+							        
+						            //currentVP.redrawModules(mModuleModel.getModuleExchangeMap());
+									if(gui_state_model.isPartitioningEnabled()){
+							            ModelCreationEditor.this.currentVP
+							            	.setAlgorithm(gui_state_model.getAlgorithmString());
+							            ModelCreationEditor.this.currentVP
+							            	.setSolution(gui_state_model.getSolution());
+									}
 								}
 							}
 						});
