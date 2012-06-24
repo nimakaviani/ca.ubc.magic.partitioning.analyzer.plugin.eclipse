@@ -38,10 +38,8 @@ import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IPropertyListener;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.forms.events.ExpansionAdapter;
-import org.eclipse.ui.forms.events.ExpansionEvent;
-import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
+import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapData;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
@@ -68,7 +66,18 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
+import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
+import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 
+// TODO: this class needs to be refactored into three separate
+//		classes perhaps sharing an interface
+// TODO: problem: the controller is responsible for deciding how
+//		events are handled, but there is view code that directly calls
+//		the model. This is not such a problem, since the most important
+//		thing is to to have a model that supports multiple views...
+//		but it is annoying...get rid of it.
+// TODO: replace all initializeGrid functions with a function that
+//		takes the number of desired columns
 public class 
 ModelCreationEditor 
 extends MultiPageEditorPart 
@@ -80,7 +89,6 @@ implements IView
 		= 1;
 	
 	private FormToolkit toolkit;
-	private Form form;
 	
     VisualizePartitioning currentVP;
     Object current_vp_lock = new Object();
@@ -107,6 +115,11 @@ implements IView
 	private Combo partitioning_algorithm_combo;
 	private Combo interaction_model_combo;
 	private Combo execution_model_combo;
+	private Combo simulation_type_combo;
+	private Label best_run_result_label;
+	private Label best_run_algorithm_label;
+	private Label best_run_cost_label;
+	private Label total_simulation_units;
 
 	public 
 	ModelCreationEditor() 
@@ -175,6 +188,8 @@ implements IView
 	{
 		this.createModelConfigurationPage();
 		this.createModelAnalysisPage();
+		/// 
+		this.createModelTestPage();
 		this.updateTitle();
 		
 		// the following code is a view-communication solution
@@ -245,21 +260,23 @@ implements IView
 		
 		this.toolkit 
 			= new FormToolkit(parent.getDisplay());
-		this.form 
-			= this.toolkit.createForm(parent);
-		this.form.setText("Configure and Create a Model");
-		this.toolkit.decorateFormHeading( this.form );
+		ScrolledForm model_configuration_form 
+			= this.toolkit.createScrolledForm(parent);
+		model_configuration_form.setText(
+			"Configure and Create a Model"
+		);
 		
 		TableWrapLayout layout 
 			= new TableWrapLayout();
 		layout.numColumns = 1;
-		this.form.getBody().setLayout(layout);
+		model_configuration_form
+			.getBody().setLayout(layout);
 		
 		Section set_paths_composite
 			= this.toolkit.createSection(
-				this.form.getBody(),
+				model_configuration_form.getBody(),
 				Section.TITLE_BAR 
-					|Section.EXPANDED 
+					| Section.EXPANDED 
 					| Section.DESCRIPTION 
 					| Section.TWISTIE
 			);
@@ -276,22 +293,12 @@ implements IView
 		TableWrapData td 
 			= new TableWrapData(TableWrapData.FILL);
 		set_paths_composite.setLayoutData(td);
-		set_paths_composite.addExpansionListener(
-			new ExpansionAdapter() {
-				public void 
-				expansionStateChanged
-				( ExpansionEvent e ) 
-				{
-					//form.reflow(true);
-				}
-			}
-		);
 		
 		set_paths_composite.setClient(set_paths_client);
 		
 		Section configure_composite
 			= this.toolkit.createSection(
-				form.getBody(),
+				model_configuration_form.getBody(),
 				Section.TITLE_BAR 
 					|Section.EXPANDED 
 					| Section.DESCRIPTION 
@@ -313,7 +320,7 @@ implements IView
 		
 		Section partitioning_composite
 			= this.toolkit.createSection(
-				form.getBody(),
+				model_configuration_form.getBody(),
 				Section.TITLE_BAR 
 					|Section.EXPANDED 
 					| Section.DESCRIPTION 
@@ -335,7 +342,7 @@ implements IView
 		
 		this.actions_composite
 			= this.toolkit.createSection(
-				form.getBody(),
+				model_configuration_form.getBody(),
 				Section.TITLE_BAR 
 					| Section.EXPANDED 
 					| Section.DESCRIPTION
@@ -357,7 +364,7 @@ implements IView
 		this.initializeActionsWidgets(actions_client);
 		
 		int index
-			= super.addPage( form );
+			= super.addPage( model_configuration_form );
 		super.setPageText( index, "Model Configuration" );
 		
 		this.set_partitioning_widgets_enabled(false);
@@ -382,28 +389,24 @@ implements IView
 		this.profiler_trace_text 
 			= toolkit.createLabel( 
 				parent, 
-				PartitionerGUIStateModel.AbbreviatePath(
-					this.partitioner_gui_state_model.getProfilerTracePath()
-				)
+				this.partitioner_gui_state_model.getProfilerTracePath()
 			);
 		toolkit.createLabel(parent, "");
 		
 		toolkit.createLabel(parent, "Mod Exposer XML: " );
 		this.module_exposer_text 
-			= toolkit.createText( 
-				parent, 
-				PartitionerGUIStateModel.AbbreviatePath(
-					partitioner_gui_state_model
-						.getModuleExposerPath() 
-				)
-			);
-		this.module_exposer_text.setEditable(false);
+			= toolkit.createText(parent, "");
+		this.module_exposer_text.setEditable( true );
+		this.module_exposer_text.setSize( 
+			150, 
+			this.module_exposer_text.getSize().y
+		);
 		GridData grid_data 
 			= new GridData( SWT.FILL, SWT.FILL, true, false, 1, 1);
 		
 		grid_data.grabExcessHorizontalSpace = true;
 		// hack: will need to fix
-		grid_data.widthHint = 300;
+		grid_data.widthHint = 600;
 		this.module_exposer_text.setLayoutData(grid_data);
 		
 		mod_exposer_browse_button 
@@ -427,11 +430,6 @@ implements IView
 							= file_dialog.open();
 						if(selected != null){
 							ModelCreationEditor.this.module_exposer_text.setText(selected);
-							ModelCreationEditor.this.controller
-								.setModelProperty(
-									Constants.GUI_MODULE_EXPOSER, 
-									selected
-								);
 						}
 					}
 			}
@@ -439,19 +437,14 @@ implements IView
 		
 		this.toolkit.createLabel(parent, "Host Config. XML: " );
 		this.host_config_text
-			=  toolkit.createText( 
-				parent, 
-				PartitionerGUIStateModel.AbbreviatePath(
-					this.partitioner_gui_state_model.getHostConfigurationPath()
-				)
-			);
-		host_config_text.setEditable(false);
+			=  toolkit.createText(parent,"");
+		host_config_text.setEditable( true );
 		grid_data 
 			= new GridData( SWT.FILL, SWT.FILL, true, false, 1, 1);
 		
 		grid_data.grabExcessHorizontalSpace = true;
 		// hack: will need to fix
-		grid_data.widthHint = 300;
+		grid_data.widthHint = 600;
 		host_config_text.setLayoutData(grid_data);
 		
 		this.host_config_browse 
@@ -471,10 +464,6 @@ implements IView
 					= file_dialog.open();
 				if(selected != null){
 					host_config_text.setText(selected);
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_HOST_CONFIGURATION, 
-						selected
-					);
 				}
 			}
 		});
@@ -676,17 +665,6 @@ implements IView
 	initializeActionsWidgets
 	( Composite parent ) 
 	{
-		final GridLayout model_configuration_page_grid_layout
-			= new GridLayout();
-		model_configuration_page_grid_layout.numColumns 
-			= 2;
-		parent.setLayout( model_configuration_page_grid_layout );
-	}
-
-	private void 
-	initializeActionsGrid
-	( Composite parent ) 
-	{
 		final Button exposure_button
 			= toolkit.createButton(
 				parent, 
@@ -706,6 +684,18 @@ implements IView
 				widgetSelected
 				( SelectionEvent e )
 				{
+					ModelCreationEditor.this.controller.setModelProperty(
+						Constants.GUI_HOST_CONFIGURATION, 
+						ModelCreationEditor.this.host_config_text.getText()
+					);
+					ModelCreationEditor.this.controller.setModelProperty(
+						Constants.GUI_MODULE_EXPOSER, 
+						ModelCreationEditor.this.module_exposer_text.getText()
+					);
+					
+					ModelCreationEditor.this.host_config_text.setEditable(false);
+					ModelCreationEditor.this.module_exposer_text.setEditable(false);
+					
 					ModelCreationEditor.this.setVisualizationAction();
 					ModelCreationEditor.this.actions_composite.setVisible(false);
 					
@@ -722,6 +712,17 @@ implements IView
 				}
 			}
 		);
+	}
+
+	private void 
+	initializeActionsGrid
+	( Composite parent ) 
+	{
+		final GridLayout model_configuration_page_grid_layout
+			= new GridLayout();
+		model_configuration_page_grid_layout.numColumns 
+			= 2;
+		parent.setLayout( model_configuration_page_grid_layout );
 	}
 	
 	private void
@@ -924,6 +925,189 @@ implements IView
 	}
 	
 	private void 
+	createModelTestPage() 
+	{
+		Composite parent 
+			= super.getContainer();
+		
+		ScrolledForm model_test_form 
+			= this.toolkit.createScrolledForm(parent);
+		model_test_form.setText(
+			"Test and Simulation Framework"
+		);
+		
+		TableWrapLayout layout 
+			= new TableWrapLayout();
+		layout.numColumns = 1;
+		model_test_form.getBody().setLayout(layout);
+		
+		Section control_composite
+			= this.toolkit.createSection(
+				model_test_form.getBody(),
+				Section.TITLE_BAR 
+					| Section.EXPANDED 
+					| Section.DESCRIPTION 
+					| Section.TWISTIE
+			);
+		control_composite.setText("Run a Simulation");
+				
+		Composite control_client
+			= this.toolkit.createComposite(control_composite);
+		this.initializeControlGrid(control_client);
+		this.initializeControlWidgets( control_client );
+		
+		control_composite.setClient(control_client);
+	
+		Section table_composite
+			= this.toolkit.createSection(
+					model_test_form.getBody(),
+					Section.TITLE_BAR 
+						| Section.EXPANDED 
+						| Section.DESCRIPTION 
+						| Section.TWISTIE
+				);
+		table_composite.setText("View Simulations");
+				
+		Composite table_client
+			= this.toolkit.createComposite(table_composite);
+		this.initializeTableClientGrid(table_client);
+		this.initializeTableClientWidgets( table_client );
+		
+		table_composite.setClient(table_client);
+	
+		int index
+			= super.addPage( model_test_form );
+		super.setPageText( index, "Simulate and Test" );	}
+	
+	private void 
+	initializeTableClientGrid
+	( Composite parent ) 
+	{
+		final GridLayout test_framework_page_grid_layout
+			= new GridLayout();
+		test_framework_page_grid_layout.numColumns 
+			= 1;
+		parent.setLayout( test_framework_page_grid_layout );
+	}
+	
+	private void 
+	initializeTableClientWidgets
+	( Composite parent ) 
+	{
+		
+	}
+
+	private void 
+	initializeControlGrid
+	( Composite parent ) 
+	{
+		final GridLayout test_framework_page_grid_layout
+			= new GridLayout();
+		test_framework_page_grid_layout.numColumns 
+			= 3;
+		parent.setLayout( test_framework_page_grid_layout );
+	}
+	
+	private void 
+	initializeControlWidgets
+	( Composite parent ) 
+	{
+		// we do not add a layoutdata to the Label since that screws
+		// up the vertical spacing
+		this.toolkit.createLabel(parent, "Simulation Type: " );
+		
+		this.simulation_type_combo
+			= new Combo(parent, SWT.NONE);
+		this.initialize_simulation_types_combo(
+			parent, 
+			this.simulation_type_combo
+		);
+		
+		Button run_simulation_button
+			= this.toolkit.createButton(
+				parent, 
+				"Run", 
+				SWT.PUSH
+			);
+		GridData grid_data  
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
+		grid_data.horizontalSpan = 1;
+		run_simulation_button.setLayoutData(grid_data);
+		
+		run_simulation_button.addSelectionListener(
+			new SelectionAdapter()
+			{
+				@Override
+				public void
+				widgetSelected
+				( SelectionEvent e )
+				{
+					// call the model and ask them to perform simulation
+					// functionality; worry about displaying the table later
+				}
+			}
+		);
+		
+		this.toolkit.createLabel(parent, "Best Run Name: " );
+		this.best_run_result_label
+			= this.toolkit.createLabel(parent, "Simulation Type: " );
+		grid_data  
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
+		grid_data.horizontalSpan = 2;
+		this.best_run_result_label.setLayoutData(grid_data);
+		
+		this.toolkit.createLabel(parent, "Best Run Algorithm: " );
+		this.best_run_algorithm_label
+			= toolkit.createLabel(parent, "Simulation Type: " );
+		grid_data  
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
+		grid_data.horizontalSpan = 2;
+		this.best_run_algorithm_label.setLayoutData(grid_data);
+		
+		this.toolkit.createLabel(parent, "Best Run Cost: " );
+		this.best_run_cost_label
+			= toolkit.createLabel(parent, "Simulation Type: " );
+		grid_data  
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
+		grid_data.horizontalSpan = 2;
+		this.best_run_cost_label.setLayoutData(grid_data);
+	
+		this.toolkit.createLabel(parent, "Total Number: " );
+		this.total_simulation_units
+			= toolkit.createLabel(parent, "Simulation Type: " );
+		grid_data  
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
+		grid_data.horizontalSpan = 2;
+		this.total_simulation_units.setLayoutData(grid_data);
+	}
+
+	private void
+	initialize_simulation_types_combo
+	( Composite parent, final Combo simulation_type_combo ) 
+	{
+		for( SimulatorType type : SimulatorFactory.SimulatorType.values()){
+            simulation_type_combo.add(type.getText());
+        }
+	
+	    simulation_type_combo.addSelectionListener( 
+			new SelectionAdapter(){
+				public void 
+				widgetSelected( SelectionEvent se )
+				{
+					ModelCreationEditor.this.controller.setModelProperty(
+						Constants.GUI_SIMULATION_TYPE,
+						SimulatorType.fromString(
+							simulation_type_combo.getText()
+						)
+					);
+				}
+			}
+		);
+	
+	    simulation_type_combo.select(0);
+	}
+
+	private void 
 	setSwingLookAndFeel() 
 	throws InvocationTargetException, InterruptedException 
 	{
@@ -940,7 +1124,7 @@ implements IView
 				}
 			});
 	}
-
+	
 	private void
 	updateTitle()
 	// the following method is recommended by the eclipse
@@ -991,23 +1175,17 @@ implements IView
 			break;
 		case Constants.GUI_PROFILER_TRACE:
 			this.profiler_trace_text.setText( 
-				PartitionerGUIStateModel.AbbreviatePath(
-					(String) evt.getNewValue()
-				)
+				(String) evt.getNewValue()
 			);
 			break;
 		case Constants.GUI_MODULE_EXPOSER:
 			this.module_exposer_text.setText(
-				PartitionerGUIStateModel.AbbreviatePath(
-					(String) evt.getNewValue()
-				)
+				(String) evt.getNewValue()
 			);
 			break;
 		case Constants.GUI_HOST_CONFIGURATION:
 			this.host_config_text.setText(
-				PartitionerGUIStateModel.AbbreviatePath(
-					(String) evt.getNewValue()
-				)
+				(String) evt.getNewValue()
 			);
 			break;
 		case Constants.GUI_PERFORM_PARTITIONING:
@@ -1053,6 +1231,9 @@ implements IView
            
            	// reading the input stream for the profiling XML document 
            	// provided to the tool.
+           	//
+           	// in order to make use of eclipse's notification infrastructure
+           	// the swingworker has to be replaced with an eclipse job
            	SwingWorker worker 
            		= new SwingWorker()
            		{

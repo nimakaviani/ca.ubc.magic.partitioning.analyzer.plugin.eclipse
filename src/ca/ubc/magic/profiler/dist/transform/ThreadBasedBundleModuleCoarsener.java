@@ -36,8 +36,10 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
     }
     
     @Override
-    public ModuleModel getModuleModelFromParser(JipRun jipRun) {
-        
+    public ModuleModel 
+    getModuleModelFromParser
+    ( JipRun jipRun ) 
+    {
         mIgnoreSet = mConstraintModel.getIgnoreSet();
         
         mModuleModel.setName("Profile " + jipRun.getDate());
@@ -272,8 +274,9 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
     protected void initializeModels(){
         NodeObj rootNode = mStart;
         
-        if (mConstraintModel.getRootEntityList() != null)
+        if (mConstraintModel.getRootEntityList() != null){
             rootNode = extractChildNode(rootNode, mConstraintModel.getRootEntityList(), 0);
+        }
         applyRecursion(rootNode);
     }
 
@@ -284,16 +287,24 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
         recursiveWriteEdge(rootNode, i);
     }
     
-    private NodeObj extractChildNode(NodeObj rtNode, List<CodeEntity> rootEntityList, int depth){
+    private NodeObj 
+    extractChildNode
+    ( NodeObj rtNode, List<CodeEntity> rootEntityList, int depth)
+    {
         NodeObj rootNode = null;
+        
         if (depth > rootEntityList.size() - 1)
             return rtNode;
         
-        for (NodeObj node : rtNode.getChildSet())
+        for (NodeObj node : rtNode.getChildSet()){
+        	// david: problem here: I am assuming that at least one of the following should
+        	// return non-null
             if (rootEntityList.get(depth).getEntityPattern().matches(node.getName(), null, null)){
                 rootNode = extractChildNode(node, rootEntityList, depth + 1);
                 break;
             }
+        }
+        
         return rootNode;
     }
 }

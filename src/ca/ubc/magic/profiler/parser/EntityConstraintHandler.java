@@ -50,10 +50,12 @@ public class EntityConstraintHandler {
     }
     
     public void startUnit(){
+    	// this.mConstraintType is liable to be null here
         mCodeUnit = new CodeUnit();
     }
     
     public void endUnit(String name, CodeUnitType type){
+    	// System.err.println("Constraint: " + this.mConstraintType.getText());
         mCodeUnit.setName(name);
         mCodeUnit.setType(type);
         switch(type){
@@ -78,6 +80,7 @@ public class EntityConstraintHandler {
     }
     
     public void endEntity(){
+    	System.err.println("Constraint: " + this.mConstraintType.getText());
         switch (mConstraintType){
             case ROOT:
                 setRootEntity();
@@ -96,7 +99,7 @@ public class EntityConstraintHandler {
                 break;
             case NULL:
             default:
-                throw new RuntimeException("Invalid entity");
+                throw new RuntimeException("Invalid entity: " + this.mConstraintType.getText());
         }
     }    
     

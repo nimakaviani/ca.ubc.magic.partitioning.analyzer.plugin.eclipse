@@ -61,7 +61,7 @@ public class EntityConstraintParser extends DefaultHandler {
     	text.reset();
 
         try{
-            //System.out.println("startElt " + name);
+            System.err.println("startElt " + name);
             if (name.equals("constraints")){
             }else if (name.equals("root")){
                 mHandler.setConstraintType(name);
@@ -87,12 +87,13 @@ public class EntityConstraintParser extends DefaultHandler {
             }
             
         }catch (Exception e){
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e.getMessage() + ": " + name);
         }
     }
 
     @Override
     public void endElement (String uri, String name, String qName) {
+    	System.err.println("endElement " + name);
         if (name.equals("constraints")){
             }else if (name.equals("entity")){
                 mHandler.endEntity();
@@ -102,7 +103,7 @@ public class EntityConstraintParser extends DefaultHandler {
                 mHandler.endUnit(getText(), CodeUnitType.CLASS);
             }else if (name.equals("method")){
                 mHandler.endUnit(getText(), CodeUnitType.METHOD);
-            }else if (name.equals("target")){
+            } else if (name.equals("target")){
                 mHandler.endTarget(getText());
             }else {
                 mHandler.removeConstraintType();

@@ -38,6 +38,7 @@ public class BundleModuleCoarsener implements IModuleCoarsener {
                     visitFrameForModuling(f);
                 }
            }
+        
         return mModuleModel;
     }        
     

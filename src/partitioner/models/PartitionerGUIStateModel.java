@@ -34,8 +34,6 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 import snapshots.model.IModel;
 import snapshots.model.PropertyChangeDelegate;
 
-// TODO: make the default paths on a click to browse dependent on the
-//		 current path 
 public class 
 PartitionerGUIStateModel 
 implements IModel
@@ -173,12 +171,14 @@ implements IModel
 	( String profiler_trace )
 	{
 		String old_trace = this.profiler_trace;
-		this.profiler_trace = profiler_trace;
+		String formatted_profiler_trace 
+		 	= profiler_trace.replace("/", "\\");
+		this.profiler_trace = formatted_profiler_trace;
 		
 		this.property_change_delegate.firePropertyChange(
 			Constants.GUI_PROFILER_TRACE, 
 			old_trace, 
-			profiler_trace
+			formatted_profiler_trace
 		);
 	}
 	
@@ -322,41 +322,7 @@ implements IModel
 		);
 	}
 	
-    /*
-	 private void initDynamicComponents() {
-       // Initializing the InteractionCostType menu from the menu bar
-       for (InteractionCostType type : InteractionFactory.InteractionCostType.values()){
-           JCheckBoxMenuItem interactionTypeItem = new JCheckBoxMenuItem(type.getText());
-           interactionTypeItem.addActionListener(new java.awt.event.ActionListener() {
-               public void actionPerformed(java.awt.event.ActionEvent evt) {
-                   if (mHostModel != null){
-                       mHostModel.setInteractionCostModel(
-                               InteractionFactory.getInteractionCostModel(
-                               InteractionCostType.fromString(((JCheckBoxMenuItem) evt.getSource()).getText())));
-                   }
-               }
-           });
-           interactionModelMenu.add(interactionTypeItem);
-       }*/
-
-   /*
- // Initializing the ExecutionCostType menu from the menu bar
- for (ExecutionCostType type : ExecutionFactory.ExecutionCostType.values()){
-     JCheckBoxMenuItem execTypeItem = new JCheckBoxMenuItem(type.getText());
-     execTypeItem.addActionListener(new java.awt.event.ActionListener() {
-         public void actionPerformed(java.awt.event.ActionEvent evt) {
-             if (mHostModel != null){
-                 mHostModel.setExecutionCostModel(
-                         ExecutionFactory.getInteractionCostModel(
-                         ExecutionCostType.fromString(((JCheckBoxMenuItem) evt.getSource()).getText())));
-             }
-         }
-     });
-     executionModelMenu.add(execTypeItem);
- }
- */
-	
-	@Override
+    @Override
 	public void 
 	addPropertyChangeListener
 	( PropertyChangeListener l ) 
@@ -455,6 +421,8 @@ implements IModel
 	            IModuleCoarsener moduleCoarsener 
 	            	= ModuleCoarsenerFactory.getModuleCoarsener(
 	            		this.mModuleType, 
+	            		// david - the constraint model could be null here
+	            		// in which case the program will crash
 	            		new_constraint_model
 	            	);                                 
 	            module_model
@@ -527,6 +495,8 @@ implements IModel
 		return this.mModuleModel;
 	}
 
+	// dead code - to be removed later
+	/* 
 	public static String
 	AbbreviatePath
 	( String path_arg )
@@ -546,7 +516,7 @@ implements IModel
 		}
 		
 		return sb.toString();
-	}
+	} */
 	
 	// called from swing worker 
 	// TODO: thread safety concerns have been reintroduced in full force
@@ -583,7 +553,8 @@ implements IModel
             }
             partitioner.partition();
             
-            // david - it may be better to store the entire IPartitioner instead
+            // david - it may be better to store the entire 
+            // IPartitioner instead
             this.partitioner_solution
             	= partitioner.getSolution();
         }catch( Exception ex ){
@@ -591,12 +562,12 @@ implements IModel
         }
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////////
-	///	TODO: 
-	///		- The following functions are quite a bit of interface for a 
-	///		single piece of functionality perhaps it would be better to display 
-	///		this information elsewhere, and simplify the code; ask Nima.
-	//////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////
+	///	TODO: The following functions are quite a bit of interface for 
+	///		a single piece of functionality perhaps it would be better 
+	/// 	to display this information elsewhere, and simplify the 
+	///		code; ask Nima.
+	///////////////////////////////////////////////////////////////////
 	
 	public boolean 
 	isPartitioningEnabled() 
