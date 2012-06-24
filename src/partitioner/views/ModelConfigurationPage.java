@@ -6,12 +6,17 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.SwingUtilities;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -20,19 +25,29 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapData;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventAdmin;
 
 import partitioner.models.PartitionerGUIStateModel;
 import plugin.Constants;
 import snapshots.controller.ControllerDelegate;
+import snapshots.views.SnapshotView;
+import snapshots.views.VirtualModelFileInput;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
@@ -77,6 +92,8 @@ extends ScrolledForm
 	private VisualizePartitioning currentVP;
 
 	private Frame frame;
+
+	private ModelCreationEditor model_creation_editor;
 	
 	public void
 	setProfilerTracePath
@@ -92,7 +109,8 @@ extends ScrolledForm
 		ControllerDelegate controller,
 		VisualizePartitioning currentVP, 
 		Object current_vp_lock,
-		Frame frame )
+		Frame frame, 
+		ModelCreationEditor model_creation_editor)
 	{
 		super(parent);
 		
@@ -113,6 +131,8 @@ extends ScrolledForm
 		this.setText(
 			"Configure and Create a Model"
 		);
+		this.model_creation_editor
+			= model_creation_editor;
 		
 		TableWrapLayout layout 
 			= new TableWrapLayout();
@@ -282,28 +302,28 @@ extends ScrolledForm
 		mod_exposer_browse_button 
 			= toolkit.createButton(parent, "Browse", SWT.PUSH);
 		mod_exposer_browse_button.addSelectionListener( 
-				new SelectionAdapter(){
-					public void widgetSelected
-					( SelectionEvent event )
-					{
-						FileDialog file_dialog 
-							= new FileDialog( 
-								PlatformUI.getWorkbench()
-									.getActiveWorkbenchWindow().getShell(), 
-								SWT.OPEN
-							);
-						file_dialog.setText("Select File");
-						file_dialog.setFilterPath( 
-							ModelConfigurationPage.this
-								.profiler_trace_text.getText() 
+			new SelectionAdapter(){
+				public void widgetSelected
+				( SelectionEvent event )
+				{
+					FileDialog file_dialog 
+						= new FileDialog( 
+							PlatformUI.getWorkbench()
+								.getActiveWorkbenchWindow().getShell(), 
+							SWT.OPEN
 						);
-						String selected
-							= file_dialog.open();
-						if(selected != null){
-							ModelConfigurationPage.this
-								.module_exposer_text.setText(selected);
-						}
+					file_dialog.setText("Select File");
+					file_dialog.setFilterPath( 
+						ModelConfigurationPage.this
+							.profiler_trace_text.getText() 
+					);
+					String selected
+						= file_dialog.open();
+					if(selected != null){
+						ModelConfigurationPage.this
+							.module_exposer_text.setText(selected);
 					}
+				}
 			}
 		);
 		
@@ -670,11 +690,50 @@ extends ScrolledForm
 					ModelConfigurationPage.this
 						.perform_partitioning_button.setEnabled(false);
 					ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
+					
+					ModelConfigurationPage.this.updateModelName();
 				}
 			}
 		);
 	}
 	
+	private void 
+	updateModelName() 
+	{
+		String name_suffix
+			= new SimpleDateFormat("HH:mm:ss")
+				.format( new Date() );
+		String coarsener
+			= ModelConfigurationPage.this.set_coarsener_combo.getText();
+		String new_name
+			= coarsener + "_" + name_suffix;
+		
+		VirtualModelFileInput input
+			= (VirtualModelFileInput) 
+				ModelConfigurationPage.this.model_creation_editor.getEditorInput();
+		
+		input.setSecondaryName(new_name);
+		
+		BundleContext context 
+			= FrameworkUtil.getBundle(
+				ModelConfigurationPage.class
+			).getBundleContext();
+        ServiceReference<EventAdmin> ref 
+        	= context.getServiceReference(EventAdmin.class);
+        EventAdmin eventAdmin 
+        	= context.getService(ref);
+        Map<String,Object> properties 
+        	= new HashMap<String, Object>();
+        properties.put("REFRESH", new Boolean(true));
+        Event event 
+        	= new Event("viewcommunication/syncEvent", properties);
+        eventAdmin.sendEvent(event);
+        event = new Event("viewcommunication/asyncEvent", properties);
+        eventAdmin.postEvent(event);
+        
+        this.model_creation_editor.updateTitle();
+	}
+
 	void
 	set_partitioning_widgets_enabled
 	( boolean enabled )

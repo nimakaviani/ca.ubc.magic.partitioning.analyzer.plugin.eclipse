@@ -13,8 +13,12 @@ public class
 VirtualModelFileInput 
 extends File
 implements IStorageEditorInput 
+// TODO: concerns about threading: all methods dealing with names
+// must be synchronized, since they are updated by the editor
+// and then must be visible to the snapshot view
 {
 	private IStorage storage;
+	private String secondary_name;
 	
 	public
 	VirtualModelFileInput
@@ -40,10 +44,23 @@ implements IStorageEditorInput
 	}
 
 	@Override
-	public String 
+	synchronized public String 
 	getName() 
 	{
-		return this.storage.getName();
+		if( this.secondary_name == null){
+			return this.storage.getName();
+		}
+		else {
+			return this.secondary_name;
+		}
+	}
+	
+	synchronized public void
+	setSecondaryName
+	( String secondary_name )
+	{
+		this.secondary_name
+			= secondary_name;
 	}
 
 	@Override
@@ -54,7 +71,7 @@ implements IStorageEditorInput
 	}
 
 	@Override
-	public String 
+	synchronized public String 
 	getToolTipText() 
 	{
 		return this.storage.getName() + " " + this.format(this.storage.getFullPath().toString());

@@ -61,7 +61,7 @@ public class EntityConstraintParser extends DefaultHandler {
     	text.reset();
 
         try{
-            System.err.println("startElt " + name);
+          //  System.err.println("startElt " + name);
             if (name.equals("constraints")){
             }else if (name.equals("root")){
                 mHandler.setConstraintType(name);
@@ -93,7 +93,7 @@ public class EntityConstraintParser extends DefaultHandler {
 
     @Override
     public void endElement (String uri, String name, String qName) {
-    	System.err.println("endElement " + name);
+    	//System.err.println("endElement " + name);
         if (name.equals("constraints")){
             }else if (name.equals("entity")){
                 mHandler.endEntity();

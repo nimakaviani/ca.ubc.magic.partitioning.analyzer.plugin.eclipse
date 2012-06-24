@@ -1,13 +1,16 @@
 package snapshots.views;
 
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.DirectoryDialog;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
@@ -39,7 +43,13 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 
+import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;
 
@@ -181,10 +191,11 @@ implements IView
 										= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 									IWorkbenchPage page = window.getActivePage();
 									try {
-										page.openEditor(
-											input,
-											"plugin.views.model_creation_editor"
-										);
+										IEditorPart new_editor
+											= page.openEditor(
+												input,
+												"plugin.views.model_creation_editor"
+											);
 									} catch (PartInitException e1) {
 										e1.printStackTrace();
 									}
@@ -221,6 +232,51 @@ implements IView
 		
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
+		
+		// the following code is a view-communication solution
+		// found in:
+		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
+		BundleContext context 
+			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
+		EventHandler handler 
+			= new EventHandler() {
+				public void handleEvent
+				( final Event event )
+				{
+					// acceptable alternative, given that we run only
+					// one display
+					Display display 
+						= Display.getDefault();
+					assert( display != null) : "Display is null";
+					if( display.getThread() == Thread.currentThread() ){
+						Boolean refresh 
+							= (Boolean) event.getProperty("REFRESH");
+						if(refresh != null && refresh == true){
+							SnapshotView.this.refresh();
+						}
+					}
+					else {
+						display.syncExec( 
+							new Runnable() {
+								public void 
+								run()
+								{
+									Boolean refresh 
+										= (Boolean) event.getProperty("REFRESH");
+									if(refresh != null && refresh == true){
+										SnapshotView.this.refresh();
+									}
+								}
+							}
+						);
+					}
+				}
+			};
+			
+		Dictionary<String,String> properties 
+			= new Hashtable<String, String>();
+		properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
+		context.registerService(EventHandler.class, handler, properties);
 	}
 	
 	@Override
@@ -498,6 +554,7 @@ implements IView
 	// the following code is from:
 	// http://cvalcarcel.wordpress.com/tag/setexpandedelements/
 	{
+		System.out.println("Refreshing the snapshot view");
 		Object[] treePaths 
 			= this.snapshot_tree_viewer.getExpandedElements();
 		this.snapshot_tree_viewer.refresh();
@@ -907,6 +964,18 @@ implements IView
 			}
 		}
 	}
+
+/*	@Override
+	public void 
+	propertyChange
+	( org.eclipse.jface.util.PropertyChangeEvent event ) 
+	{
+		if(event.getProperty().equals(
+			Constants.SNAPSHOT_VIEW_UPDATE_MODEL_NAME
+		)){
+			this.refresh();
+		}
+	}*/
 }
 
 // note : the following class and the next modeled themselves
@@ -914,7 +983,7 @@ implements IView
 // http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/DemonstratesTreeViewer.htm
 class 
 FileTreeContentProvider 
-implements ITreeContentProvider 
+implements ITreeContentProvider
 // TODO: try to remove the snapshot events classes and have a pure MVC (pure is good)
 {
 	Set<File> snapshot_folders
@@ -938,15 +1007,15 @@ implements ITreeContentProvider
 	
 	public VirtualModelFileInput 
 	addVirtualModelInput
-	( String string ) 
+	( String absolute_path ) 
 	{
 		int count = 1;
 		Set<File> models = null;
 		
 		// if contained, 
-		if( this.snapshot_models.containsKey(string) ){
-			count = this.snapshots_map.get(string) + 1;
-			models = this.snapshot_models.get(string);
+		if( this.snapshot_models.containsKey(absolute_path) ){
+			count = this.snapshots_map.get(absolute_path) + 1;
+			models = this.snapshot_models.get(absolute_path);
 		}
 		else {
 			models = new TreeSet<File>( 
@@ -956,16 +1025,18 @@ implements ITreeContentProvider
 						return arg0.getName().compareTo(arg1.getName());
 					}
 				});
-			this.snapshot_models.put(string, models);
+			this.snapshot_models.put(absolute_path, models);
 		}
 		
+		String virtual_file_name
+			= "Model " + count;
 		VirtualModelFile virtual_file 
-			= new VirtualModelFile(string, "Model " + count);
+			= new VirtualModelFile(absolute_path, virtual_file_name );
 		VirtualModelFileInput return_value
-			= new VirtualModelFileInput(string, virtual_file);
+			= new VirtualModelFileInput(absolute_path, virtual_file);
 	
 		models.add(return_value);
-		this.snapshots_map.put(string, count);
+		this.snapshots_map.put(absolute_path, count);
 		
 		return return_value;
 	}

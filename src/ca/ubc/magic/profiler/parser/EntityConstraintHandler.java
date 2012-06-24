@@ -80,7 +80,7 @@ public class EntityConstraintHandler {
     }
     
     public void endEntity(){
-    	System.err.println("Constraint: " + this.mConstraintType.getText());
+    	//System.err.println("Constraint: " + this.mConstraintType.getText());
         switch (mConstraintType){
             case ROOT:
                 setRootEntity();

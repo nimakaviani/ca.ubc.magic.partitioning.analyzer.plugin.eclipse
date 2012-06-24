@@ -5,16 +5,12 @@ import java.awt.Color;
 import java.awt.Frame;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Dictionary;
-import java.util.Hashtable;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jface.dialogs.IPageChangedListener;
-import org.eclipse.jface.dialogs.PageChangedEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -25,7 +21,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
@@ -35,11 +30,6 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.MultiPageEditorPart;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 
 import partitioner.models.PartitionerGUIStateModel;
 import plugin.Constants;
@@ -52,8 +42,6 @@ import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 
-// TODO: this class needs to be refactored into three separate
-//		classes perhaps sharing an interface
 // TODO: problem: the controller is responsible for deciding how
 //		events are handled, but there is view code that directly calls
 //		the model. This is not such a problem, since the most important
@@ -151,8 +139,6 @@ implements IView
 		}
 	}
 
-
-	
 	@Override
 	protected void 
 	createPages() 
@@ -183,7 +169,8 @@ implements IView
 				this.controller,
 				this.currentVP,
 				this.current_vp_lock,
-				this.frame
+				this.frame,
+				this
 			);
 		
 		this.toolkit.adapt(this.model_configuration_page);
@@ -196,9 +183,8 @@ implements IView
 		this.createModelTestPage();
 		this.updateTitle();
 		
-		// the following code is a view-communication solution
-		// found in:
-		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
+		/*
+		
 		// it may not work given that this is not a view but an editor
 		BundleContext context 
 			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
@@ -207,8 +193,6 @@ implements IView
 				public void handleEvent
 				( final Event event )
 				{
-					System.out.println("Calling event handler");
-					
 					Display parent 
 						= Display.getCurrent();
 					if( parent.getThread() == Thread.currentThread() ){
@@ -242,33 +226,7 @@ implements IView
 				= new Hashtable<String, String>();
 			properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
 			context.registerService(EventHandler.class, handler, properties);
-			
-			this.addPageChangedListener( new IPageChangedListener(){
-				@Override
-				public void 
-				pageChanged
-				( PageChangedEvent event ) 
-				{
-				}
-			});
-			
-		/*
-		this.addPropertyListener(
-			new IPropertyListener(){
-				@Override
-				public void 
-				propertyChanged
-				( Object source, int propId ) {
-					switch( propId ){
-					case MultiPageEditorPart.PROP_TITLE:
-						System.out.println("title property changed");
-					default:
-						System.out.println(
-							"ModelCreationEditor is swallowing the event."
-						);
-					}
-				}
-			});*/
+			*/
 	}
 
 	private void 
@@ -512,7 +470,7 @@ implements IView
 			});
 	}
 	
-	private void
+	void
 	updateTitle()
 	// the following method is recommended by the eclipse
 	// plugins book
