@@ -40,23 +40,25 @@ public class SimplexModelExtended extends SimplexModel {
         int indexer = 0, tmpIndexer = 0, sourceIndex = 0, targetIndex = 0;
         int variablesSize = size + edgeList.size();
         
-        // the loop initializes the coefficines of the paired constraints where
+        // the loop initializes the coefficients of the paired constraints where
         // it is required for two modules to be placed together. 
         for (String[] pair : pairSet){
             int p1Index = nodeIndexMap.indexOf(pair[0]);
             int p2Index = nodeIndexMap.indexOf(pair[1]);
             double[] coefficients = new double[variablesSize];            
             
-            for (int j = 0; j < variablesSize; j++){
-                if (j == p1Index)
-                    coefficients[j] = 1;
-                else if (j == p2Index)
-                    coefficients[j] = -1;
-                else 
-                    coefficients[j] = 0;
-                printArray("Coeffs " + indexer + " : ", coefficients);
-                constraints.add(new LinearConstraint(coefficients, Relationship.EQ, 0));
-            }
+            coefficients[p1Index] = 1;
+            coefficients[p2Index] = -1;
+//            for (int j = 0; j < variablesSize; j++){
+//                if (j == p1Index)
+//                    coefficients[j] = 1;
+//                else if (j == p2Index)
+//                    coefficients[j] = -1;
+//                else 
+//                    coefficients[j] = 0;
+//            }
+            printArray("Coeffs " + indexer + " : ", coefficients);
+            constraints.add(new LinearConstraint(coefficients, Relationship.EQ, 0));
         }
         
         // the loop initializes the coefficients for the real variables
@@ -84,7 +86,7 @@ public class SimplexModelExtended extends SimplexModel {
         
         // the loop initializes the coefficients for the guard values ensuring
         // generation of differential weights for the model whose values will
-        // not be negative to alter the resutls of evaluations.
+        // not be negative to alter the results of evaluations.
         for (int i = size; i < variablesSize; i++){
             double[] coefficients = new double[variablesSize];     
             tmpIndexer = (indexer - size);

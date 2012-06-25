@@ -22,7 +22,7 @@ public class EntityConstraintModel {
     private Set<CodeEntity> mIgnoreSet;
     private Set<CodeEntity> mReplicableSet;
     private Set<CodeEntity> mNonReplicableSet;
-    private List<CodeEntity> mRootEntityList;
+    private List<List<CodeEntity>> mRootEntityList;
     
     private ConstraintSwitches mConstraintSwitches;
     
@@ -33,13 +33,17 @@ public class EntityConstraintModel {
         mIgnoreSet = new HashSet<CodeEntity>();
         mReplicableSet = new HashSet<CodeEntity>();
         mNonReplicableSet = new HashSet<CodeEntity>();
-        mRootEntityList = new ArrayList<CodeEntity>();
+        mRootEntityList = new ArrayList<List<CodeEntity>>();
         
         mConstraintSwitches = new ConstraintSwitches();
     }
     
-    public List<CodeEntity> getRootEntityList(){
-        return mRootEntityList;
+    public void addRootEntityList(List<CodeEntity> list){
+    	mRootEntityList.add(list);
+    }
+    
+    public final List<List<CodeEntity>> getRootEntityList(){
+    	return mRootEntityList;
     }
     
     

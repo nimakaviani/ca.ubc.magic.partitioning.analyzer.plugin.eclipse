@@ -21,6 +21,8 @@ public class Module {
     Long[]    mExecutionCount;
     
     boolean mIgnoreRate = Boolean.FALSE;
+    boolean mIsRoot = Boolean.FALSE;
+    boolean mIsNonReplicable = Boolean.FALSE;
     
     // The default size for the number of elements to be kept for 
     // execution cost and execution count of a module with respect
@@ -32,20 +34,24 @@ public class Module {
     public static final int DEFAULT = 0;
  
     public Module(String name, CodeUnitType type){
-        this(name, Constants.INVALID_PARTITION_ID, type, 0.0, 0, false);
+        this(name, Constants.INVALID_PARTITION_ID, type, 0.0, 0,  
+        		Boolean.FALSE,  Boolean.FALSE,  Boolean.FALSE);
     }
     
     public Module(String name, int partitionId){
-       this(name, partitionId, CodeUnitType.DEFAULT, 0.0, 0, false);
+       this(name, partitionId, CodeUnitType.DEFAULT, 0.0, 0, 
+    		   Boolean.FALSE,  Boolean.FALSE,  Boolean.FALSE);
     }
     
     public Module(Module m){
         this(m.getName(), m.getPartitionId(), m.getType(),
-                m.getExecutionCost(), m.getExecutionCount(), m.isIgnoreRate());
+                m.getExecutionCost(), m.getExecutionCount(), 
+                m.isIgnoreRate(), m.isRoot(), m.isNonReplicable());
     }
     
     public Module(String name, int partitionId, CodeUnitType type,
-            double executionCost, long executionCount, boolean ignoreRate){
+            double executionCost, long executionCount, 
+            boolean ignoreRate, boolean isRoot, boolean isNonReplicable){
         mModuleName = name;
         mPartitionId = partitionId;
         mType = type;
@@ -54,6 +60,8 @@ public class Module {
         mExecutionCount = new Long[Module.SIZE]; 
         mExecutionCount[Module.DEFAULT] = executionCount;
         mIgnoreRate = ignoreRate;
+        mIsRoot = isRoot;
+        mIsNonReplicable = isNonReplicable;
     }
     
     public void setName(String moduleName){
@@ -125,6 +133,22 @@ public class Module {
     public boolean isIgnoreRate(){
         return mIgnoreRate;
     }
+    
+    public void setIsRoot(boolean isRoot){
+    	mIsRoot = isRoot;
+    }
+    
+    public boolean isRoot(){
+    	return mIsRoot;
+    }
+    
+    public boolean isNonReplicable(){
+    	return mIsNonReplicable;
+    }
+    
+    public void setNonReplicable(boolean isNonReplicable){
+    	mIsNonReplicable = isNonReplicable;
+    }
             
     @Override
     public boolean equals(Object obj){
@@ -163,7 +187,7 @@ public class Module {
         // is set. This ensures that it returns the cumulative value as 
         // expected in to be seen in the graph.
         if (mExecutionCost[1] == null)
-            return Double.toString(mExecutionCost[0]);
+            return Double.toString(mExecutionCost[0] / 1.0E6);
         
         StringBuilder buffer = new StringBuilder();
         int id = 0;

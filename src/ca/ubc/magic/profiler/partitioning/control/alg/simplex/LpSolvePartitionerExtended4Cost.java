@@ -5,8 +5,9 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import lpsolve.LpSolve;
-import lpsolve.LpSolveException;
 
+import org.apache.commons.math.linear.ArrayRealVector;
+import org.apache.commons.math.linear.RealVector;
 import org.apache.commons.math.optimization.linear.LinearConstraint;
 import org.apache.commons.math.optimization.linear.LinearObjectiveFunction;
 import org.apache.commons.math.optimization.linear.Relationship;
@@ -21,34 +22,35 @@ public class LpSolvePartitionerExtended4Cost extends SimplexPartitionerExtended4
 		try {
 			LinearObjectiveFunction objectiveFunction = mSimplexModel.getObjectiveFunction();
 			Collection<LinearConstraint> constraints = mSimplexModel.getConstraints();
-			double[] coefficients = objectiveFunction.getCoefficients().toArray();
+			RealVector v = new ArrayRealVector();
+			double[] coefficients = v.append(0.0).append(objectiveFunction.getCoefficients()).toArray();
 			int numVariables = coefficients.length;
 			solver = LpSolve.makeLp(constraints.size(), numVariables);
 			solver.setObjFn(coefficients);
-			System.out.println("OBJECTIVE: " + Arrays.toString(coefficients));
+			solver.setRh(0, objectiveFunction.getConstantTerm());
+//			System.out.println("OBJECTIVE: " + Arrays.toString(coefficients));
 			for(int i=1;i <= solver.getNcolumns();i++) {
-				solver.setInt(i, true);
+				solver.setBinary(i, true);
 			}
 			Iterator<LinearConstraint> it = constraints.iterator();
 			while(it.hasNext()) {
-				LinearConstraint lc = it.next();
-				double[] lcArray = lc.getCoefficients().toArray();
+				final LinearConstraint lc = it.next();
+				v = new ArrayRealVector();
+				final double[] lcArray = v.append(0.0).append(lc.getCoefficients()).toArray();
 				solver.addConstraint(lcArray, apacheToLpSolve(lc.getRelationship()), lc.getValue());
-				System.out.println("CONSTRAINT: " + Arrays.toString(lcArray) + " " + lc.getRelationship().name() + " " + lc.getValue());
+//				System.out.println("CONSTRAINT: " + Arrays.toString(lcArray) + " " + lc.getRelationship().name() + " " + lc.getValue());
 			}
-			
+			solver.setMinim();
 			solver.solve();
 			double[] solution = solver.getPtrVariables();
 			int i = 0;            
-			System.out.println("SOLUTION: " + Arrays.toString(solver.getPtrVariables()));
+			System.out.println("SOLUTION: (" + Double.toString(solver.getObjective()) +")");
 			
-			Module m = mModuleModel.getModuleMap().get(mSimplexModel.getNode(0));
-			m.setPartitionId(2 - (new Double(0.0d)).intValue());
 			for (;i < solution.length-1; i++){
-				 if (i >= mSize-1)
-	                  break;
+				if (i >= mSize)
+                    break;
 				double current = solution[i];
-				m = mModuleModel.getModuleMap().get(mSimplexModel.getNode(i+1));
+				Module m = mModuleModel.getModuleMap().get(mSimplexModel.getNode(i));
 				m.setPartitionId(2 - (new Double(current)).intValue());                    
 			}
 			
@@ -60,18 +62,18 @@ public class LpSolvePartitionerExtended4Cost extends SimplexPartitionerExtended4
 	 @Override
 	 public String getSolution() {
 	       try {
-			return Arrays.toString(solver.getPtrVariables());
-		} catch (LpSolveException e) {
-			throw new RuntimeException(e);
+			return Double.toString(solver.getObjective());
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage());
 		}
 	 }
 	 
 	 public static int apacheToLpSolve(Relationship r) {
-		 if(r.equals(r.EQ)) {
+		 if(r.equals(Relationship.EQ)) {
 			 return 3;
-		 } else if(r.equals(r.GEQ)) {
+		 } else if(r.equals(Relationship.GEQ)) {
 			 return 2;
-		 } else if(r.equals(r.LEQ)) {
+		 } else if(r.equals(Relationship.LEQ)) {
 			 return 1;
 		 } else {
 			 throw new IllegalArgumentException();

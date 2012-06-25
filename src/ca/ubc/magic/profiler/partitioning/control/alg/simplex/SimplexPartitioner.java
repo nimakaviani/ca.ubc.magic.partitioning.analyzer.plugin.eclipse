@@ -18,6 +18,7 @@ import ca.ubc.magic.profiler.dist.model.interaction.InteractionCostHelper;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
 import ca.ubc.magic.profiler.partitioning.control.alg.AbstractPartitioner;
+
 import org.apache.commons.math.optimization.GoalType;
 import org.apache.commons.math.optimization.RealPointValuePair;
 import org.apache.commons.math.optimization.linear.SimplexSolver;
@@ -58,7 +59,7 @@ public class SimplexPartitioner extends AbstractPartitioner {
                 Module m = mModuleModel.getModuleMap().get(mSimplexModel.getNode(i++));
                 m.setPartitionId(2 - (new Double(d)).intValue());                    
             }
-            System.out.println("Solution: " + solution.getValue());
+            System.out.println("Solution: (" + solution.getValue() + ")");
         }catch(Exception e){
             throw new RuntimeException(e.getMessage());
         }

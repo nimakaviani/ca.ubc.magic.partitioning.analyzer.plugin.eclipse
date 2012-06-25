@@ -4,10 +4,13 @@
  */
 package ca.ubc.magic.profiler.parser;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ca.ubc.magic.profiler.dist.control.Constants;
-import ca.ubc.magic.profiler.dist.model.granularity.CodeUnitType;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeEntity;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeUnit;
+import ca.ubc.magic.profiler.dist.model.granularity.CodeUnitType;
 import ca.ubc.magic.profiler.dist.model.granularity.ConstraintType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
 
@@ -24,6 +27,8 @@ public class EntityConstraintHandler {
     private CodeUnit   mCodeUnit;
     
     private ConstraintType mConstraintType;
+    
+    private List<CodeEntity> mEntryList = null;
     
     public EntityConstraintHandler(){
          mConstraintModel = new EntityConstraintModel();
@@ -73,6 +78,15 @@ public class EntityConstraintHandler {
         
     }
     
+    public void startEntry(){
+    	mEntryList = new ArrayList<CodeEntity>();
+    }
+    
+    public void endEntry(){
+    	mConstraintModel.addRootEntityList(mEntryList);
+    	mEntryList = null;
+    }
+    
     public void endTarget(String type){
         mEntity.setTarget(CodeUnitType.fromString(type));
     }
@@ -101,7 +115,9 @@ public class EntityConstraintHandler {
     }    
     
     private void setRootEntity(){
-        mConstraintModel.getRootEntityList().add(mEntity);
+    	if (mEntryList == null)
+    		throw new RuntimeException("Invalid entry Id");
+        mEntryList.add(mEntity);
     }
     
     private void setExposeEntity(){

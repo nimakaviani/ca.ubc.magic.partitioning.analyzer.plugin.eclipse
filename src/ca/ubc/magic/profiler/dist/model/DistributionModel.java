@@ -5,9 +5,9 @@
 package ca.ubc.magic.profiler.dist.model;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Vector;
+
+import ca.ubc.magic.profiler.dist.control.Util;
 
 /**
  *
@@ -29,9 +29,8 @@ public class DistributionModel {
         this(moduleModel.getModuleMap(), hostModel);
     }
     
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-	public DistributionModel(Map moduleMap, HostModel hostModel){
-        mModuleMap = deepClone(moduleMap);
+    public DistributionModel(Map moduleMap, HostModel hostModel){
+        mModuleMap = Util.deepClone(moduleMap);
         mHostModel = hostModel;
         mNumberOfPartitions = mHostModel.getNumberOfHosts();
     }
@@ -69,23 +68,4 @@ public class DistributionModel {
     public void setNumberOfPartitions(int numberOfPartitions){
         mNumberOfPartitions = numberOfPartitions;
     }   
-    
-     private HashMap deepClone(Map map) {
-        HashMap newone = (HashMap) ((HashMap)map).clone();
-        Iterator it = newone.keySet().iterator();
-        while (it.hasNext()) {
-            Object newkey = it.next();
-            Object deepobj = null, newobj = newone.get(newkey);
-            if (newobj instanceof HashMap)
-                deepobj = deepClone((HashMap)newobj);
-            else if (newobj instanceof String)
-                deepobj = (Object)new String((String)newobj);
-            else if (newobj instanceof Vector)
-                deepobj = ((Vector)newobj).clone();
-            else if (newobj instanceof Module)
-                deepobj = new Module((Module) newobj);
-            newone.put(newkey, deepobj);
-        }
-        return newone;
-    }
 }

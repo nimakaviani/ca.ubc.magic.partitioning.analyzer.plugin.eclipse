@@ -46,7 +46,7 @@ public class SimplexPartitionerExtended4Cost extends SimplexPartitionerExtended 
                     mArray[1].getName(), mInteractionCostMap.get(baseMHP).getTotalCost());
             
             // This is the cost of having m2 on premise and m1 in the cloud
-            // put into adjacencymatrix[j][i]. Only h2toh1cost is taken into 
+            // put into adjacencymatrix[j][i]. Only h1toh2cost is taken into 
             // consideration as the other cost is multiplied by its associated 
             // value and is then normalized to 0. In this case, h1 to h2 cost would
             // be equal to the cost of transfering data from cloud(h1) to premise(h2)

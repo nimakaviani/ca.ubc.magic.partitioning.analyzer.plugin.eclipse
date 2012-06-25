@@ -19,6 +19,8 @@ import org.apache.commons.math.optimization.linear.LinearConstraint;
 import org.apache.commons.math.optimization.linear.LinearObjectiveFunction;
 import org.apache.commons.math.optimization.linear.Relationship;
 
+import cern.colt.Arrays;
+
 public class SimplexModel {
 	
 	List<String> nodeIndexMap;
@@ -63,22 +65,22 @@ public class SimplexModel {
             ArrayList<LinearConstraint> constraints = new ArrayList<LinearConstraint>();
             int indexer = 0;
             for (int i = 0; i < size; i++){
-                double[] coefficients1 = new double[size];                
+                double[] coefficients = new double[size];                
                 for (int j = 0; j < size; j++){
                     if (j != indexer)
-                        coefficients1[j] = 0;
+                        coefficients[j] = 0;
                     else
-                        coefficients1[j] = 1;
+                        coefficients[j] = 1;
                 }
                 
                 String nodeId = nodeIndexMap.get(indexer);
                 if (sourceSet.contains(nodeId))
-                    constraints.add(new LinearConstraint(coefficients1, Relationship.EQ, 1));
+                    constraints.add(new LinearConstraint(coefficients, Relationship.EQ, 1));
                 else if (targetSet.contains(nodeId))
-                    constraints.add(new LinearConstraint(coefficients1, Relationship.EQ, 0));
+                    constraints.add(new LinearConstraint(coefficients, Relationship.EQ, 0));
                 else{                    
-                    constraints.add(new LinearConstraint(coefficients1, Relationship.GEQ, 0));
-                    constraints.add(new LinearConstraint(coefficients1, Relationship.LEQ, 1));
+                    constraints.add(new LinearConstraint(coefficients, Relationship.GEQ, 0));
+                    constraints.add(new LinearConstraint(coefficients, Relationship.LEQ, 1));
                 }
                 
                 indexer ++;
@@ -125,23 +127,20 @@ public class SimplexModel {
             return size;
 	}	
         
-        protected void printArray(String title, double[] array){
-//            System.out.print(title + ": ");
-//            for (int i = 0; i < array.length; i++)
-//                System.out.print(array[i] + " ");
-//            System.out.println();
-        }
-        
-        protected void pinToSource(String nodeId){
-            sourceSet.add(nodeId);
-        }
+    protected void printArray(String title, double[] array){
+//        System.out.println(title + ": " + Arrays.toString(array));
+    }
+    
+    protected void pinToSource(String nodeId){
+        sourceSet.add(nodeId);
+    }
 
-        protected void pinToTarget(String nodeId){
-            targetSet.add(nodeId);
-        }
-        
-        protected void pinTogether(String nodeId1, String nodeId2){
-            pairSet.add(new String[]{nodeId1, nodeId2});
-        }
+    protected void pinToTarget(String nodeId){
+        targetSet.add(nodeId);
+    }
+    
+    protected void pinTogether(String nodeId1, String nodeId2){
+        pairSet.add(new String[]{nodeId1, nodeId2});
+    }
 }
 

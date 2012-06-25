@@ -41,6 +41,8 @@ public abstract class AbstractPartitioner implements IPartitioner {
     
     protected int mSize;
     
+    private boolean mSetup = Boolean.FALSE;
+    
     public void init (ModuleModel mModel, final HostModel hModel){
         mModuleModel = mModel;
         mHostModel = hModel;
@@ -63,17 +65,16 @@ public abstract class AbstractPartitioner implements IPartitioner {
     }
     
     public void partition(){
-        applyFilters();
-        initNodes();
-        initEdges();
-//        printInteractions();
-        long start = System.currentTimeMillis();
+
+		prePartition();
+
+		long start = System.currentTimeMillis();
         doPartition();
         System.out.println(this.getClass().getCanonicalName() + "ExecTime: " + (System.currentTimeMillis() - start));
+        
         postPartition();
-//        printCutEdges();
     }
-
+    
     protected void initCostMap(){
         
         // initializing data execution cost for the model
@@ -84,7 +85,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
                 mExecutionCostMap.put(mh, mh.setExecutionCost(mHostModel, 
                         mHostModel.getDefaultHost()));
                 
-                System.out.println(mh.toString() + " ExecCost: " + mh.getCost());
+//                System.out.println(mh.toString() + " ExecCost: " + mh.getCost());
             }
         
         ////////////////////////////////////////////////
@@ -107,7 +108,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
                     s2tmp.setCost(s2tp.getInteractionCost(mHostModel, iData));
                     mInteractionCostMap.put(s2tmp, s2tmp.getCost());      
                     
-                    System.out.println(s2tmp.toString() + "InterCost: " + s2tmp.getCost());
+//                    System.out.println(s2tmp.toString() + "InterCost: " + s2tmp.getCost());
                 }
             }
         }
@@ -201,7 +202,18 @@ public abstract class AbstractPartitioner implements IPartitioner {
     
     public abstract String getSolution();
     
+    public void prePartition(){
+    	if (mSetup)
+    		return;
+    	applyFilters();
+        initNodes();
+        initEdges();
+//      printInteractions();
+        mSetup = Boolean.TRUE;
+    }
+    
     protected void postPartition(){
+//      printCutEdges();
         mModuleModel.setParitioned(true);
 
         CostAnalyzerHelper.analyzeCosts(this.getClass().getCanonicalName(), mModuleModel, mHostModel);

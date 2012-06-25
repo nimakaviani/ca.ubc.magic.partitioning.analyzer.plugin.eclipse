@@ -65,6 +65,8 @@ public class EntityConstraintParser extends DefaultHandler {
             if (name.equals("constraints")){
             }else if (name.equals("root")){
                 mHandler.setConstraintType(name);
+            }else if (name.equals("entry")){
+                mHandler.startEntry();
             }else if (name.equals("expose")){
                 mHandler.setConstraintType(name);
             }else if (name.equals("ignore")){
@@ -96,6 +98,8 @@ public class EntityConstraintParser extends DefaultHandler {
         if (name.equals("constraints")){
             }else if (name.equals("entity")){
                 mHandler.endEntity();
+            }else if (name.equals("entry")){
+                mHandler.endEntry();
             }else if (name.equals("component")){
                 mHandler.endUnit(getText(), CodeUnitType.COMPONENT);
             }else if (name.equals("class")){

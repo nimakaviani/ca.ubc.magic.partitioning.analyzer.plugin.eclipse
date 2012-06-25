@@ -19,9 +19,9 @@ public class Constants {
     /**
      * Constants for the default profiler module path and the default host path
      */
-    public static final String DEFAULT_PROFILE_XML_PATH = "resources/dist-model/Profile-20120504-190723.xml";
-    public static final String DEFAULT_HOST_XML_PATH = "resources/dist-model/host-magic.xml";
-    public static final String DEFAULT_CONSTRAINT_XML_PATH = "resources/dist-model/moduleconstraints-aries3.xml";
+    public static final String DEFAULT_PROFILE_XML_PATH = "/home/nima/tmp/20120604-160134.xml";
+    public static final String DEFAULT_HOST_XML_PATH = "resources/dist-model/host-magic2.xml";
+    public static final String DEFAULT_CONSTRAINT_XML_PATH = "resources/dist-model/moduleconstraints-aries5.xml";
     
     /**
      * These are the set of constants used for METIS
@@ -49,7 +49,17 @@ public class Constants {
     /**
      * Factors for cost conversion when doing variable deployments
      */
-    public static final double LINEAR_COST_CONVERSION_FACTOR = 8640.0;
+    public static final double LINEAR_COST_CONVERSION_FACTOR = 1.0;//0.0667;//8640.0;
+    
+    /**
+     * 
+     */
+    public static final HashSet<String> JSP_COMPILER_FILTER_SET = new HashSet<String>(
+            Arrays.asList(new String[] {
+                "org.ops4j.pax.web.pax-web-jsp:org.eclipse.jdt.internal.compiler",
+                "org.ops4j.pax.web.pax-web-jsp:org.apache.jasper.compiler"
+            }));
+    
     
      /**
      * 
@@ -77,6 +87,8 @@ public class Constants {
      * The handshake parameter for the constant time in millisecond that it takes for every 
      * connection to establish.
      */
+    // TODO nimak - the current handshake cost applies to every data exchange.
+    //              it can be modified so that it only affects the first connection.
     public static final double DEFAULT_HANDSHAKE_COST = 1;
 
     /**
@@ -149,12 +161,23 @@ public class Constants {
      * under one node while dealing with application execution costs. Web nodes should not be separated
      * and their separation should not be considered in the model.
      */
-    public static final Set<String> WEB_NODES = new HashSet<String>(Arrays.asList(
+    private static final Set<String> WEB_NODES_ARIES = new HashSet<String>(Arrays.asList(
             new String[] {
                 "javax.servlet-api",
                 "org.ops4j.pax.web.pax-web-jsp",
                 "org.ops4j.pax.web.pax-web-jetty-bundle"
             }));
+    private static final Set<String> WEB_NODES_TOMCAT = new HashSet<String>(Arrays.asList(
+            new String[] {
+                "jsp-api",
+                "jasper",
+                "servlet-api",
+                "catalina",
+                "tomcat-coyote",
+                "tomcat-util",
+                "el-api"
+            }));
+    public static final Set<String> WEB_NODES = WEB_NODES_TOMCAT;
     
     public static final String SYNTHETIC_NODE = "Synthetic_Entry-Node";
 }

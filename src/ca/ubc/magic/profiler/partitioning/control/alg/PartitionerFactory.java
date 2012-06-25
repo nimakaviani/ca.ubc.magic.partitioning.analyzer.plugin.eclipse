@@ -15,12 +15,9 @@ import ca.ubc.magic.profiler.partitioning.control.alg.simplex.SimplexPartitioner
  *
  * @author nima
  */
-public class 
-PartitionerFactory 
-{
-    public enum 
-    PartitionerType
-    {
+public class PartitionerFactory {
+    
+    public enum PartitionerType{
         MIN_MAX_PREFLOW_PUSH("MinMax (Preflow Push)"),
         MULTI_WAY_METIS ("Multi-way (hMetis)"),
         ILP("BIP (Simplex)"),
@@ -50,10 +47,7 @@ PartitionerFactory
          }
     }       
     
-    public static IPartitioner 
-    getPartitioner
-    ( PartitionerType type )
-    {
+    public static IPartitioner getPartitioner(PartitionerType type){
         switch (type){
             case ILP:
                 return new SimplexPartitioner();
@@ -68,7 +62,7 @@ PartitionerFactory
             case MIN_MAX_PREFLOW_PUSH:
                 return new PreflowPushPartitioner();
             default:
-            	throw new RuntimeException("No proper partitioner found");
+             throw new RuntimeException("No proper partitioner found");
         }
     }    
 }

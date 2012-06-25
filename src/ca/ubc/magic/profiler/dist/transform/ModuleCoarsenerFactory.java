@@ -16,6 +16,7 @@ public class ModuleCoarsenerFactory {
         BUNDLE("Bundle Coarsener"),
         THREAD_BUNDLE ("Thread Bundle Coarsener"),
         REQUEST_BUNDLE("Request Bundle Coarsener"),
+        FRAME_BUNDLE("Frame Bundle Coarsener"),
         EXTENDED_REQUEST_BUNDLE("Extended Request Bundle Coarsener"),
         COARSE_REQUEST_BUNDLE("Coarse Request Bundle Coarsener"),
         LOW_LATENCY_EXTENDED_REQUEST_BUNDLE("Low Latency Extended Request Bundle Coarsener"),
@@ -50,6 +51,8 @@ public class ModuleCoarsenerFactory {
                 return new BundleModuleCoarsener(constraintModel);
             case THREAD_BUNDLE:
                 return new ThreadBasedBundleModuleCoarsener(constraintModel);
+            case FRAME_BUNDLE:
+                return new FrameBasedModuleCoarsener(constraintModel);
             case REQUEST_BUNDLE:
                 return new RequestBasedBundleModuleCoarsener(constraintModel);
             case EXTENDED_REQUEST_BUNDLE:
