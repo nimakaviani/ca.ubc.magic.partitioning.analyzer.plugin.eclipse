@@ -38,18 +38,11 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
     }
     
     @Override
-<<<<<<< HEAD
     public ModuleModel getModuleModelFromParser(JipRun jipRun) {
         
         if (mConstraintModel == null)
             throw new RuntimeException("No constraint model is defined. Make sure you active module exposing!");
         
-=======
-    public ModuleModel 
-    getModuleModelFromParser
-    ( JipRun jipRun ) 
-    {
->>>>>>> origin/mid_boss_branch
         mIgnoreSet = mConstraintModel.getIgnoreSet();
         
         mModuleModel.setName("Profile " + jipRun.getDate());
@@ -287,7 +280,6 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
     protected void initializeModels(){
         NodeObj rootNode = mStart;
         
-<<<<<<< HEAD
         try {
 	        if (!mConstraintModel.getRootEntityList().isEmpty())
 	        	for (List<CodeEntity> l : mConstraintModel.getRootEntityList()){
@@ -301,12 +293,6 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
         	e.printStackTrace();
         	throw new RuntimeException("Initializing the module models failed");
         }
-=======
-        if (mConstraintModel.getRootEntityList() != null){
-            rootNode = extractChildNode(rootNode, mConstraintModel.getRootEntityList(), 0);
-        }
-        applyRecursion(rootNode);
->>>>>>> origin/mid_boss_branch
     }
 
     protected void applyRecursion(NodeObj rootNode) {
@@ -322,7 +308,6 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
         recursiveWriteEdge(rootNode, 0);
     }
     
-<<<<<<< HEAD
     protected NodeObj checkForAddingSyntheticNode(int i, NodeObj returnedNode) {
         if (mConstraintModel.getConstraintSwitches().isSyntheticNodeActivated()){
         	NodeObj syntheticNodeObj = new NodeObj(Constants.SYNTHETIC_NODE + "_" + i, 
@@ -364,26 +349,5 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
             if (entity.getEntityPattern().matches(nodeName, null, null))
                 return true;
         return false;
-=======
-    private NodeObj 
-    extractChildNode
-    ( NodeObj rtNode, List<CodeEntity> rootEntityList, int depth)
-    {
-        NodeObj rootNode = null;
-        
-        if (depth > rootEntityList.size() - 1)
-            return rtNode;
-        
-        for (NodeObj node : rtNode.getChildSet()){
-        	// david: problem here: I am assuming that at least one of the following should
-        	// return non-null
-            if (rootEntityList.get(depth).getEntityPattern().matches(node.getName(), null, null)){
-                rootNode = extractChildNode(node, rootEntityList, depth + 1);
-                break;
-            }
-        }
-        
-        return rootNode;
->>>>>>> origin/mid_boss_branch
     }
 }
