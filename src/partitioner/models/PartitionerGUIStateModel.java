@@ -374,6 +374,9 @@ implements IModel
 	///				-> mHostModel, set in initializeHostModel
 	///			we should be safe from concurrency problems given that mModuleModel
 	///			and mHostModel are set once and never modified
+	///	What makes these functions interesting, other than the issue of thread safety
+	///	is that they are a single operation that we want to be able to backtrack or
+	/// recover from when it fails. This is an interesting problem.
 	////////////////////////////////////////////////////////////////////////////////////
 	public void 
 	createModuleModel
