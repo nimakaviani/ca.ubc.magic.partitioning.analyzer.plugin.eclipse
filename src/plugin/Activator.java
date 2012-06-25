@@ -5,7 +5,6 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
 import snapshots.events.logging.EventLogActionHandler;
-import snapshots.model.ActiveSnapshotModel;
 import snapshots.model.EventLogListModel;
 import snapshots.model.SnapshotsListModel;
 
@@ -18,7 +17,6 @@ extends AbstractUIPlugin
 		= "plugin";
 	private static Activator plugin;
 	
-	private ActiveSnapshotModel active_snapshot_model;
 	private EventLogActionHandler action_handler;
 	private EventLogListModel event_log_list_model;
 	private SnapshotsListModel snapshots_list_model;
@@ -35,8 +33,6 @@ extends AbstractUIPlugin
 		super.start(context);
 		plugin = this;
 		
-		this.active_snapshot_model 
-			= new ActiveSnapshotModel();
 		this.action_handler 
 			= new EventLogActionHandler();
 		this.event_log_list_model
@@ -66,12 +62,6 @@ extends AbstractUIPlugin
 	( String path ) 
 	{
 		return imageDescriptorFromPlugin(PLUGIN_ID, path);
-	}
-	
-	public ActiveSnapshotModel 
-	getActiveSnapshotModel() 
-	{
-		return this.active_snapshot_model;
 	}
 	
 	public EventLogActionHandler

@@ -52,6 +52,11 @@ Constants
 		= "InteractionCost";
 	public static final String GUI_EXECUTION_COST
 		= "ExecutionCost";
+	public static final String GUI_SIMULATION_TYPE 
+		= "SimulationType";
+	public static final int SNAPSHOT_VIEW_UPDATE_MODEL_NAME
+	//	= "UpdateModelName";
+		= 0;
 	
 	public static final String PERSPECTIVE_SNAPSHOTS_VIEW_ID
 		= "plugin.views.snapshot_view";

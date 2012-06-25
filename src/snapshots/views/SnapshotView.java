@@ -1,10 +1,16 @@
 package snapshots.views;
 
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.DirectoryDialog;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
@@ -22,6 +29,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.*;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -35,22 +43,32 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 
+import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;
 
-
-import snapshots.action.AboutAction;
 import snapshots.action.FinishAction;
 import snapshots.action.JIPViewerAction;
-import snapshots.action.PartitionerViewerAction;
-import snapshots.action.StartAction;
+import snapshots.com.mentorgen.tools.util.profile.Start;
 import snapshots.controller.ControllerDelegate;
 import snapshots.controller.IController;
+import snapshots.events.ISnapshotEventListener;
+import snapshots.events.SnapshotEvent;
 import snapshots.events.SnapshotEventManager;
 import snapshots.events.logging.ErrorDisplayAction;
 import snapshots.events.logging.EventLogActionHandler;
+import snapshots.events.logging.EventLogEvent;
+import snapshots.events.logging.EventLogger;
 import snapshots.events.logging.LogAction;
+import snapshots.model.ActiveSnapshotModel;
+import snapshots.model.ISnapshotInfoModel;
+import snapshots.model.Snapshot;
 
 public class 
 SnapshotView 
@@ -60,20 +78,24 @@ implements IView
 	public static final String ID 
 		= "snapshots.views.SampleView";
 
-	Text 		path_text;
-	Text		name_text;
-	Text		port_text;
-	Text 		host_text;
+	Text 							path_text;
+	Text							name_text;
+	Text							port_text;
+	Text 							host_text;
 	
-	private IController controller 
+	private IController 			controller 
 		= new ControllerDelegate();
-	EventLogTable		log_console_table;
-	private	TreeViewer	snapshot_tree_viewer;
+	EventLogTable					log_console_table;
+	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
+	
+	private ActiveSnapshotModel 	active_snapshot_model;
 
 	public 
 	SnapshotView() 
 	{
+		this.active_snapshot_model
+			= new ActiveSnapshotModel();
 	}
 
 	public void 
@@ -87,7 +109,7 @@ implements IView
 		Group configuration_group
 			= new Group(parent, SWT.SHADOW_ETCHED_IN | SWT.FILL);
 		initializeGridLayout(configuration_group);
-		configuration_group.setText("Snapshot Properties");
+		configuration_group.setText("New Snapshot Properties");
 		initializeInputRows(configuration_group);
 		
 		GridData grid_data 
@@ -169,10 +191,11 @@ implements IView
 										= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 									IWorkbenchPage page = window.getActivePage();
 									try {
-										page.openEditor(
-											input,
-											"plugin.views.model_creation_editor"
-										);
+										IEditorPart new_editor
+											= page.openEditor(
+												input,
+												"plugin.views.model_creation_editor"
+											);
 									} catch (PartInitException e1) {
 										e1.printStackTrace();
 									}
@@ -198,7 +221,7 @@ implements IView
 		this.initializeDropDownMenu(actionBars.getMenuManager());
 		
 		this.controller.addView(this);
-		this.controller.addModel( Activator.getDefault().getActiveSnapshotModel());
+		this.controller.addModel( this.active_snapshot_model );
 		
 		this.log_console_table
 			= new EventLogTable(parent, "Event Log", null);
@@ -209,6 +232,57 @@ implements IView
 		
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
+		
+		// the following code is a view-communication solution
+		// found in:
+		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
+		BundleContext context 
+			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
+		EventHandler handler 
+			= new EventHandler() {
+				public void handleEvent
+				( final Event event )
+				{
+					// acceptable alternative, given that we run only
+					// one display
+					Display display 
+						= Display.getDefault();
+					assert( display != null) : "Display is null";
+					if( display.getThread() == Thread.currentThread() ){
+						Boolean refresh 
+							= (Boolean) event.getProperty("REFRESH");
+						if(refresh != null && refresh == true){
+							SnapshotView.this.refresh();
+						}
+					}
+					else {
+						display.syncExec( 
+							new Runnable() {
+								public void 
+								run()
+								{
+									Boolean refresh 
+										= (Boolean) event.getProperty("REFRESH");
+									if(refresh != null && refresh == true){
+										SnapshotView.this.refresh();
+									}
+								}
+							}
+						);
+					}
+				}
+			};
+			
+		Dictionary<String,String> properties 
+			= new Hashtable<String, String>();
+		properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
+		context.registerService(EventHandler.class, handler, properties);
+	}
+	
+	@Override
+	public void 
+	setFocus() 
+	{
 	}
 	
 	private void 
@@ -247,10 +321,29 @@ implements IView
 			this.snapshot_tree_viewer
 		);
 	}
-	/**
-	 * Passing the focus request to the viewer's control.
-	 */
-	public void setFocus() {
+	
+	private void 
+	initializeToolbar
+	(IToolBarManager toolBar, SnapshotEventManager snapshot_event_manager) 
+	{		
+		this.controller.addView(this);	
+		this.controller.addModel(Activator.getDefault().getSnapshotsListModel());
+		this.controller.addModel(Activator.getDefault().getEventLogListModel());
+		
+		IAction finish	
+			= new FinishAction(
+				snapshot_event_manager,
+				this.controller,
+				this.controller
+			);
+		IAction start	
+			= new StartAction(
+				snapshot_event_manager,
+				this.controller
+			);
+				
+		toolBar.add(start);
+		toolBar.add(finish);
 	}
 	
 	private void 
@@ -262,10 +355,10 @@ implements IView
 		path_label.pack();
 		
 		this.path_text 
-			= createPath( parent, 1 );
+			= createPath( parent,1 );
 		this.path_text.setLocation(80, 20);
 		this.path_text.pack();
-		this.path_text.setEditable(false);
+		this.path_text.setEditable(true);
 		
 		Button browse_button 
 			= new Button( parent, SWT.NONE );
@@ -274,7 +367,8 @@ implements IView
 			public void widgetSelected( SelectionEvent event ){
 				DirectoryDialog file_dialog 
 					= new DirectoryDialog( 
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), 
+						PlatformUI.getWorkbench()
+							.getActiveWorkbenchWindow().getShell(), 
 						SWT.OPEN
 					);
 				file_dialog.setText("Select Directory");
@@ -343,53 +437,15 @@ implements IView
 		
 		return local_text;
 	}
-	/*
-	private void 
-	initializeToolbar
-	(IToolBarManager toolBar, SnapshotEventManager snapshot_event_manager) 
-	{	
-		/*
-		IController snapshots_list_model 
-			= Activator.getDefault().getSnapshotsListModel().getController();
-		IController active_snapshot_model
-			= Activator.getDefault().getActiveSnapshotModel().getController();
-			
-		snapshots_list_model.addView(this);		
-		active_snapshot_model.addView(this);
-		
-		IAction details	
-			= new ConfigureAction(this, snapshot_event_manager);
-		IAction finish	
-			= new FinishAction(
-				snapshot_event_manager,
-				active_snapshot_model,
-				snapshots_list_model
-			);
-		IAction start	
-			= new StartAction(
-				snapshot_event_manager,
-				active_snapshot_model			
-			);
-				
-		toolBar.add(details);
-		toolBar.add(start);
-		toolBar.add(finish);
-	}*/
 	
 	private void 
 	initializeDropDownMenu
 	(IMenuManager dropDownMenu) 
 	{
-		IAction about		
-			= new AboutAction();
 		IAction jip_viewer
 			= new JIPViewerAction();
-		IAction partitioner_viewer
-			= new PartitionerViewerAction();
 		
-		dropDownMenu.add(about);
 		dropDownMenu.add(jip_viewer);
-		dropDownMenu.add(partitioner_viewer);
 	}
 	
 	private void 
@@ -410,10 +466,10 @@ implements IView
 		String prevPath = null;
 		
 		prevPath 
-			= Activator.getDefault().getActiveSnapshotModel().
-				getSnapshotPath();
-		if(prevPath == null || prevPath.equals("")){
-			prevPath = "C:\\Users\\dillesca\\Desktop\\tmp";
+			= this.active_snapshot_model
+				.getSnapshotPath();
+		if(prevPath == null){
+			prevPath = ""; 
 		}
 		
 		System.out.println("Previous Path " + prevPath);
@@ -424,7 +480,7 @@ implements IView
 	getPreviousName()
 	{
 		String prevName = null;
-		prevName = Activator.getDefault().getActiveSnapshotModel().getSnapshotName();
+		prevName = this.active_snapshot_model.getSnapshotName();
 		
 		if(prevName == null){
 			prevName = "";
@@ -438,7 +494,7 @@ implements IView
 	{
 		String prevPort = null;
 		
-		prevPort = Activator.getDefault().getActiveSnapshotModel().getSnapshotPort();
+		prevPort = this.active_snapshot_model.getSnapshotPort();
 		if(prevPort == null || prevPort.equals("") ){
 			prevPort = "15599";
 		}
@@ -451,7 +507,7 @@ implements IView
 	{
 		String prevHost = null;
 		
-		prevHost = Activator.getDefault().getActiveSnapshotModel().getSnapshotHost();
+		prevHost = this.active_snapshot_model.getSnapshotHost();
 		
 		if(prevHost == null || prevHost.equals("") ){
 			prevHost = "localhost";
@@ -459,7 +515,7 @@ implements IView
 		
 		return prevHost;
 	}
-
+	
 	@Override
 	public void 
 	modelPropertyChange
@@ -498,35 +554,11 @@ implements IView
 	// the following code is from:
 	// http://cvalcarcel.wordpress.com/tag/setexpandedelements/
 	{
+		System.out.println("Refreshing the snapshot view");
 		Object[] treePaths 
 			= this.snapshot_tree_viewer.getExpandedElements();
 		this.snapshot_tree_viewer.refresh();
 		this.snapshot_tree_viewer.setExpandedElements(treePaths);
-	}
-	
-	private void 
-	initializeToolbar
-	(IToolBarManager toolBar, SnapshotEventManager snapshot_event_manager) 
-	{		
-		this.controller.addView(this);	
-		this.controller.addModel(Activator.getDefault().getSnapshotsListModel());
-		this.controller.addModel(Activator.getDefault().getEventLogListModel());
-		
-		IAction finish	
-			= new FinishAction(
-				snapshot_event_manager,
-				this.controller,
-				this.controller
-			);
-		IAction start	
-			= new StartAction(
-				snapshot_event_manager,
-				this.controller,
-				this
-			);
-				
-		toolBar.add(start);
-		toolBar.add(finish);
 	}
 	
 	private void 
@@ -545,54 +577,7 @@ implements IView
 		);
 	}
 	
-	public boolean 
-	valid_inputs() 
-	{
-		boolean valid_inputs = true;
-		
-		Shell shell
-			= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-		
-		if(!this.validPortEntry(this.port_text.getText())){
-			this.displayErrorDialog(
-				shell, 
-				"The port entry cannot be empty and must contain only numbers"
-			);
-			
-			valid_inputs = false;
-		}
-		if(this.host_text.getText() == ""){
-			this.displayErrorDialog(shell, "The host name cannot be empty");
-			valid_inputs = false;
-		}
-		
-		if(this.path_text.getText() == ""){
-			this.displayErrorDialog(shell, "The directory path cannot be empty");
-			valid_inputs = false;
-		}
-		
-		return valid_inputs;
-	}
-	
-	private boolean 
-	validPortEntry
-	(String str) 
-	{
-		 if(str != null && str.length() > 0) {
-            int length = str.length();
-            boolean accept = true;
-            for(int idx = 0; idx < length && accept; idx++) {
-                accept = Character.isDigit(str.charAt(idx));
-            }
-            if(accept) {
-                return true;
-            }
-        }
-		 
-		return false;
-	}
-	
-	private void 
+	public void 
 	displayErrorDialog
 	(Shell shell, String string) 
 	{
@@ -649,6 +634,348 @@ implements IView
 		file_tree_content_provider.add(path);
 		this.refresh();
 	}
+	
+	class 
+	StartAction 
+	extends Action 
+	implements ISnapshotEventListener
+	{
+		private final SnapshotEventManager 	snapshot_event_manager;
+		private IController 				controller;
+		private EventLogger 				event_logger;
+		
+		public 
+		StartAction
+		(	SnapshotEventManager snapshot_event_manager, IController controller )
+		{
+			this.controller
+				= controller;
+			this.event_logger
+				= new EventLogger();
+			
+			this.snapshot_event_manager 
+				= snapshot_event_manager;
+			this.snapshot_event_manager.addSnapshotEventListener(
+				this
+			);
+			this.setToolTipText
+			("Record a profile snapshot.");
+			this.setEnabled(true);
+		}
+		
+		@Override
+		public void
+		setEnabled
+		(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			
+			String image_path
+				= enabled 
+				? "icons/record.png"
+				: "icons/record_inactive.png";
+		
+			this.setImageDescriptor
+			(Activator.getImageDescriptor(image_path));
+		}
+		
+		@Override
+		public void 
+		run()
+		{
+			// the start action is now also responsible for
+			// implementing the data check functionality
+			if( !this.values_present() )
+				return;
+
+			// returned array should be ordered as in gui layout
+			this.controller.setModelProperty(
+				Constants.PATH_PROPERTY, SnapshotView.this.path_text.getText()
+			);
+			this.controller.setModelProperty(
+				Constants.NAME_PROPERTY, SnapshotView.this.name_text.getText()
+			);
+			this.controller.setModelProperty(
+				Constants.HOST_PROPERTY, SnapshotView.this.host_text.getText()
+			);
+			this.controller.setModelProperty(
+				Constants.PORT_PROPERTY, SnapshotView.this.port_text.getText()
+			);
+			
+		    Snapshot snapshot 
+		    	= this.getSnapshot();
+		    
+		    try{
+		    	this.inner_run(snapshot);
+		    }
+		    catch(IOException ex){
+	        	ex.printStackTrace();
+	        }
+		}
+		
+		public boolean 
+		values_present() 
+		// the system will also validate the inputed data when it
+		// attempts to create the snapshot
+		{
+			Shell shell
+				= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+			
+			StringBuilder error_message 
+				= new StringBuilder();
+			
+			if( SnapshotView.this.path_text.getText().equals("") ){
+				error_message.append("The directory path cannot be empty\n");
+			}
+			if( !this.validPortEntry( SnapshotView.this.port_text.getText()) ){
+				error_message.append(
+					"The port entry cannot be empty and must contain only numbers\n"
+				);
+			}
+			if( SnapshotView.this.host_text.getText().equals("") ){
+				error_message.append("The host name cannot be empty\n");
+			}
+			
+			if(error_message.length() != 0 ){
+				SnapshotView.this
+					.displayErrorDialog(shell, error_message.toString());
+			}
+			return error_message.length() == 0;
+		}
+		
+		private boolean 
+		validPortEntry
+		(String str) 
+		{
+			 if(str != null && str.length() > 0) {
+	            int length = str.length();
+	            boolean accept = true;
+	            for(int idx = 0; idx < length && accept; idx++) {
+	                accept = Character.isDigit(str.charAt(idx));
+	            }
+	            if(accept) {
+	                return true;
+	            }
+	        }
+			 
+			return false;
+		}
+
+		private void 
+		inner_run
+		(Snapshot snapshot) 
+		throws IOException 
+		{
+		    if (snapshot != null) {
+		    	boolean gotException = false;
+		    	try {
+		    		snapshots.com.mentorgen.tools.util.profile.File.doFile(
+		    			snapshot.getHost(),
+		    			snapshot.getPort(),
+		    			snapshot.getPathAndName());
+		    	}
+		    	catch (IOException ioex) {
+		    		gotException = true;
+		        	this.event_logger.updateConsoleLog(ioex);
+		    	}
+				      
+		    	// if no exception, ie the above succeeded, then go to start
+		    	// command and report file success
+		    	if (!gotException) {
+		    		this.event_logger.updateForSuccessfulCall(
+		    			"file"
+		    		);
+		    		try {
+		    			Start.doStart(snapshot.getHost(),
+		    					snapshot.getPort());
+		    		}
+		    		catch (IOException ioex) {
+		    			gotException = true;
+		    			this.event_logger.updateConsoleLog(ioex);
+		    		}
+		    	}
+		    	// if no exception, ie the above succeeded, then
+		    	//report start success and send event
+		    	if (!gotException) {
+		    	  	this.event_logger.updateForSuccessfulCall(
+		    	  		"start"
+		    	  	);
+					this.snapshot_event_manager.fireSnapshotEvent(
+							new SnapshotEvent(
+					            SnapshotEvent.ID_SNAPSHOT_STARTED, 
+					            snapshot
+					        )
+						);
+					this.controller.setModelProperty(
+							Constants.NAME_PROPERTY, 
+							snapshot.getName()
+						);
+					this.setEnabled(false);
+		    	}
+		    } 
+		}
+
+		private Snapshot 
+		getSnapshot() 
+		{
+			ISnapshotInfoModel info_model
+				= SnapshotView.this.active_snapshot_model;
+			
+		    // check path specified
+		    String path = info_model.getSnapshotPath();	    
+		    if (path == null || path.trim().length() == 0) {
+		    	EventLogEvent event
+		    		= this.event_logger.getErrorEvent();
+		    	event.addProperty(
+		    		Constants.KEY_ERR_MSSG, 
+		    		"A folder in which to store the snapshot " 
+		    		+ "must be specified."
+		    	);
+		    	EventLogActionHandler action_handler
+		    		= Activator.getDefault().getActionHandler();
+		    	action_handler.performActionByKey(
+		    		Constants.ACTKEY_ERROR_DISPLAY, 
+		    		event
+		    	);
+		    	return null; 
+		    }
+		    
+		    File pathFile = new File(path);
+		    if (!pathFile.exists() || !pathFile.isDirectory()) {
+		    	EventLogEvent event
+		    		= this.event_logger.getErrorEvent();
+		    	event.addProperty(
+		    		Constants.KEY_ERR_MSSG,
+		    		"The folder ({0}) does not exist."
+		    	);
+		    	event.addProperty(
+		    		Constants.KEY_ERR_VALUES,
+		    		new Object[]{ pathFile.getPath() }
+		    	);
+		    	EventLogActionHandler action_handler
+		    		= Activator.getDefault().getActionHandler();
+		    	action_handler.performActionByKey(
+		    		Constants.ACTKEY_ERROR_DISPLAY,
+		    		event
+		    	);
+		    	
+		    	return null; 
+		    }
+		    
+		    if (!pathFile.canWrite() || !pathFile.canRead()) {
+		    	EventLogEvent event
+		    		= this.event_logger.getErrorEvent();
+		    	event.addProperty(
+		    		Constants.KEY_ERR_MSSG, 
+		    		"The folder ({0}) must have both read and "
+		    		+ "write access."
+		    	);
+		    	event.addProperty(
+		    		Constants.KEY_ERR_VALUES, 
+		    		new Object[]{pathFile.getPath()}
+		    	);
+		    	EventLogActionHandler event_handler
+		    		= Activator.getDefault().getActionHandler();
+		    	event_handler.performActionByKey(
+		    		Constants.ACTKEY_ERROR_DISPLAY,
+		    		event
+		    	);
+		    	
+		    	return null;
+		    }
+		    
+		    String port 		
+		    	= info_model.getSnapshotPort();
+		    String host 		
+		    	= info_model.getSnapshotHost();
+		    final String origName 	
+		    	= info_model.getSnapshotName();
+		    
+		    String newName 				
+		    	=  this.setNewName(origName, pathFile);
+		   
+		    return new Snapshot(
+		        pathFile.getPath(),
+		        newName,
+		        origName,
+		        port,
+		        host
+		    );
+		  }
+		
+		private String 
+		setNewName
+		(String origName, File pathFile) 
+		{
+			String newName;
+			
+			// modify name if it already exists and is not empty
+		    if (origName.length() > 0) {
+		      boolean nameExists = true;
+		      String tempName = origName;
+		      String nameSuffix = ".txt";
+		      if (	origName.endsWith(".txt") 
+		    		|| origName.endsWith(".xml")) 
+		      {
+		        tempName 
+		        	= origName.substring(0, origName.length() - 4);
+		        nameSuffix 
+		        	= origName.substring(origName.length() - 4);
+		      }
+		      StringBuilder buf = new StringBuilder(tempName);
+		      int baseLength = buf.length();
+		      for (int cnt = 0; nameExists; cnt++) {
+		        buf.setLength(baseLength);
+		        if (cnt > 0) {
+		          buf.append(cnt);
+		        }
+		        buf.append(nameSuffix);
+		        File txtPath = new File(pathFile, buf.toString());
+		        nameExists = txtPath.exists();
+		      }
+		      newName = buf.toString();
+		    }
+		    // name is empty, create name based on current time
+		    // but leave origName empty
+		    else {
+		      StringBuilder buf = new StringBuilder();
+		      buf.append(
+		    	new SimpleDateFormat("yyyyMMdd-HHmmss").format(
+		    		new Date()
+		    	)
+		    	);
+		      buf.append(".txt");
+		      newName = buf.toString();
+		    }
+		    return newName;
+		}
+		
+		 /* ---------------- from SnapshotEventListener -------- */
+		@Override
+		public void
+		handleSnapshotEvent
+		(SnapshotEvent event) 
+		{
+			switch (event.getId()) {
+			    case SnapshotEvent.ID_SNAPSHOT_CAPTURED:
+			    case SnapshotEvent.ID_SNAPSHOT_CAPTURE_FAILED:
+				    this.setEnabled(true);
+				    break;
+			}
+		}
+	}
+
+/*	@Override
+	public void 
+	propertyChange
+	( org.eclipse.jface.util.PropertyChangeEvent event ) 
+	{
+		if(event.getProperty().equals(
+			Constants.SNAPSHOT_VIEW_UPDATE_MODEL_NAME
+		)){
+			this.refresh();
+		}
+	}*/
 }
 
 // note : the following class and the next modeled themselves
@@ -656,11 +983,7 @@ implements IView
 // http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/DemonstratesTreeViewer.htm
 class 
 FileTreeContentProvider 
-implements ITreeContentProvider 
-// TODO: Let the user add a folder, or automatically add a folder when it is used 
-// in the browser
-// TODO: Let the user remove a folder
-// TODO: let the user double click a file to open it in the model editor
+implements ITreeContentProvider
 // TODO: try to remove the snapshot events classes and have a pure MVC (pure is good)
 {
 	Set<File> snapshot_folders
@@ -675,22 +998,24 @@ implements ITreeContentProvider
 	{
 		File default_directory
 			= new File(path);
-		this.snapshot_folders.add( default_directory );
+		if(default_directory.exists()){
+			this.snapshot_folders.add( default_directory );
+		}
 		this.snapshot_models
 			= new HashMap<String, Set<File>>();
 	}
 	
 	public VirtualModelFileInput 
 	addVirtualModelInput
-	( String string ) 
+	( String absolute_path ) 
 	{
 		int count = 1;
 		Set<File> models = null;
 		
 		// if contained, 
-		if( this.snapshot_models.containsKey(string) ){
-			count = this.snapshots_map.get(string) + 1;
-			models = this.snapshot_models.get(string);
+		if( this.snapshot_models.containsKey(absolute_path) ){
+			count = this.snapshots_map.get(absolute_path) + 1;
+			models = this.snapshot_models.get(absolute_path);
 		}
 		else {
 			models = new TreeSet<File>( 
@@ -700,16 +1025,18 @@ implements ITreeContentProvider
 						return arg0.getName().compareTo(arg1.getName());
 					}
 				});
-			this.snapshot_models.put(string, models);
+			this.snapshot_models.put(absolute_path, models);
 		}
 		
+		String virtual_file_name
+			= "Model " + count;
 		VirtualModelFile virtual_file 
-			= new VirtualModelFile(string, "Model " + count);
+			= new VirtualModelFile(absolute_path, virtual_file_name );
 		VirtualModelFileInput return_value
-			= new VirtualModelFileInput(string, virtual_file);
+			= new VirtualModelFileInput(absolute_path, virtual_file);
 	
 		models.add(return_value);
-		this.snapshots_map.put(string, count);
+		this.snapshots_map.put(absolute_path, count);
 		
 		return return_value;
 	}

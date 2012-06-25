@@ -13,8 +13,7 @@ public class SimulatorFactory {
     public enum SimulatorType{
         
         STATIC_TIME_SIMULATOR ("Static Time Simulator (No Trace Replay)"),
-        TIME_SIMULATOR("Time Simulator"),
-        NONE("Select a Simulator ...");
+        TIME_SIMULATOR("Time Simulator");
         
          private String text;
 
