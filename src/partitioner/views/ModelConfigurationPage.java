@@ -828,7 +828,7 @@ extends ScrolledForm
 			super("Create Model");
 			
 			this.profiler_trace_path
-				= profiler_trace_path;
+				= profiler_trace_path.trim();
 			this.gui_state_model
 				= gui_state_model;
 		}
