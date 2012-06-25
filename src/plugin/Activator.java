@@ -18,8 +18,13 @@ extends AbstractUIPlugin
 	
 	private EventLogActionHandler action_handler;
 	private EventLogListModel event_log_list_model;
-//	private SnapshotsListModel snapshots_list_model;
+	private Object file_tree_content_provider;
 	
+	// to implement persistence in the snapshot view I have...options:
+	//		1) store the necessary data in the activator when it needs to 
+	//		be saved, and restore upon load
+	//		2) store in the file system
+	//		3) 
 	public 
 	Activator() 
 	{}
@@ -36,8 +41,6 @@ extends AbstractUIPlugin
 			= new EventLogActionHandler();
 		this.event_log_list_model
 			= new EventLogListModel();
-	//	this.snapshots_list_model
-	//		= new SnapshotsListModel();
 	}
 
 	public void 
@@ -74,11 +77,18 @@ extends AbstractUIPlugin
 	{
 		return this.event_log_list_model;
 	}
-	
-	/*
-	public SnapshotsListModel
-	getSnapshotsListModel()
+
+	public void 
+	persistTreeContentProvider
+	( Object missing ) 
 	{
-		return this.snapshots_list_model;
-	}*/
+		this.file_tree_content_provider
+			= missing;
+	}
+	
+	public Object
+	getTreeContentProvider()
+	{
+		return this.file_tree_content_provider;
+	}
 }

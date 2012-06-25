@@ -34,6 +34,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -94,10 +95,25 @@ implements IView
 			= new ActiveSnapshotModel();
 	}
 
+	@Override
+	public void 
+	dispose()
+	{
+		// temporary solution: implement true persistence later
+		Activator.getDefault().persistTreeContentProvider(
+			this.file_tree_content_provider
+		);
+		super.dispose();
+	}
+	
 	public void 
 	createPartControl
 	( Composite parent ) 
 	{
+		this.file_tree_content_provider
+			= (FileTreeContentProvider)
+				Activator.getDefault().getTreeContentProvider();
+		
 		GridLayout parent_layout
 			= new GridLayout(1, true);
 		parent.setLayout(parent_layout);
@@ -125,10 +141,12 @@ implements IView
 		grid_data 
 			= new GridData(GridData.FILL_BOTH);
 		
-		this.file_tree_content_provider
-			= new FileTreeContentProvider(this.getPreviousPath(), this.snapshot_tree_viewer); 
+		if( this.file_tree_content_provider == null ){
+			this.file_tree_content_provider
+				= new FileTreeContentProvider(this.getPreviousPath(), this.snapshot_tree_viewer); 
+		}
 		snapshot_tree_viewer.setContentProvider( 
-				this.file_tree_content_provider
+			this.file_tree_content_provider
 		);
 		
 		snapshot_tree_viewer.setLabelProvider( new FileTreeLabelProvider() );
@@ -1147,7 +1165,8 @@ implements ILabelProvider
  
   public void 
   dispose() 
-  {}
+  {
+  }
 
   public boolean 
   isLabelProperty
