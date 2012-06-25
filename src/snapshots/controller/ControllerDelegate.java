@@ -104,4 +104,18 @@ implements IController
 			}
         }
 	}
+	
+	@Override
+	public void
+	alertPeers
+	( String property_name, Object source, Object new_value )
+	{
+		System.out.println("Posting to siblings");
+		// nascent communication method
+		// may become more complex as more data is transmitted and
+		// use case becomes more sophisticated
+		PropertyChangeEvent evt 
+			= new PropertyChangeEvent(source, property_name, null, new_value);
+		this.propertyChange(evt);
+	}
 }

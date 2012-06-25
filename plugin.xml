@@ -44,11 +44,6 @@
             allPopups="false"
             locationURI="popup:plugin.views.snapshot_view">
          <command
-               commandId="plugin.addSnapshotFolder"
-               id="AddSnapshotFolder"
-               style="push">
-         </command>
-         <command
                commandId="plugin.ClearFolders"
                id="ClearFolders"
                style="push">
@@ -58,8 +53,42 @@
                id="RemoveSnapshotsFolder"
                style="push">
          </command>
+         <command
+               commandId="plugin.addSnapshotFolder"
+               id="AddSnapshotFolder"
+               style="push">
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+         <toolbar id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.analysis_toolbar">
+            <command
+                  commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.MouseMode"
+                  icon="icons/mouse2.png"
+                  id="MouseMode"
+                  label="MouseMode"
+                  style="pulldown">
+            </command>
+         </toolbar>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="menu:plugin.addSnapshotFolder">
+         <command
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.command7"
+               id="Picking"
+               style="push">
+         </command>
+         <command
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.transforming"
+               id="Transforming"
+               style="push">
+         </command>
       </menuContribution>
    </extension>
+   
+   
    <extension
          point="org.eclipse.ui.handlers">
       <handler
@@ -74,9 +103,22 @@
             class="ClearFolders"
             commandId="plugin.ClearFolders">
       </handler>
+      <handler
+            class="addSnapshotFolder"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.MouseMode">
+      </handler>
+      <handler
+            class="addSnapshotFolder"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.transforming">
+      </handler>
+      <handler
+            class="addSnapshotFolder"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.picking">
+      </handler>
    </extension>
-   <extension
-         point="org.eclipse.ui.commands">
+   
+   
+   <extension point="org.eclipse.ui.commands">
       <command
             id="plugin.addSnapshotFolder"
             name="Add Snapshot Folder">
@@ -89,6 +131,17 @@
             id="plugin.ClearFolders"
             name="Clear Contents">
       </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.MouseMode"
+            name="Set Mouse Mode">
+      </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.transforming"
+            name="Transforming">
+      </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.picking"
+            name="Picking">
+      </command>
    </extension>
-
 </plugin>

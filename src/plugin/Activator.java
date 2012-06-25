@@ -6,7 +6,6 @@ import org.osgi.framework.BundleContext;
 
 import snapshots.events.logging.EventLogActionHandler;
 import snapshots.model.EventLogListModel;
-import snapshots.model.SnapshotsListModel;
 
 public class 
 Activator 
@@ -19,7 +18,7 @@ extends AbstractUIPlugin
 	
 	private EventLogActionHandler action_handler;
 	private EventLogListModel event_log_list_model;
-	private SnapshotsListModel snapshots_list_model;
+//	private SnapshotsListModel snapshots_list_model;
 	
 	public 
 	Activator() 
@@ -37,8 +36,8 @@ extends AbstractUIPlugin
 			= new EventLogActionHandler();
 		this.event_log_list_model
 			= new EventLogListModel();
-		this.snapshots_list_model
-			= new SnapshotsListModel();
+	//	this.snapshots_list_model
+	//		= new SnapshotsListModel();
 	}
 
 	public void 
@@ -76,9 +75,10 @@ extends AbstractUIPlugin
 		return this.event_log_list_model;
 	}
 	
+	/*
 	public SnapshotsListModel
 	getSnapshotsListModel()
 	{
 		return this.snapshots_list_model;
-	}
+	}*/
 }

@@ -1,54 +1,38 @@
 package snapshots.action;
 
+import java.beans.PropertyChangeEvent;
 import java.io.IOException;
-
 
 import org.eclipse.jface.action.Action;
 
 import plugin.Activator;
 import plugin.Constants;
 
-
 import snapshots.com.mentorgen.tools.util.profile.Finish;
 import snapshots.controller.IController;
-import snapshots.events.ISnapshotEventListener;
-import snapshots.events.SnapshotEvent;
-import snapshots.events.SnapshotEventManager;
 import snapshots.events.logging.EventLogger;
 import snapshots.model.Snapshot;
-
-
+import snapshots.views.IView;
 
 public class 
 FinishAction 
 extends Action 
-implements ISnapshotEventListener
+implements IView
 {
-	private final SnapshotEventManager 	snapshot_event_manager;
 	private Snapshot 					current_snapshot;
 	private EventLogger					event_logger;
-	private IController 				active_snapshot_controller;
-	private IController 				snapshot_list_controller;
+	private IController 				controller;
 	
 	public
 	FinishAction
-	( 	SnapshotEventManager snapshot_event_manager, 
-		IController active_snapshot_controller,
-		IController snapshot_list_controller )
+	( IController controller )
 	{
 		this.event_logger 
 			= new EventLogger();
-		this.active_snapshot_controller
-			= active_snapshot_controller;
-		this.snapshot_list_controller
-			= snapshot_list_controller;
+		this.controller
+			= controller;
 		
-		// we'll see if something else needs a reference to this
-		this.snapshot_event_manager
-			= snapshot_event_manager;
-		this.snapshot_event_manager.addSnapshotEventListener(
-			this
-		);
+		this.controller.addView(this);
 		
 		this.setToolTipText
 		("Disconnect from application to produce snapshot.");
@@ -103,41 +87,46 @@ implements ISnapshotEventListener
 			this.event_logger.updateForSuccessfulCall(
 				"finish"
 			);
-			snapshot_event_manager.fireSnapshotEvent(
-				new SnapshotEvent(
-					SnapshotEvent.ID_SNAPSHOT_CAPTURED,
-					this.current_snapshot
-				)
+			this.controller.alertPeers(
+				//new SnapshotEvent(
+					Constants.SNAPSHOT_CAPTURED_PROPERTY,
+					this,
+					//this.current_snapshot
+					null
+				//)
 			);
 	    }
 	    else {
-	    	snapshot_event_manager.fireSnapshotEvent(
-	    		new SnapshotEvent(
-	    			SnapshotEvent.ID_SNAPSHOT_CAPTURE_FAILED,
-	    			this.current_snapshot
-	    		)
+	    	this.controller.alertPeers(
+	    		Constants.SNAPSHOT_CAPTURE_FAILED,
+	    		this,
+	    		null
 	    	);
 	    }
-		this.active_snapshot_controller.setModelProperty(
+		this.controller.setModelProperty(
 			Constants.NAME_PROPERTY, ""
 		);
-		this.snapshot_list_controller.setModelProperty(
-			Constants.SNAPSHOT_PROPERTY, this.current_snapshot
+		this.controller.alertPeers(
+			Constants.SNAPSHOT_CAPTURED_PROPERTY, 
+			this, null
 		);
 	    this.setEnabled(false);
 	}
 
-	 /* ---------------- from SnapshotEventListener ------ */
-
 	@Override
 	public void 
-	handleSnapshotEvent
-	(SnapshotEvent event) 
+	modelPropertyChange
+	( PropertyChangeEvent evt ) 
 	{
-		if (event.getId() == SnapshotEvent.ID_SNAPSHOT_STARTED) {
-		      this.setEnabled(true);
+		switch(evt.getPropertyName()){
+		case Constants.SNAPSHOT_STARTED:
+			this.setEnabled(true);
 		      this.current_snapshot 
-		      	= event.getSnapshot();
-		    }
+		      	= (Snapshot) evt.getNewValue();
+			break;
+		default:
+			System.out.println("FinishAction swallowing event: " + evt.getPropertyName());
+			break;
+		}
 	}
 }
