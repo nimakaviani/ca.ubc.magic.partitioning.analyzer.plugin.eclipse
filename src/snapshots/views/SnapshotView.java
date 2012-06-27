@@ -34,7 +34,6 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.dialogs.ErrorDialog;
-import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -617,6 +616,13 @@ implements IView
 		this.refresh();
 	}
 	
+	public void
+	removeModel
+	( VirtualModelFileInput model )
+	{
+		this.file_tree_content_provider.remove_model( model );
+	}
+	
 	private FileTreeContentProvider
 	getSnapshotTreeContentProvider()
 	{
@@ -991,6 +997,24 @@ implements ITreeContentProvider
 			= new HashMap<String, Set<File>>();
 	}
 	
+	public void 
+	remove_model
+	( VirtualModelFileInput model ) 
+	{
+		// to delete we need the path
+		String full_path
+			= model.getAbsolutePath();
+		System.out.println(full_path);
+		if( this.snapshot_models.containsKey( full_path )){
+			System.out.println("Contained.");
+			Set<File> models
+				= this.snapshot_models.get( full_path );
+			models.remove(model);
+		} else {
+			System.out.println("That is not contained.");
+		}
+	}
+
 	public VirtualModelFileInput 
 	addVirtualModelInput
 	( String absolute_path ) 

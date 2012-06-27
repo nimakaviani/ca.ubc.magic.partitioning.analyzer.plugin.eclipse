@@ -38,16 +38,16 @@ public class
 PartitionerGUIStateModel 
 implements IModel
 {
-	private PropertyChangeDelegate property_change_delegate;
+	private PropertyChangeDelegate 	property_change_delegate;
 	
-	private ModuleCoarsenerType mModuleType; 
-	private PartitionerType partitioner_type;
-	private InteractionCostType interaction_cost_type;
-	private ExecutionCostType execution_cost_type;
+	private ModuleCoarsenerType 	mModuleType; 
+	private PartitionerType 		partitioner_type;
+	private InteractionCostType 	interaction_cost_type;
+	private ExecutionCostType 		execution_cost_type;
 
-	private volatile	String profiler_trace;  
-	private volatile 	String module_exposer;
-	private volatile 	String host_configuration; 
+	private volatile String			profiler_trace;  
+	private volatile String 		module_exposer;
+	private volatile String 		host_configuration; 
 	
 	private ModuleModelHandler mmHandler;
 	private SimulationFramework mSimFramework; 
@@ -113,7 +113,7 @@ implements IModel
 	private void 
     initFilters() 
     { 
-    	mFilterMap 
+    	this.mFilterMap 
     		= new HashMap<String, IFilter>();
     	this.active_host_filter
     		= null;
@@ -498,29 +498,6 @@ implements IModel
 		return this.mModuleModel;
 	}
 
-	// dead code - to be removed later
-	/* 
-	public static String
-	AbbreviatePath
-	( String path_arg )
-	{
-		String path = path_arg.replace("\\", "/");
-		
-		String[] portions
-			= path.split("/");
-		StringBuilder sb = new StringBuilder();
-		
-		int start 
-			= portions.length > 2 
-			? portions.length - 3 
-			: 0;
-		for( int i = start; i < portions.length; ++i ){
-			sb.append("/" + portions[i]);
-		}
-		
-		return sb.toString();
-	} */
-	
 	// called from swing worker 
 	// TODO: thread safety concerns have been reintroduced in full force
 	private void 

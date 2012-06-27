@@ -58,6 +58,29 @@
                id="AddSnapshotFolder"
                style="push">
          </command>
+         <command
+               commandId="plugin.RemoveModel"
+               id="RemoveModel"
+               style="push">
+            <visibleWhen
+                  checkEnabled="true">
+               <and>
+                  <with
+                        variable="selection">
+                     <count
+                           value="1">
+                     </count>
+                  </with>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="snapshots.views.VirtualModelFileInput">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
       </menuContribution>
       <menuContribution
             allPopups="false"
@@ -104,6 +127,10 @@
             commandId="plugin.ClearFolders">
       </handler>
       <handler
+            class="RemoveModel"
+            commandId="plugin.RemoveModel">
+      </handler>
+      <handler
             class="addSnapshotFolder"
             commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.MouseMode">
       </handler>
@@ -142,6 +169,10 @@
       <command
             id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.picking"
             name="Picking">
+      </command>
+      <command
+            id="plugin.RemoveModel"
+            name="Remove Model">
       </command>
    </extension>
 </plugin>
