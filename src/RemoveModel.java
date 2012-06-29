@@ -51,7 +51,8 @@ extends AbstractHandler
 							try {
 								if(ref.getEditorInput() == model ){
 									editor_page.closeEditor(ref.getEditor(false), false);
-									// one option: get all editors and find the one with the right tooltip
+									// one option: get all editors and find the one with the 
+									// right tooltip
 									execution_success 
 										= true;
 									break;
