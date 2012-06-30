@@ -16,7 +16,6 @@ import javax.swing.SwingUtilities;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -29,8 +28,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -46,7 +43,6 @@ import org.osgi.service.event.EventAdmin;
 import partitioner.models.PartitionerGUIStateModel;
 import plugin.Constants;
 import snapshots.controller.ControllerDelegate;
-import snapshots.views.SnapshotView;
 import snapshots.views.VirtualModelFileInput;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
@@ -674,24 +670,7 @@ extends ScrolledForm
 						ModelConfigurationPage.this.module_exposer_text.getText()
 					);
 					
-					ModelConfigurationPage.this.host_config_text.setEditable(false);
-					ModelConfigurationPage.this.module_exposer_text.setEditable(false);
-					
 					ModelConfigurationPage.this.setVisualizationAction();
-					ModelConfigurationPage.this.actions_composite.setVisible(false);
-					
-					ModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
-					ModelConfigurationPage.this.exposure_button.setEnabled(false);
-					
-					ModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
-					ModelConfigurationPage.this.host_config_browse.setVisible(false);
-					ModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
-					
-					ModelConfigurationPage.this
-						.perform_partitioning_button.setEnabled(false);
-					ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
-					
-					ModelConfigurationPage.this.updateModelName();
 				}
 			}
 		);
@@ -852,11 +831,36 @@ extends ScrolledForm
 				this.gui_state_model.finished();
 				visualizeModuleModel(); 
 				
+				Display.getDefault().asyncExec( 
+					new Runnable(){
+						@Override
+						public void run() 
+						{
+							ModelConfigurationPage.this.host_config_text.setEditable(false);
+							ModelConfigurationPage.this.module_exposer_text.setEditable(false);
+							
+							ModelConfigurationPage.this.actions_composite.setVisible(false);
+							
+							ModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
+							ModelConfigurationPage.this.exposure_button.setEnabled(false);
+							
+							ModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
+							ModelConfigurationPage.this.host_config_browse.setVisible(false);
+							ModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
+							
+							ModelConfigurationPage.this
+								.perform_partitioning_button.setEnabled(false);
+							ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
+							
+							ModelConfigurationPage.this.updateModelName();
+						}
+					});
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			
 			return Status.OK_STATUS;
 		}
 		

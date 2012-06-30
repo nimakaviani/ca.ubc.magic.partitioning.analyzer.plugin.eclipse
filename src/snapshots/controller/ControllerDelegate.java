@@ -104,4 +104,14 @@ implements IController
 			}
         }
 	}
+	
+	@Override
+	public void
+	alertPeers
+	( String property_name, Object source, Object new_value )
+	{
+		PropertyChangeEvent evt 
+			= new PropertyChangeEvent(source, property_name, null, new_value);
+		this.propertyChange(evt);
+	}
 }

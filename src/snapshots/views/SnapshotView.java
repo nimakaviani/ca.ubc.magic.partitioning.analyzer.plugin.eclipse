@@ -1,7 +1,6 @@
 package snapshots.views;
 
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -53,14 +52,11 @@ import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;
 
-import snapshots.action.FinishAction;
-import snapshots.action.JIPViewerAction;
 import snapshots.com.mentorgen.tools.util.profile.Start;
 import snapshots.controller.ControllerDelegate;
+import snapshots.controller.FinishAction;
 import snapshots.controller.IController;
-import snapshots.events.ISnapshotEventListener;
-import snapshots.events.SnapshotEvent;
-import snapshots.events.SnapshotEventManager;
+import snapshots.controller.JIPViewerAction;
 import snapshots.events.logging.ErrorDisplayAction;
 import snapshots.events.logging.EventLogActionHandler;
 import snapshots.events.logging.EventLogEvent;
@@ -98,10 +94,25 @@ implements IView
 			= new ActiveSnapshotModel();
 	}
 
+	@Override
+	public void 
+	dispose()
+	{
+		// temporary solution: implement true persistence later
+		Activator.getDefault().persistTreeContentProvider(
+			this.file_tree_content_provider
+		);
+		super.dispose();
+	}
+	
 	public void 
 	createPartControl
 	( Composite parent ) 
 	{
+		this.file_tree_content_provider
+			= (FileTreeContentProvider)
+				Activator.getDefault().getTreeContentProvider();
+		
 		GridLayout parent_layout
 			= new GridLayout(1, true);
 		parent.setLayout(parent_layout);
@@ -129,16 +140,17 @@ implements IView
 		grid_data 
 			= new GridData(GridData.FILL_BOTH);
 		
-		this.file_tree_content_provider
-			= new FileTreeContentProvider(this.getPreviousPath(), this.snapshot_tree_viewer); 
+		if( this.file_tree_content_provider == null ){
+			this.file_tree_content_provider
+				= new FileTreeContentProvider(this.getPreviousPath(), this.snapshot_tree_viewer); 
+		}
 		snapshot_tree_viewer.setContentProvider( 
-				this.file_tree_content_provider
+			this.file_tree_content_provider
 		);
 		
 		snapshot_tree_viewer.setLabelProvider( new FileTreeLabelProvider() );
 		snapshot_tree_viewer.getTree().setLayoutData(grid_data);
 		snapshot_tree_viewer.getTree().pack();
-		// the following line generates an error
 		snapshot_tree_viewer.setInput("hello");
 		
 		// from example code found in the eclipse plugins book
@@ -191,11 +203,10 @@ implements IView
 										= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 									IWorkbenchPage page = window.getActivePage();
 									try {
-										IEditorPart new_editor
-											= page.openEditor(
-												input,
-												"plugin.views.model_creation_editor"
-											);
+										page.openEditor(
+											input,
+											"plugin.views.model_creation_editor"
+										);
 									} catch (PartInitException e1) {
 										e1.printStackTrace();
 									}
@@ -211,11 +222,8 @@ implements IView
 		
 		IActionBars actionBars 	
 			= super.getViewSite().getActionBars();
-		SnapshotEventManager snapshot_event_manager
-			= new SnapshotEventManager();
 		this.initializeToolbar(
-			actionBars.getToolBarManager(), 
-			snapshot_event_manager
+			actionBars.getToolBarManager()
 		);
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
@@ -315,7 +323,6 @@ implements IView
 			this.snapshot_tree_viewer
 		);
 		
-		//getSite().registerContextMenu(menuManager, this);
 		// Make the selection available
 		getSite().setSelectionProvider(
 			this.snapshot_tree_viewer
@@ -324,21 +331,17 @@ implements IView
 	
 	private void 
 	initializeToolbar
-	(IToolBarManager toolBar, SnapshotEventManager snapshot_event_manager) 
+	(IToolBarManager toolBar) 
 	{		
 		this.controller.addView(this);	
-		this.controller.addModel(Activator.getDefault().getSnapshotsListModel());
 		this.controller.addModel(Activator.getDefault().getEventLogListModel());
 		
 		IAction finish	
 			= new FinishAction(
-				snapshot_event_manager,
-				this.controller,
 				this.controller
 			);
 		IAction start	
 			= new StartAction(
-				snapshot_event_manager,
 				this.controller
 			);
 				
@@ -380,7 +383,7 @@ implements IView
 				
 				// add the new directory to the list of directories in the
 				// tree viewer
-				SnapshotView.this.addFolder(selected);
+				SnapshotView.this.addFolder( selected );
 			}
 		});
 		
@@ -532,15 +535,14 @@ implements IView
 		case Constants.NAME_PROPERTY:
 			this.name_text.setText( (String) evt.getNewValue());
 			break;
+		case Constants.SNAPSHOT_CAPTURED_PROPERTY:
+			this.snapshot_tree_viewer.setInput("hello");
+			this.snapshot_tree_viewer.refresh();
+			break;
 		case Constants.PORT_PROPERTY:
 			this.port_text.setText( (String) evt.getNewValue() );
 			System.out.println(this.port_text.getText());
 			System.out.println(this.host_text.getText());
-			break;
-		case Constants.SNAPSHOT_PROPERTY:
-			System.err.println("inside snapshotview model property change");
-			this.snapshot_tree_viewer.setInput("hello");
-			this.snapshot_tree_viewer.refresh();
 			break;
 		case Constants.EVENT_LIST_PROPERTY:
 			this.log_console_table.refresh();
@@ -614,6 +616,13 @@ implements IView
 		this.refresh();
 	}
 	
+	public void
+	removeModel
+	( VirtualModelFileInput model )
+	{
+		this.file_tree_content_provider.remove_model( model );
+	}
+	
 	private FileTreeContentProvider
 	getSnapshotTreeContentProvider()
 	{
@@ -638,29 +647,24 @@ implements IView
 	class 
 	StartAction 
 	extends Action 
-	implements ISnapshotEventListener
+	implements IView
 	{
-		private final SnapshotEventManager 	snapshot_event_manager;
 		private IController 				controller;
 		private EventLogger 				event_logger;
 		
 		public 
 		StartAction
-		(	SnapshotEventManager snapshot_event_manager, IController controller )
+		(	IController controller )
 		{
 			this.controller
 				= controller;
 			this.event_logger
 				= new EventLogger();
 			
-			this.snapshot_event_manager 
-				= snapshot_event_manager;
-			this.snapshot_event_manager.addSnapshotEventListener(
-				this
-			);
 			this.setToolTipText
 			("Record a profile snapshot.");
 			this.setEnabled(true);
+			this.controller.addView(this);
 		}
 		
 		@Override
@@ -800,16 +804,15 @@ implements IView
 		    	  	this.event_logger.updateForSuccessfulCall(
 		    	  		"start"
 		    	  	);
-					this.snapshot_event_manager.fireSnapshotEvent(
-							new SnapshotEvent(
-					            SnapshotEvent.ID_SNAPSHOT_STARTED, 
-					            snapshot
-					        )
-						);
+					this.controller.alertPeers(
+						Constants.SNAPSHOT_STARTED,
+						this,
+					    snapshot
+					);
 					this.controller.setModelProperty(
-							Constants.NAME_PROPERTY, 
-							snapshot.getName()
-						);
+						Constants.NAME_PROPERTY, 
+						snapshot.getName()
+					);
 					this.setEnabled(false);
 		    	}
 		    } 
@@ -949,33 +952,23 @@ implements IView
 		    }
 		    return newName;
 		}
-		
-		 /* ---------------- from SnapshotEventListener -------- */
+
 		@Override
-		public void
-		handleSnapshotEvent
-		(SnapshotEvent event) 
+		public void 
+		modelPropertyChange
+		( PropertyChangeEvent evt ) 
 		{
-			switch (event.getId()) {
-			    case SnapshotEvent.ID_SNAPSHOT_CAPTURED:
-			    case SnapshotEvent.ID_SNAPSHOT_CAPTURE_FAILED:
+			switch (evt.getPropertyName()) {
+			    case Constants.SNAPSHOT_CAPTURED_PROPERTY:
+			    case Constants.SNAPSHOT_CAPTURE_FAILED:
 				    this.setEnabled(true);
 				    break;
+			    default:
+			    	System.out.println("StartAction swallowed message.");
+			    	break;
 			}
 		}
 	}
-
-/*	@Override
-	public void 
-	propertyChange
-	( org.eclipse.jface.util.PropertyChangeEvent event ) 
-	{
-		if(event.getProperty().equals(
-			Constants.SNAPSHOT_VIEW_UPDATE_MODEL_NAME
-		)){
-			this.refresh();
-		}
-	}*/
 }
 
 // note : the following class and the next modeled themselves
@@ -984,7 +977,6 @@ implements IView
 class 
 FileTreeContentProvider 
 implements ITreeContentProvider
-// TODO: try to remove the snapshot events classes and have a pure MVC (pure is good)
 {
 	Set<File> snapshot_folders
 		= new CopyOnWriteArraySet<File>();
@@ -1005,6 +997,24 @@ implements ITreeContentProvider
 			= new HashMap<String, Set<File>>();
 	}
 	
+	public void 
+	remove_model
+	( VirtualModelFileInput model ) 
+	{
+		// to delete we need the path
+		String full_path
+			= model.getAbsolutePath();
+		System.out.println(full_path);
+		if( this.snapshot_models.containsKey( full_path )){
+			System.out.println("Contained.");
+			Set<File> models
+				= this.snapshot_models.get( full_path );
+			models.remove(model);
+		} else {
+			System.out.println("That is not contained.");
+		}
+	}
+
 	public VirtualModelFileInput 
 	addVirtualModelInput
 	( String absolute_path ) 
@@ -1143,21 +1153,6 @@ implements ILabelProvider
 		= new ArrayList<ILabelProviderListener>();
   }
 
-  /* keep as an example
-  public void 
-  setPreserveCase
-  ( boolean preserveCase ) 
-  {
-    // Since this attribute affects how the labels are computed,
-    // notify all the listeners of the change.
-    LabelProviderChangedEvent event = new LabelProviderChangedEvent(this);
-    for (int i = 0, n = listeners.size(); i < n; i++) {
-      ILabelProviderListener ilpl = (ILabelProviderListener) listeners
-          .get(i);
-      ilpl.labelProviderChanged(event);
-    }
-  }*/
-
   public Image 
   getImage
   ( Object arg0 ) 
@@ -1194,7 +1189,8 @@ implements ILabelProvider
  
   public void 
   dispose() 
-  {}
+  {
+  }
 
   public boolean 
   isLabelProperty

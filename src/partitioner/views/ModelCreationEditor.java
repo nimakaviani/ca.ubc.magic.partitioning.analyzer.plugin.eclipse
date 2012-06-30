@@ -182,51 +182,6 @@ implements IView
 		this.createModelAnalysisPage( model_analysis_composite );
 		this.createModelTestPage();
 		this.updateTitle();
-		
-		/*
-		
-		// it may not work given that this is not a view but an editor
-		BundleContext context 
-			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
-		EventHandler handler 
-			= new EventHandler() {
-				public void handleEvent
-				( final Event event )
-				{
-					Display parent 
-						= Display.getCurrent();
-					if( parent.getThread() == Thread.currentThread() ){
-						String profiler_trace 
-							= (String) event.getProperty("PROFILER_TRACE");
-						ModelCreationEditor.this.controller.setModelProperty(
-							Constants.GUI_PROFILER_TRACE, 
-							profiler_trace
-						);
-					}
-					else {
-						parent.syncExec( 
-							new Runnable() {
-								public void 
-								run()
-								{
-									String profiler_trace 
-										= (String) event.getProperty("PROFILER_TRACE");
-									ModelCreationEditor.this.controller.setModelProperty(
-										Constants.GUI_PROFILER_TRACE, 
-										profiler_trace
-									);
-								}
-							}
-						);
-					}
-				}
-			};
-			
-			Dictionary<String,String> properties 
-				= new Hashtable<String, String>();
-			properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
-			context.registerService(EventHandler.class, handler, properties);
-			*/
 	}
 
 	private void 
@@ -238,7 +193,6 @@ implements IView
 		// the following should be set before any SWING widgets are
 		// instantiated it reduces flicker on a resize
 		//System.setProperty("sun.awt.noerasebackground", "true");
-		
 		model_analysis_composite.addControlListener(new CleanResizeListener(frame));
 
 		SwingUtilities.invokeLater( 
@@ -470,7 +424,7 @@ implements IView
 			});
 	}
 	
-	void
+	public void
 	updateTitle()
 	// the following method is recommended by the eclipse
 	// plugins book

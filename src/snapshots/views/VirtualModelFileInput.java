@@ -24,7 +24,8 @@ implements IStorageEditorInput
 	VirtualModelFileInput
 	( String parent, IStorage storage )
 	{
-		super(parent, parent);
+		super(parent);
+		System.out.println(parent);
 		this.storage
 			= storage;
 	}
