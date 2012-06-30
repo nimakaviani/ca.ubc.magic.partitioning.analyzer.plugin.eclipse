@@ -114,4 +114,32 @@ implements IController
 			= new PropertyChangeEvent(source, property_name, null, new_value);
 		this.propertyChange(evt);
 	}
+
+	@Override
+	public void 
+	notifyModel
+	( String event_name ) 
+	{
+		for ( IModel model: registered_models ) {
+            try {
+                Method method 
+                	= model.getClass().getMethod( 
+                		"do" + event_name
+                	);
+                method.invoke(model);
+                System.out.printf(
+                	"Calling method do%s() in class %s\n",
+                	event_name, 
+                	model.getClass()
+                );
+            } catch (NoSuchMethodException ex) {
+            	System.err.printf( 
+            		"No method do%s() in class %s\n", 
+            		event_name, model.getClass()
+            	);
+            } catch (Exception ex) {
+            	ex.printStackTrace();
+			}
+        }
+	}
 }

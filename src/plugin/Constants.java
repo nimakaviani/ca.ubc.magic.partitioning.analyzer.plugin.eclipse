@@ -11,8 +11,6 @@ Constants
 		= "SnapshotHost";
 	public static final String PORT_PROPERTY 				
 		= "SnapshotPort";
-//	public static final String SNAPSHOT_PROPERTY 			
-//		= "AdditionalSnapshot";
 	public static final String KEY_ERR_DLGTITLE 			
 		= "err_dlgttle";
 	public static final String KEY_ERR_MSSG 				
@@ -69,4 +67,15 @@ Constants
 		= "snapshot_failed_message";
 	public static final String SNAPSHOT_STARTED 
 		= "snapshot_started_message";
+	
+	public static final String GENERATE_MODEL_EVENT 
+		= "ModelGeneration";
+	public static final String ACTIVE_CONFIGURATION_PANEL 
+		= "ActiveConfigurationPanel";
+	public static final String MODULE_EXCHANGE_MAP 
+		= "ModuleExchageMap";
+	public static final String SOLUTION 
+		= "Solution";
+	public static final String ALGORITHM 
+		= "Algorithm";
 }

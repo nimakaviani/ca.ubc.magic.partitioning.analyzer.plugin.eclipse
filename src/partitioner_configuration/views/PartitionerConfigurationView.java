@@ -17,14 +17,9 @@ import javax.swing.SwingUtilities;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -34,9 +29,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -73,38 +66,34 @@ PartitionerConfigurationView
 extends ViewPart
 implements IView
 {
-	private TableViewer viewer;
-	
 	private FormToolkit toolkit;
 	
 	private Section actions_composite;
 	private Label 	profiler_trace_text;
 
-	private PartitionerGUIStateModel partitioner_gui_state_model;
+	private Text 	module_exposer_text;
+	private Text 	host_config_text;
 	
-	private Text module_exposer_text;
-	private Text host_config_text;
+	private Button 	mod_exposer_browse_button;
+	private Button 	host_config_browse;
 	
-	private Button mod_exposer_browse_button;
-	private Button host_config_browse;
-	
-	private Button exposure_button;
-	private Button synthetic_node_button;
-	private Button perform_partitioning_button;
+	private Button 	exposure_button;
+	private Button 	synthetic_node_button;
+	private Button	perform_partitioning_button;
 
 	private ControllerDelegate controller;
 	
-	private Combo set_coarsener_combo;
+	private Combo 	set_coarsener_combo;
 	
-	private Combo partitioning_algorithm_combo;
-	private Combo interaction_model_combo;
-	private Combo execution_model_combo;
+	private Combo 	partitioning_algorithm_combo;
+	private Combo 	interaction_model_combo;
+	private Combo 	execution_model_combo;
 
-	private Object current_vp_lock;
+	private Object 	current_vp_lock;
 
 	private VisualizePartitioning currentVP;
 
-	private Frame frame;
+	private Frame 	frame;
 
 	private ModelCreationEditor model_creation_editor;
 	
@@ -116,9 +105,7 @@ implements IView
 	{
 		this.toolkit 
 			= new FormToolkit( parent.getDisplay() );
-		this.partitioner_gui_state_model
-			= new PartitionerGUIStateModel();
-		
+				
 		ScrolledForm sf 
 			= this.toolkit.createScrolledForm(parent);
 		
@@ -146,7 +133,6 @@ implements IView
 			= this.toolkit.createComposite( set_paths_composite, SWT.WRAP);
 		this.initializeSetPathsBarGrid( set_paths_client );
 		this.initializeSetPathsBarWidgets( set_paths_client, toolkit );
-		set_paths_client.setSize( new Point(400,400) );
 		
 		this.toolkit.paintBordersFor(set_paths_client);
 
@@ -245,7 +231,7 @@ implements IView
 		this.profiler_trace_text 
 			= toolkit.createLabel( 
 				parent, 
-				this.partitioner_gui_state_model.getProfilerTracePath()
+				""
 			);
 		toolkit.createLabel(parent, "");
 		
@@ -612,9 +598,9 @@ implements IView
 				SWT.PUSH
 			);
 		GridData grid_data 
-			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false);
 		grid_data.horizontalSpan = 1;
-		exposure_button.setLayoutData(grid_data);
+		exposure_button.setLayoutData( grid_data );
 		
 		exposure_button.addSelectionListener(
 			new SelectionAdapter()
@@ -643,7 +629,7 @@ implements IView
 	setVisualizationAction()
 	{
 		// david - make sure we are not in the middle of creating a new model
-		synchronized( this.current_vp_lock){
+		synchronized( this.current_vp_lock ){
 			if(this.currentVP != null){
 				return;
 			}
@@ -652,9 +638,11 @@ implements IView
 		try{ 
 			// for concurrency, we cache the references we will work with
 			final String profiler_trace_path
-				 = this.partitioner_gui_state_model.getProfilerTracePath();
+				 = null;
+			// this.partitioner_gui_state_model.getProfilerTracePath();
 			final PartitionerGUIStateModel gui_state_model 
-				= this.partitioner_gui_state_model;
+				= null;
+			// this.partitioner_gui_state_model;
 			
 			if(  	profiler_trace_path == null 
 					|| profiler_trace_path.equals("") ) {

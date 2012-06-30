@@ -16,5 +16,6 @@ extends PropertyChangeListener
 	public void addView(IView view);
 	public void removeView(IView view);
 	public void setModelProperty(String property_name, Object new_value);
-	public void alertPeers(String property_name, Object source, Object new_value);
+	public void alertPeers(String event_name, Object source, Object new_value);
+	public void notifyModel(String event_name);
 }

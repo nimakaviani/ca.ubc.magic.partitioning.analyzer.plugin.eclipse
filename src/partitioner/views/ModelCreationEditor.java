@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Frame;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -36,6 +37,8 @@ import plugin.Constants;
 import snapshots.controller.ControllerDelegate;
 import snapshots.views.IView;
 
+import ca.ubc.magic.profiler.dist.model.ModulePair;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
@@ -47,6 +50,8 @@ import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 //		the model. This is not such a problem, since the most important
 //		thing is to to have a model that supports multiple views...
 //		but it is annoying...get rid of it.
+// 		-> reconsideration: this is a major problem and interferes with
+//		the use of a controller as a communication mechanism between views
 // TODO: replace all initializeGrid functions with a function that
 //		takes the number of desired columns
 public class 
@@ -68,8 +73,8 @@ implements IView
     private Frame 				frame;
 	private ControllerDelegate 	controller;
 	
-	final private PartitionerGUIStateModel partitioner_gui_state_model
-		= new PartitionerGUIStateModel();
+//	final private PartitionerGUIStateModel partitioner_gui_state_model
+//		= new PartitionerGUIStateModel();
 	
 	private Combo simulation_type_combo;
 	private Label best_run_result_label;
@@ -100,9 +105,6 @@ implements IView
 	throws PartInitException 
 	{
 		super.init(site, input);
-		this.controller = new ControllerDelegate();
-		this.controller.addModel(this.partitioner_gui_state_model);
-		this.controller.addView(this);
 	}
 
 	@Override
@@ -161,11 +163,17 @@ implements IView
 	    this.frame 
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
     
+	    PartitionerGUIStateModel partitioner_gui_state_model
+	    	= new PartitionerGUIStateModel();
+	    
+	    this.controller = new ControllerDelegate();
+		this.controller.addView(this);
+		
 		this.model_configuration_page
 			= new ModelConfigurationPage( 
 				parent, 
 				this.toolkit, 
-				this.partitioner_gui_state_model,
+				partitioner_gui_state_model,
 				this.controller,
 				this.currentVP,
 				this.current_vp_lock,
@@ -498,10 +506,33 @@ implements IView
 			);
 			break;
 		case Constants.GUI_PERFORM_PARTITIONING:
-			boolean enabled 
+			{
+				boolean enabled 
+					= (boolean) evt.getNewValue();
+				this.model_configuration_page
+					.set_partitioning_widgets_enabled( enabled );
+			}
+			break;
+		case Constants.ACTIVE_CONFIGURATION_PANEL:
+			boolean enabled
 				= (boolean) evt.getNewValue();
-			this.model_configuration_page
-				.set_partitioning_widgets_enabled( enabled );
+			this.model_configuration_page.visualizeModuleModel();
+			this.model_configuration_page.set_configuration_widgets_enabled( enabled );
+			break;
+		case Constants.MODULE_EXCHANGE_MAP:
+			Map<ModulePair, InteractionData> map
+				= (Map<ModulePair, InteractionData>) evt.getNewValue();
+			this.model_configuration_page.setModuleMap(map);
+			break;
+		case Constants.ALGORITHM:
+			String algorithm
+				= (String) evt.getNewValue();
+			this.model_configuration_page.setAlgorithm( algorithm );
+			break;
+		case Constants.SOLUTION:
+			String solution
+				= (String) evt.getNewValue();
+			this.model_configuration_page.setSolution( solution );
 			break;
 		default:
 			System.out.println("Swallowing message.");

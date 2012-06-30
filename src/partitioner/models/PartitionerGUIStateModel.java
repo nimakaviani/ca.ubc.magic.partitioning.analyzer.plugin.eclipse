@@ -1,10 +1,22 @@
 package partitioner.models;
 
 import java.beans.PropertyChangeListener;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.SwingUtilities;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.swt.widgets.Display;
+
+import partitioner.views.ModelConfigurationPage;
 import plugin.Constants;
 
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
@@ -28,6 +40,7 @@ import ca.ubc.magic.profiler.parser.ModuleModelParser;
 import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
+import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
@@ -37,6 +50,8 @@ import snapshots.model.PropertyChangeDelegate;
 public class 
 PartitionerGUIStateModel 
 implements IModel
+// TODO: write an adapter around the Model so were more cleanly separte
+//		the mvc interface from the program logic
 {
 	private PropertyChangeDelegate 	property_change_delegate;
 	
@@ -71,7 +86,7 @@ implements IModel
 	private String interaction_model;
 	private String execution_model;
 	private String partitioner_solution;
-
+	
 	public
 	PartitionerGUIStateModel()
 	{
@@ -488,6 +503,12 @@ implements IModel
 		if(this.perform_partitioning){
 			this.runPartitioningAlgorithm();
 		}
+		
+		this.property_change_delegate.firePropertyChange(
+				Constants.MODULE_EXCHANGE_MAP, 
+				null, 
+				this.mModuleModel.getModuleExchangeMap()
+			);
 	}
 	
 	// called from swing worker-> obtains the reference itself
@@ -540,6 +561,99 @@ implements IModel
         }catch( Exception ex ){
         	ex.printStackTrace();
         }
+	}
+	
+	public void
+	doModelGeneration()
+	{
+		System.out.println("Generating Model");
+		
+		try{ 
+			// for concurrency, we cache the references we will work with
+			final String profiler_trace_path
+				 = this.getProfilerTracePath();
+			
+			if(  	profiler_trace_path == null 
+					|| profiler_trace_path.equals("") ) {
+				throw new Exception("No profiler dump data is provided.");   
+			}
+			
+           	if( this.getHostConfigurationPath()
+           			.equals("") ) {
+           		throw new Exception ("No host layout is provided.");
+           	}
+           	
+           	this.initializeHostModel();
+           
+           	// reading the input stream for the profiling XML document 
+           	// provided to the tool.
+           	PartitionerGUIStateModel.Job job 
+           		= new PartitionerGUIStateModel.Job(
+           			profiler_trace_path,
+           			this
+           		);
+           	
+           	job.setUser(true);
+           	job.setPriority(Job.SHORT);
+           	job.schedule();
+        }catch(Exception e){    
+        	e.printStackTrace();
+        }
+	}
+	
+	///////////////////////////////////////////////////////////////////
+	///
+	///////////////////////////////////////////////////////////////////
+	
+	class 
+	Job extends org.eclipse.core.runtime.jobs.Job
+	{
+		private String profiler_trace_path;
+		private PartitionerGUIStateModel gui_state_model;
+		
+		Job
+		( String profiler_trace_path, PartitionerGUIStateModel gui_state_model )
+		{
+			super("Create Model");
+			
+			this.profiler_trace_path
+				= profiler_trace_path;
+			this.gui_state_model
+				= gui_state_model;
+		}
+		@Override
+		protected IStatus 
+		run
+		( IProgressMonitor monitor ) 
+		{
+			try {
+				final InputStream in 
+					=  new BufferedInputStream(
+						new FileInputStream(
+							this.profiler_trace_path
+						)
+					);
+				if( monitor.isCanceled()){
+				 	return Status.CANCEL_STATUS;
+				}
+				this.gui_state_model.createModuleModel(in);
+				in.close();
+				this.gui_state_model.finished();
+			//	visualizeModuleModel(); 
+				
+				// notify the view so it runs the following in an async manner
+				PartitionerGUIStateModel.this
+					.property_change_delegate.firePropertyChange(
+						Constants.ACTIVE_CONFIGURATION_PANEL, true, false
+					);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
+			return Status.OK_STATUS;
+		}
 	}
 
 	///////////////////////////////////////////////////////////////////

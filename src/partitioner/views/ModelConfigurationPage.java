@@ -44,7 +44,9 @@ import partitioner.models.PartitionerGUIStateModel;
 import plugin.Constants;
 import snapshots.controller.ControllerDelegate;
 import snapshots.views.VirtualModelFileInput;
+import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
@@ -64,7 +66,7 @@ extends ScrolledForm
 	
 	private Label 	profiler_trace_text;
 	
-	private PartitionerGUIStateModel partitioner_gui_state_model;
+	//private PartitionerGUIStateModel partitioner_gui_state_model;
 	private Text module_exposer_text;
 	private Text host_config_text;
 	
@@ -83,13 +85,18 @@ extends ScrolledForm
 	private Combo interaction_model_combo;
 	private Combo execution_model_combo;
 
-	private Object current_vp_lock;
-
-	private VisualizePartitioning currentVP;
-
 	private Frame frame;
 
 	private ModelCreationEditor model_creation_editor;
+	
+	private Object current_vp_lock;
+	private VisualizePartitioning currentVP;
+
+	private Map<ModulePair, InteractionData> module_exchange_map;
+
+	private String algorithm;
+
+	private String solution;
 	
 	public void
 	setProfilerTracePath
@@ -110,10 +117,13 @@ extends ScrolledForm
 	{
 		super(parent);
 		
-		this.partitioner_gui_state_model
-			= partitioner_gui_state_model;
+		//this.partitioner_gui_state_model
+		//	= partitioner_gui_state_model;
 		this.controller
 			= controller;
+		this.controller.addModel(
+			partitioner_gui_state_model
+		);
 		
 		this.current_vp_lock
 			= current_vp_lock;
@@ -275,7 +285,8 @@ extends ScrolledForm
 		this.profiler_trace_text 
 			= toolkit.createLabel( 
 				parent, 
-				this.partitioner_gui_state_model.getProfilerTracePath()
+				//this.partitioner_gui_state_model.getProfilerTracePath()
+				""
 			);
 		toolkit.createLabel(parent, "");
 		
@@ -759,147 +770,113 @@ extends ScrolledForm
 				return;
 			}
 		}
-		
-		try{ 
-			// for concurrency, we cache the references we will work with
-			final String profiler_trace_path
-				 = this.partitioner_gui_state_model.getProfilerTracePath();
-			final PartitionerGUIStateModel gui_state_model 
-				= this.partitioner_gui_state_model;
-			
-			if(  	profiler_trace_path == null 
-					|| profiler_trace_path.equals("") ) {
-				throw new Exception("No profiler dump data is provided.");   
-			}
-			
-           	if( gui_state_model.getHostConfigurationPath()
-           			.equals("") ) {
-           		throw new Exception ("No host layout is provided.");
-           	}
-           	
-           	gui_state_model.initializeHostModel();
-           
-           	// reading the input stream for the profiling XML document 
-           	// provided to the tool.
-           	ModelConfigurationPage.Job job 
-           		= new ModelConfigurationPage.Job(
-           			profiler_trace_path,
-           			gui_state_model
-           		);
-           	
-           	job.setUser(true);
-           	job.setPriority(Job.SHORT);
-           	job.schedule();
-        }catch(Exception e){    
-        	e.printStackTrace();
-        }
-	}
-	
-	class 
-	Job extends org.eclipse.core.runtime.jobs.Job
-	{
-		private String profiler_trace_path;
-		private PartitionerGUIStateModel gui_state_model;
-		
-		Job
-		( String profiler_trace_path, PartitionerGUIStateModel gui_state_model )
-		{
-			super("Create Model");
-			
-			this.profiler_trace_path
-				= profiler_trace_path;
-			this.gui_state_model
-				= gui_state_model;
-		}
-		@Override
-		protected IStatus 
-		run
-		( IProgressMonitor monitor ) 
-		{
-			try {
-				final InputStream in 
-					=  new BufferedInputStream(
-						new FileInputStream(
-							this.profiler_trace_path
-						)
-					);
-				if( monitor.isCanceled()){
-				 	return Status.CANCEL_STATUS;
-				}
-				this.gui_state_model.createModuleModel(in);
-				in.close();
-				this.gui_state_model.finished();
-				visualizeModuleModel(); 
 				
-				Display.getDefault().asyncExec( 
-					new Runnable(){
-						@Override
-						public void run() 
-						{
-							ModelConfigurationPage.this.host_config_text.setEditable(false);
-							ModelConfigurationPage.this.module_exposer_text.setEditable(false);
-							
-							ModelConfigurationPage.this.actions_composite.setVisible(false);
-							
-							ModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
-							ModelConfigurationPage.this.exposure_button.setEnabled(false);
-							
-							ModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
-							ModelConfigurationPage.this.host_config_browse.setVisible(false);
-							ModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
-							
-							ModelConfigurationPage.this
-								.perform_partitioning_button.setEnabled(false);
-							ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
-							
-							ModelConfigurationPage.this.updateModelName();
-						}
-					});
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			return Status.OK_STATUS;
-		}
-		
-		private void 
-		visualizeModuleModel() 
-		{
-			SwingUtilities.invokeLater( new Runnable(){
-				@Override
-				public void
-				run()
-				{
-					synchronized(ModelConfigurationPage.this.current_vp_lock){
-						ModelConfigurationPage.this.currentVP
-							= new VisualizePartitioning( frame );
+		this.controller.notifyModel(
+			Constants.GENERATE_MODEL_EVENT
+		);
+	}
 
-						ModelConfigurationPage.this.currentVP.drawModules(
-							Job.this.gui_state_model
-								.getModuleModel().getModuleExchangeMap()
-						);  
+	public void 
+	set_configuration_widgets_enabled
+	( boolean enabled ) 
+	{
+		Display.getDefault().asyncExec( 
+				new Runnable(){
+					@Override
+					public void run() 
+					{
+						ModelConfigurationPage.this.host_config_text.setEditable(false);
+						ModelConfigurationPage.this.module_exposer_text.setEditable(false);
 						
-						try {
-							ModelConfigurationPage.this.frame.pack();
-							SwingUtilities.updateComponentTreeUI(
-									ModelConfigurationPage.this.frame
-							);
-							
-						} catch (Exception e) {
-							e.printStackTrace();
-						};
+						ModelConfigurationPage.this.actions_composite.setVisible(false);
 						
-						if(Job.this.gui_state_model.isPartitioningEnabled()){
-							ModelConfigurationPage.this.currentVP
-				            	.setAlgorithm(Job.this.gui_state_model.getAlgorithmString());
-							ModelConfigurationPage.this.currentVP
-				            	.setSolution(Job.this.gui_state_model.getSolution());
-						}
+						ModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
+						ModelConfigurationPage.this.exposure_button.setEnabled(false);
+						
+						ModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
+						ModelConfigurationPage.this.host_config_browse.setVisible(false);
+						ModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
+						
+						ModelConfigurationPage.this
+							.perform_partitioning_button.setEnabled(false);
+						ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
+						
+						ModelConfigurationPage.this.updateModelName();
 					}
+				});
+	}
+
+	public void 
+	setModuleMap
+	( Map<ModulePair, InteractionData> map ) 
+	// TODO: EXTREMELY dangerous to pass a reference 
+	//	from the model like this: see if you can create a copy
+	// 	or refactor (split the VP object into parts, or something)
+	{
+		this.module_exchange_map
+			= map;
+	}
+
+	void 
+	visualizeModuleModel() 
+	{
+		SwingUtilities.invokeLater( new Runnable(){
+			@Override
+			public void
+			run()
+			{
+				//synchronized(PartitionerGUIStateModel.this.current_vp_lock){
+					ModelConfigurationPage.this.currentVP
+						= new VisualizePartitioning( frame );
+
+					// problem: drawModules is both a view type component and
+					// a model type component: where does it go? 
+					ModelConfigurationPage.this.currentVP.drawModules(
+						ModelConfigurationPage.this.module_exchange_map
+					);  
+					
+					try {
+						ModelConfigurationPage.this.frame.pack();
+						SwingUtilities.updateComponentTreeUI(
+								ModelConfigurationPage.this.frame
+						);
+						
+					} catch (Exception e) {
+						e.printStackTrace();
+					};
+					
+					// the following can be done after the creation of the VP, but can be
+					// done easily using the existing
+					// framework; so we may treat it as a something unrelated to the above
+				
+					Display.getDefault().asyncExec(
+						new Runnable(){
+							@Override
+							public void run() {
+								if(ModelConfigurationPage.this.perform_partitioning_button.getSelection()){
+								ModelConfigurationPage.this.currentVP
+				            		.setAlgorithm( ModelConfigurationPage.this.algorithm );
+								ModelConfigurationPage.this.currentVP
+				            		.setSolution( ModelConfigurationPage.this.solution );
+								}
+							}
+						}
+					);
 				}
-			});
-		}
+		});
+	}	
+
+	public void 
+	setAlgorithm
+	( String algorithm ) 
+	{
+		this.algorithm = algorithm;
+	}
+
+	public void 
+	setSolution
+	( String solution ) 
+	{
+		this.solution = solution;
 	}
 }
