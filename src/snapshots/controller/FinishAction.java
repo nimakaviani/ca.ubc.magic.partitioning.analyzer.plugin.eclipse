@@ -20,18 +20,18 @@ implements IView
 {
 	private Snapshot 					current_snapshot;
 	private EventLogger					event_logger;
-	private IController 				controller;
+	private IController 				active_snapshot_controller;
 	
 	public
 	FinishAction
-	( IController controller )
+	( IController active_snapshot_controller )
 	{
 		this.event_logger 
 			= new EventLogger();
-		this.controller
-			= controller;
+		this.active_snapshot_controller
+			= active_snapshot_controller;
 		
-		this.controller.addView(this);
+		this.active_snapshot_controller.addView( this );
 		
 		this.setToolTipText
 		("Disconnect from application to produce snapshot.");
@@ -86,26 +86,25 @@ implements IView
 			this.event_logger.updateForSuccessfulCall(
 				"finish"
 			);
-			this.controller.alertPeers(
+			this.active_snapshot_controller.notifyPeers(
 				//new SnapshotEvent(
 					Constants.SNAPSHOT_CAPTURED_PROPERTY,
 					this,
-					//this.current_snapshot
 					null
 				//)
 			);
 	    }
 	    else {
-	    	this.controller.alertPeers(
+	    	this.active_snapshot_controller.notifyPeers(
 	    		Constants.SNAPSHOT_CAPTURE_FAILED,
 	    		this,
 	    		null
 	    	);
 	    }
-		this.controller.setModelProperty(
+		this.active_snapshot_controller.setModelProperty(
 			Constants.NAME_PROPERTY, ""
 		);
-		this.controller.alertPeers(
+		this.active_snapshot_controller.notifyPeers(
 			Constants.SNAPSHOT_CAPTURED_PROPERTY, 
 			this, null
 		);

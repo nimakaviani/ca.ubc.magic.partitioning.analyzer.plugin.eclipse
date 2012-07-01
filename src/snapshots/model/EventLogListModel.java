@@ -57,4 +57,13 @@ implements IModel
 		this.property_change_delegate.
 			removePropertyChangeListener(l);
 	}
+
+	@Override
+	public Object[] 
+	request
+	( String[] property_names ) 
+	{
+		// not implementing this functionality here
+		return new Object[]{};
+	}
 }

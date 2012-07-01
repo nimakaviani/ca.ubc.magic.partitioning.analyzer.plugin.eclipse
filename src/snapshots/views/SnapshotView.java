@@ -44,10 +44,13 @@ import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
+import org.osgi.service.event.EventAdmin;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 
+import partitioner.views.ModelConfigurationPage;
 import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;
@@ -79,13 +82,16 @@ implements IView
 	Text							port_text;
 	Text 							host_text;
 	
-	private IController 			controller 
+	private IController 			active_snapshot_controller 
 		= new ControllerDelegate();
 	EventLogTable					log_console_table;
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 	
 	private ActiveSnapshotModel 	active_snapshot_model;
+
+	private IController 			event_log_controller
+		= new ControllerDelegate();
 
 	public 
 	SnapshotView() 
@@ -109,6 +115,8 @@ implements IView
 	createPartControl
 	( Composite parent ) 
 	{
+		setupViewCommunication();
+		
 		this.file_tree_content_provider
 			= (FileTreeContentProvider)
 				Activator.getDefault().getTreeContentProvider();
@@ -228,15 +236,14 @@ implements IView
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
 		
-		this.controller.addView(this);
-		this.controller.addModel( this.active_snapshot_model );
+		this.active_snapshot_controller.addView(this);
+		this.active_snapshot_controller.addModel( this.active_snapshot_model );
 		
 		this.log_console_table
 			= new EventLogTable(parent, "Event Log", null);
 		this.log_console_table.setContents(
 			Activator.getDefault().getEventLogListModel().getEventLogList()
 		);
-		controller.addView(this);
 		
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
@@ -287,6 +294,68 @@ implements IView
 		context.registerService(EventHandler.class, handler, properties);
 	}
 	
+	private void 
+	setupViewCommunication() 
+	{
+		IWorkbench wb = PlatformUI.getWorkbench();
+		IWorkbenchWindow win = wb.getActiveWorkbenchWindow();
+		IWorkbenchPage page = win.getActivePage();
+		   
+		//the active part
+		IWorkbenchPart active = page.getActivePart();
+		//adding a listener
+		IPartListener2 pl = new IPartListener2() {
+			public void partActivated( IWorkbenchPartReference part_ref ){
+				if(part_ref.getPart(false) instanceof ModelCreationEditor ){
+					ModelCreationEditor editor
+						= (ModelCreationEditor) part_ref.getPart(false);
+					
+					System.out.println( "Active: " + part_ref.getTitle() );
+					
+					BundleContext context 
+						= FrameworkUtil.getBundle(
+							ModelConfigurationPage.class
+						).getBundleContext();
+			        ServiceReference<EventAdmin> ref 
+			        	= context.getServiceReference(EventAdmin.class);
+			        EventAdmin eventAdmin 
+			        	= context.getService( ref );
+			        Map<String,Object> properties 
+			        	= new HashMap<String, Object>();
+			        properties.put( "ACTIVE_EDITOR", editor.getState() );
+			        Event event 
+			        	= new Event("viewcommunication/syncEvent", properties);
+			        eventAdmin.sendEvent(event);
+			        event = new Event("viewcommunication/asyncEvent", properties);
+			        eventAdmin.postEvent(event);
+				}
+			}
+		
+			@Override
+			public void partBroughtToTop(IWorkbenchPartReference partRef) {	}
+			
+			@Override
+			public void partClosed(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partDeactivated(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partOpened(IWorkbenchPartReference partRef) { } 
+			
+			@Override
+			public void partHidden(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partVisible(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partInputChanged(IWorkbenchPartReference partRef) {	}
+		};
+	
+		//page.addPartListener(pl);
+	}
+
 	@Override
 	public void 
 	setFocus() 
@@ -300,7 +369,7 @@ implements IView
 	// may become public if we have a handler call this
 	// or not: I wonder if I can make a handler a private class...
 	{
-		SnapshotView.this.controller.setModelProperty(
+		this.active_snapshot_controller.setModelProperty(
 			Constants.PATH_PROPERTY, 
 			potential_directory.getAbsolutePath()
 		);
@@ -333,16 +402,16 @@ implements IView
 	initializeToolbar
 	(IToolBarManager toolBar) 
 	{		
-		this.controller.addView(this);	
-		this.controller.addModel(Activator.getDefault().getEventLogListModel());
+		this.event_log_controller.addView(this);	
+		this.event_log_controller.addModel(Activator.getDefault().getEventLogListModel());
 		
 		IAction finish	
 			= new FinishAction(
-				this.controller
+				this.active_snapshot_controller
 			);
 		IAction start	
 			= new StartAction(
-				this.controller
+				this.active_snapshot_controller
 			);
 				
 		toolBar.add(start);
@@ -804,7 +873,7 @@ implements IView
 		    	  	this.event_logger.updateForSuccessfulCall(
 		    	  		"start"
 		    	  	);
-					this.controller.alertPeers(
+					this.controller.notifyPeers(
 						Constants.SNAPSHOT_STARTED,
 						this,
 					    snapshot

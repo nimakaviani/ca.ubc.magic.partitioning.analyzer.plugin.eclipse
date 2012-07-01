@@ -73,19 +73,24 @@ implements IView
     private Frame 				frame;
 	private ControllerDelegate 	controller;
 	
-//	final private PartitionerGUIStateModel partitioner_gui_state_model
-//		= new PartitionerGUIStateModel();
-	
-	private Combo simulation_type_combo;
-	private Label best_run_result_label;
-	private Label best_run_algorithm_label;
-	private Label best_run_cost_label;
-	private Label total_simulation_units;
-	private ModelConfigurationPage model_configuration_page;
+	private Combo 					simulation_type_combo;
+	private Label 					best_run_result_label;
+	private Label 					best_run_algorithm_label;
+	private Label 					best_run_cost_label;
+	private Label 					total_simulation_units;
+	private ModelConfigurationPage 	model_configuration_page;
 
 	public 
 	ModelCreationEditor() 
-	{}
+	{
+		this.controller = new ControllerDelegate();
+		this.controller.addView(this);
+		
+	    PartitionerGUIStateModel partitioner_gui_state_model
+    		= new PartitionerGUIStateModel();
+	    
+		this.controller.addModel(partitioner_gui_state_model);
+	}
 
 	@Override
 	public void
@@ -133,10 +138,8 @@ implements IView
 		switch(super.getActivePage())
 		{
 		case MODEL_CONFIGURATION_PAGE:
-			//his.inner_composite.setFocus();
 			break;
 		case MODEL_ANALYSIS_PAGE:
-			//this.tv2.setFocus();
 			break;
 		}
 	}
@@ -162,25 +165,18 @@ implements IView
 		
 	    this.frame 
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
-    
-	    PartitionerGUIStateModel partitioner_gui_state_model
-	    	= new PartitionerGUIStateModel();
-	    
-	    this.controller = new ControllerDelegate();
-		this.controller.addView(this);
-		
-		this.model_configuration_page
+
+	    this.model_configuration_page
 			= new ModelConfigurationPage( 
 				parent, 
 				this.toolkit, 
-				partitioner_gui_state_model,
 				this.controller,
 				this.currentVP,
 				this.current_vp_lock,
 				this.frame,
 				this
 			);
-		
+	    
 		this.toolkit.adapt(this.model_configuration_page);
 		
 		int index
@@ -467,6 +463,7 @@ implements IView
 			return_value = "";
 		}
 		
+		System.err.println("New profiler trace: " + return_value);
 		ModelCreationEditor.this.controller.setModelProperty(
 			Constants.GUI_PROFILER_TRACE, 
 			return_value
@@ -490,10 +487,10 @@ implements IView
 			);
 			break;
 		case Constants.GUI_PROFILER_TRACE:
+			System.err.println("Profiler trace event");
 			this.model_configuration_page.setProfilerTracePath(
 				(String) evt.getNewValue()
 			);
-		
 			break;
 		case Constants.GUI_MODULE_EXPOSER:
 			this.model_configuration_page.setModuleExposerPath(
@@ -513,7 +510,7 @@ implements IView
 					.set_partitioning_widgets_enabled( enabled );
 			}
 			break;
-		case Constants.ACTIVE_CONFIGURATION_PANEL:
+		case Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL:
 			boolean enabled
 				= (boolean) evt.getNewValue();
 			this.model_configuration_page.visualizeModuleModel();
@@ -548,5 +545,11 @@ implements IView
 				this.currentVP.destroy();
 			}
 		}
+	}
+
+	public Object 
+	getState() 
+	{
+		return null;
 	}
 }

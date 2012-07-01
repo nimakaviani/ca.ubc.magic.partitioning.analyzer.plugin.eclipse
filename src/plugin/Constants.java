@@ -70,7 +70,7 @@ Constants
 	
 	public static final String GENERATE_MODEL_EVENT 
 		= "ModelGeneration";
-	public static final String ACTIVE_CONFIGURATION_PANEL 
+	public static final String MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL 
 		= "ActiveConfigurationPanel";
 	public static final String MODULE_EXCHANGE_MAP 
 		= "ModuleExchageMap";

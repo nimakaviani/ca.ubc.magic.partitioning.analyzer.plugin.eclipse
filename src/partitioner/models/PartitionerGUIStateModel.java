@@ -9,14 +9,9 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.SwingUtilities;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.swt.widgets.Display;
-
-import partitioner.views.ModelConfigurationPage;
 import plugin.Constants;
 
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
@@ -40,7 +35,6 @@ import ca.ubc.magic.profiler.parser.ModuleModelParser;
 import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
-import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
@@ -116,8 +110,10 @@ implements IModel
 	 		= new HashMap<String, IFilter>();
 		
 		this.initializeForActivation();
+		
+		this.registerProperties();
 	}
-	
+
 	public void 
 	initializeForActivation() 
 	{
@@ -177,7 +173,7 @@ implements IModel
 		this.property_change_delegate.firePropertyChange(
 			Constants.GUI_MODULE_COARSENER,
 			old_coarsener, 
-			model_coarsener
+			this.mModuleType
 		);
 	}
 	
@@ -185,15 +181,20 @@ implements IModel
 	setProfilerTracePath
 	( String profiler_trace )
 	{
+		System.out.println("Inside partitioner gui state model.");
+		
 		String old_trace = this.profiler_trace;
 		String formatted_profiler_trace 
 		 	= profiler_trace.replace("/", "\\");
 		this.profiler_trace = formatted_profiler_trace;
 		
+		System.err.println(old_trace);
+		System.err.println(this.profiler_trace);
+		
 		this.property_change_delegate.firePropertyChange(
 			Constants.GUI_PROFILER_TRACE, 
 			old_trace, 
-			formatted_profiler_trace
+			this.profiler_trace
 		);
 	}
 	
@@ -505,10 +506,21 @@ implements IModel
 		}
 		
 		this.property_change_delegate.firePropertyChange(
-				Constants.MODULE_EXCHANGE_MAP, 
-				null, 
-				this.mModuleModel.getModuleExchangeMap()
-			);
+			Constants.MODULE_EXCHANGE_MAP, 
+			null, 
+			this.mModuleModel.getModuleExchangeMap()
+		);
+		this.property_change_delegate.firePropertyChange(
+			Constants.ALGORITHM,
+			null,
+			this.getAlgorithmString()
+		);
+		
+		this.property_change_delegate.firePropertyChange(
+			Constants.SOLUTION,
+			null,
+			this.getSolution()
+		);
 	}
 	
 	// called from swing worker-> obtains the reference itself
@@ -580,7 +592,7 @@ implements IModel
 			
            	if( this.getHostConfigurationPath()
            			.equals("") ) {
-           		throw new Exception ("No host layout is provided.");
+           		throw new Exception ( "No host layout is provided." );
            	}
            	
            	this.initializeHostModel();
@@ -639,12 +651,10 @@ implements IModel
 				this.gui_state_model.createModuleModel(in);
 				in.close();
 				this.gui_state_model.finished();
-			//	visualizeModuleModel(); 
 				
-				// notify the view so it runs the following in an async manner
 				PartitionerGUIStateModel.this
 					.property_change_delegate.firePropertyChange(
-						Constants.ACTIVE_CONFIGURATION_PANEL, true, false
+						Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL, true, false
 					);
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -653,6 +663,58 @@ implements IModel
 			}
 			
 			return Status.OK_STATUS;
+		}
+	}
+	
+	@Override
+	public Object[] 
+	request
+	( String[] property_names ) 
+	{
+		return this.property_change_delegate.getAll(property_names);
+	}
+	
+	private void 
+	registerProperties() 
+	{
+		String[] property_names 
+			= {
+			Constants.GUI_MODULE_COARSENER,
+			Constants.GUI_PROFILER_TRACE,
+			Constants.GUI_MODULE_EXPOSER,
+			Constants.GUI_HOST_CONFIGURATION,
+			Constants.GUI_SET_MODULE_EXPOSURE,
+			Constants.GUI_SET_SYNTHETIC_NODE,
+			Constants.GUI_SET_PRESET_MODULE_GRAPH,
+			Constants.GUI_PERFORM_PARTITIONING,
+			Constants.GUI_PARTITIONER_TYPE,
+			Constants.GUI_INTERACTION_COST,
+			Constants.GUI_EXECUTION_COST,
+		};
+		
+		Object[] properties
+			= {
+			this.mModuleType,
+			this.profiler_trace,
+			this.module_exposer,
+			this.host_configuration,
+			this.enable_module_exposure,
+			this.enable_synthetic_node,
+			this.preset_module_graph,
+			this.perform_partitioning,
+			this.partitioner_type,
+			this.interaction_cost_type,
+			this.execution_cost_type
+		};
+		
+		assert property_names.length == properties.length 
+			: "The property names list must match the properties list in length";
+		
+		for( int i = 0; i < property_names.length; ++i ){
+			this.property_change_delegate.registerProperty(
+				property_names[i], 
+				properties[i]
+			);
 		}
 	}
 

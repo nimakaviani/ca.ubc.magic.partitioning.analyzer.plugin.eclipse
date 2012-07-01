@@ -108,7 +108,6 @@ extends ScrolledForm
 	ModelConfigurationPage
 	( 	Composite parent, 
 		FormToolkit toolkit, 
-		PartitionerGUIStateModel partitioner_gui_state_model, 
 		ControllerDelegate controller,
 		VisualizePartitioning currentVP, 
 		Object current_vp_lock,
@@ -117,13 +116,8 @@ extends ScrolledForm
 	{
 		super(parent);
 		
-		//this.partitioner_gui_state_model
-		//	= partitioner_gui_state_model;
 		this.controller
 			= controller;
-		this.controller.addModel(
-			partitioner_gui_state_model
-		);
 		
 		this.current_vp_lock
 			= current_vp_lock;
@@ -825,7 +819,7 @@ extends ScrolledForm
 			public void
 			run()
 			{
-				//synchronized(PartitionerGUIStateModel.this.current_vp_lock){
+				synchronized(ModelConfigurationPage.this.current_vp_lock){
 					ModelConfigurationPage.this.currentVP
 						= new VisualizePartitioning( frame );
 
@@ -848,21 +842,23 @@ extends ScrolledForm
 					// the following can be done after the creation of the VP, but can be
 					// done easily using the existing
 					// framework; so we may treat it as a something unrelated to the above
-				
 					Display.getDefault().asyncExec(
 						new Runnable(){
 							@Override
 							public void run() {
 								if(ModelConfigurationPage.this.perform_partitioning_button.getSelection()){
-								ModelConfigurationPage.this.currentVP
-				            		.setAlgorithm( ModelConfigurationPage.this.algorithm );
-								ModelConfigurationPage.this.currentVP
-				            		.setSolution( ModelConfigurationPage.this.solution );
+									ModelConfigurationPage.this.currentVP
+					            		.setAlgorithm( ModelConfigurationPage.this.algorithm );
+									System.out.println("Algorithm: "+ ModelConfigurationPage.this.algorithm );
+									ModelConfigurationPage.this.currentVP
+					            		.setSolution( ModelConfigurationPage.this.solution );
+									System.out.println("Solution: " + ModelConfigurationPage.this.algorithm );
 								}
 							}
 						}
 					);
 				}
+			}
 		});
 	}	
 

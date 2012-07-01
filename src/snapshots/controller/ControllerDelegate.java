@@ -3,10 +3,7 @@ package snapshots.controller;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-
 
 import snapshots.model.IModel;
 import snapshots.views.IView;
@@ -16,47 +13,41 @@ public class
 ControllerDelegate 
 implements IController
 {
-	private Set<IModel>	registered_models;
+	private IModel model;
 	private List<IView> registered_views;
 		
 	public 
 	ControllerDelegate()
 	{
-		this.registered_models
-			= new CopyOnWriteArraySet<IModel>();
 		this.registered_views
 			= new CopyOnWriteArrayList<IView>();
 	}
 	
 	@Override
 	public void 
-	propertyChange
-	( PropertyChangeEvent evt ) 
-	{
-		System.out.println("Property Changed");
-		for(IView view : registered_views){
-			view.modelPropertyChange(evt);
-		}
-	}
-	
-	@Override
-	public void 
 	addModel
-	(IModel model) 
+	( IModel model ) 
 	{
-		if(registered_models.add(model)){
-			model.addPropertyChangeListener(this);
+		if(model == null){
+			throw new IllegalArgumentException(
+				"The model passed to the delegate cannot be null"
+			);
+		}
+		if(this.model == null){
+			this.model = model;
+			this.model.addPropertyChangeListener(this);
+		}
+		else {
+			throw new RuntimeException("You can only assign one model to a controller.");
 		}
 	}
 
 	@Override
 	public void 
-	removeModel
-	(IModel model) 
+	removeModel() 
 	{
-		if( registered_models.remove(model) ){
-			model.removePropertyChangeListener(this);
-		}
+		this.model.removePropertyChangeListener(this);
+		this.model = null;
 	}
 
 	@Override
@@ -75,6 +66,10 @@ implements IController
 		registered_views.remove(view);
 	}
 	
+	///////////////////////////////////////////////////////////////////////
+	/// From the view
+	///////////////////////////////////////////////////////////////////////
+	
 	@Override
 	public void 
 	setModelProperty
@@ -83,35 +78,38 @@ implements IController
 	// taken from the tutorial at:
 	// http://www.oracle.com/technetwork/articles/javase/index-142890.html
 	{
-		for ( IModel model: registered_models ) {
-            try {
-                Method method 
-                	= model.getClass().getMethod( 
-                		"set" + property_name, 
-                		new Class[] { new_value.getClass() }
-                	);
-                method.invoke(model, new_value);
-                System.out.printf("Calling method set%s() in class %s\n",
-                	property_name, model.getClass()
-                );
-            } catch (NoSuchMethodException ex) {
-            	System.err.printf( 
-            		"No method set%s() in class %s\n", 
-            		property_name, model.getClass()
+        try {
+            Method method 
+            	= this.model.getClass().getMethod( 
+            		"set" + property_name, 
+            		new Class[] { new_value.getClass() }
             	);
-            } catch (Exception ex) {
-            	ex.printStackTrace();
-			}
-        }
+            method.invoke(this.model, new_value);
+            System.out.printf("Calling method set%s() in class %s\n",
+            	property_name, this.model.getClass()
+            );
+        } catch (NoSuchMethodException ex) {
+        	System.err.printf( 
+        		"No method set%s() in class %s\n", 
+        		property_name, this.model.getClass()
+        	);
+        } catch (Exception ex) {
+        	ex.printStackTrace();
+		}
 	}
 	
 	@Override
 	public void
-	alertPeers
+	notifyPeers
 	( String property_name, Object source, Object new_value )
 	{
 		PropertyChangeEvent evt 
-			= new PropertyChangeEvent(source, property_name, null, new_value);
+			= new PropertyChangeEvent(
+				source, 
+				property_name, 
+				null, 
+				new_value
+			);
 		this.propertyChange(evt);
 	}
 
@@ -120,26 +118,47 @@ implements IController
 	notifyModel
 	( String event_name ) 
 	{
-		for ( IModel model: registered_models ) {
-            try {
-                Method method 
-                	= model.getClass().getMethod( 
-                		"do" + event_name
-                	);
-                method.invoke(model);
-                System.out.printf(
-                	"Calling method do%s() in class %s\n",
-                	event_name, 
-                	model.getClass()
-                );
-            } catch (NoSuchMethodException ex) {
-            	System.err.printf( 
-            		"No method do%s() in class %s\n", 
-            		event_name, model.getClass()
+        try {
+            Method method 
+            	= this.model.getClass().getMethod( 
+            		"do" + event_name
             	);
-            } catch (Exception ex) {
-            	ex.printStackTrace();
-			}
-        }
+            method.invoke(this.model);
+            System.out.printf(
+            	"Calling method do%s() in class %s\n",
+            	event_name, 
+            	this.model.getClass()
+            );
+        } catch (NoSuchMethodException ex) {
+        	System.err.printf( 
+        		"No method do%s() in class %s\n", 
+        		event_name, this.model.getClass()
+        	);
+        } catch (Exception ex) {
+        	ex.printStackTrace();
+		}
+	}
+	
+	@Override
+	public Object[] 
+	requestProperties
+	( String[] property_names ) 
+	{
+		return this.model.request( property_names );
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////
+	/// From the Model
+	//////////////////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void 
+	propertyChange
+	( PropertyChangeEvent evt ) 
+	{
+		System.out.println("Property Changed");
+		for(IView view : registered_views){
+			view.modelPropertyChange(evt);
+		}
 	}
 }

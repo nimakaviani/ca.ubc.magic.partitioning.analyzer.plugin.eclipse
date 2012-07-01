@@ -3,7 +3,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
@@ -12,7 +11,6 @@ import org.eclipse.ui.handlers.HandlerUtil;
 
 import snapshots.views.SnapshotView;
 import snapshots.views.VirtualModelFileInput;
-
 
 public class 
 RemoveModel 
@@ -23,6 +21,7 @@ extends AbstractHandler
 	execute
 	( ExecutionEvent event ) 
 	throws ExecutionException 
+	// TODO: this function threw an exception once : not resolved
 	{
 		boolean execution_success = false;
 		
@@ -75,5 +74,4 @@ extends AbstractHandler
 		
 		return null;
 	}
-
 }
