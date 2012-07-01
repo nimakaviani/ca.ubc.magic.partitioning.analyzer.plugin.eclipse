@@ -9,7 +9,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map;
 
 import javax.swing.SwingUtilities;
@@ -30,6 +32,11 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.IPartListener2;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPartReference;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -42,6 +49,8 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
@@ -57,7 +66,7 @@ import partitioner.views.ModelConfigurationPage;
 import partitioner.views.ModelCreationEditor;
 import plugin.Constants;
 
-import snapshots.controller.ControllerDelegate;
+import snapshots.controller.IController;
 import snapshots.views.IView;
 import snapshots.views.VirtualModelFileInput;
 
@@ -81,7 +90,7 @@ implements IView
 	private Button 	synthetic_node_button;
 	private Button	perform_partitioning_button;
 
-	private ControllerDelegate controller;
+	private IController controller;
 	
 	private Combo 	set_coarsener_combo;
 	
@@ -89,7 +98,7 @@ implements IView
 	private Combo 	interaction_model_combo;
 	private Combo 	execution_model_combo;
 
-	private Object 	current_vp_lock;
+	private Object 	current_vp_lock = new Object();
 
 	private VisualizePartitioning currentVP;
 
@@ -97,12 +106,56 @@ implements IView
 
 	private ModelCreationEditor model_creation_editor;
 	
+	private Object controller_lock = new Object();
 	
 	@Override
 	public void 
 	createPartControl
 	( Composite parent ) 
 	{
+		setupViewCommunication();
+		
+		// the following code is a view-communication solution
+			// found in:
+			// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
+			BundleContext context 
+				= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
+			EventHandler handler 
+				= new EventHandler() {
+					public void handleEvent
+					( final Event event )
+					{
+						// acceptable alternative, given that we run only
+						// one display
+						Display display 
+							= Display.getDefault();
+						assert( display != null) : "Display is null";
+						if( display.getThread() == Thread.currentThread() ){
+							IController controller 
+								= (IController) event.getProperty("ACTIVE_EDITOR");
+							PartitionerConfigurationView.this.setValues(controller);
+						}
+						else {
+							display.syncExec( 
+								new Runnable() {
+									public void 
+									run()
+									{
+										IController controller 
+											= (IController) event.getProperty("ACTIVE_EDITOR");
+										PartitionerConfigurationView.this.setValues(controller);
+									}
+								}
+							);
+						}
+					}
+				};
+				
+			Dictionary<String,String> properties 
+				= new Hashtable<String, String>();
+			properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
+			context.registerService(EventHandler.class, handler, properties);
+				
 		this.toolkit 
 			= new FormToolkit( parent.getDisplay() );
 				
@@ -211,6 +264,25 @@ implements IView
 		
 		this.set_partitioning_widgets_enabled(false); 
 	}
+	
+
+	private int 
+	findIndex
+	( Combo set_coarsener_combo, String string ) 
+	{
+		String[] items
+			= set_coarsener_combo.getItems();
+		for( int i = 0; i < items.length; ++i ){
+			if( items[i].equals(string)){
+				return i;
+			}
+		}
+		throw new IllegalArgumentException(
+			"The string is not contained in the combo box."
+		);
+	}
+
+
 	
 	private void 
 	initializeSetPathsBarGrid
@@ -793,17 +865,7 @@ implements IView
 						@Override
 						public void run() 
 						{
-							PartitionerConfigurationView.this.host_config_text.setEditable(false);
-							PartitionerConfigurationView.this.module_exposer_text.setEditable(false);
-							
-							PartitionerConfigurationView.this.actions_composite.setVisible(false);
-							
-							PartitionerConfigurationView.this.synthetic_node_button.setEnabled(false);
-							PartitionerConfigurationView.this.exposure_button.setEnabled(false);
-							
-							PartitionerConfigurationView.this.mod_exposer_browse_button.setVisible(false);
-							PartitionerConfigurationView.this.host_config_browse.setVisible(false);
-							PartitionerConfigurationView.this.set_coarsener_combo.setEnabled(false);
+							PartitionerConfigurationView.this.setConfigurationWidgetsEnabled(false);
 							
 							PartitionerConfigurationView.this
 								.perform_partitioning_button.setEnabled(false);
@@ -859,4 +921,164 @@ implements IView
 			});
 		}
 	}
+	
+	private void 
+	setupViewCommunication() 
+	{
+		IWorkbenchPage page = this.getSite().getPage();
+		   
+		//adding a listener
+		IPartListener2 pl = new IPartListener2() {
+			public void partActivated( IWorkbenchPartReference part_ref ){
+				if(part_ref.getPart(false) instanceof ModelCreationEditor ){
+					ModelCreationEditor editor
+						= (ModelCreationEditor) part_ref.getPart(false);
+					
+					System.out.println( "Active: " + part_ref.getTitle() );
+					
+					BundleContext context 
+						= FrameworkUtil.getBundle(
+							ModelConfigurationPage.class
+						).getBundleContext();
+			        ServiceReference<EventAdmin> ref 
+			        	= context.getServiceReference(EventAdmin.class);
+			        EventAdmin eventAdmin 
+			        	= context.getService( ref );
+			        Map<String,Object> properties 
+			        	= new HashMap<String, Object>();
+			        properties.put( "ACTIVE_EDITOR", editor.getController() );
+			        Event event 
+			        	= new Event("viewcommunication/syncEvent", properties);
+			        eventAdmin.sendEvent(event);
+			        event = new Event("viewcommunication/asyncEvent", properties);
+			        eventAdmin.postEvent(event);
+				}
+			}
+		
+			@Override
+			public void partBroughtToTop(IWorkbenchPartReference partRef) {	}
+			
+			@Override
+			public void partClosed(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partDeactivated(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partOpened(IWorkbenchPartReference partRef) { } 
+			
+			@Override
+			public void partHidden(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partVisible(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partInputChanged(IWorkbenchPartReference partRef) {	}
+		};
+	
+		page.addPartListener(pl);
+	}
+	
+	protected void 
+	setConfigurationWidgetsEnabled
+	( Boolean enabled ) 
+	{
+		PartitionerConfigurationView.this.host_config_text.setEditable( enabled );
+		PartitionerConfigurationView.this.module_exposer_text.setEditable(enabled);
+		
+		PartitionerConfigurationView.this.actions_composite.setVisible(enabled);
+		
+		PartitionerConfigurationView.this.synthetic_node_button.setEnabled(enabled);
+		PartitionerConfigurationView.this.exposure_button.setEnabled(enabled);
+		
+		PartitionerConfigurationView.this.mod_exposer_browse_button.setVisible(enabled);
+		PartitionerConfigurationView.this.host_config_browse.setVisible(enabled);
+		PartitionerConfigurationView.this.set_coarsener_combo.setEnabled(enabled);
+	}
+
+
+	protected void 
+	setValues
+	( IController controller ) 
+	// this function should only be called from swt thread,
+	// again though, we want to be concerned about threading
+	// issues
+	//
+	// problem: whenever we change anything we have to send a message
+	// to update the model; this basically means we need to controller
+	{
+		synchronized(this.controller_lock){
+			assert controller != null : "The controller argument should not be null";
+			
+			if(this.controller != null){
+				this.controller.removeView(this);
+				// this will need to be controlled by a lock
+			}
+			this.controller = controller;
+			
+			String[] args 
+				= new String[]{
+				Constants.GUI_PROFILER_TRACE,
+				Constants.GUI_MODULE_EXPOSER,
+				Constants.GUI_HOST_CONFIGURATION,
+				Constants.GUI_MODULE_COARSENER,
+				Constants.GUI_SET_MODULE_EXPOSURE,
+				Constants.GUI_SET_SYNTHETIC_NODE,
+				Constants.GUI_PERFORM_PARTITIONING,
+				Constants.GUI_EXECUTION_COST,
+				Constants.GUI_INTERACTION_COST,
+				Constants.GUI_PARTITIONER_TYPE,
+				Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL
+			};
+			
+			Object[] properties 
+				= this.controller.requestProperties(args);
+			
+			System.err.println("Profiler trace: " + (String) properties[0]);
+			this.profiler_trace_text.setText( (String) properties[0]);
+			this.profiler_trace_text.setSize(400, this.profiler_trace_text.getSize().y);
+			System.out.println("x : " + this.profiler_trace_text.getSize().x +
+					"y " + this.profiler_trace_text.getSize().y );
+			System.out.println("From label: " + this.profiler_trace_text.getText());
+			this.module_exposer_text.setText( (String) properties[1]);
+			this.host_config_text.setText( (String) properties[2]);
+			
+			int index 
+				= this.findIndex(
+					this.set_coarsener_combo, 
+					((ModuleCoarsenerType) properties[3]).getText()
+				);
+			this.set_coarsener_combo.select( index);
+			System.out.println( "exposure_button" + properties[4].toString());
+			this.exposure_button.setSelection( (Boolean) properties[4]);
+			System.out.println( "synthetic_node_button" + properties[5].toString());
+			this.synthetic_node_button.setSelection( (Boolean) properties[5]);
+			
+			this.perform_partitioning_button.setEnabled( (Boolean) properties[6]);
+			System.err.println(((ExecutionCostType) properties[7]).getText());
+			index 
+				= this.findIndex(
+					this.execution_model_combo, 
+					((ExecutionCostType) properties[7]).getText()
+				);
+			this.execution_model_combo.select( index );
+			index 
+				= this.findIndex(
+					this.interaction_model_combo, 
+					((InteractionCostType) properties[8]).getText()
+				);
+			this.interaction_model_combo.select( index );
+			index 
+				= this.findIndex(
+					this.partitioning_algorithm_combo, 
+					((PartitionerType) properties[9]).getText()
+				);
+			
+			this.partitioning_algorithm_combo.select( index ); 
+			this.setConfigurationWidgetsEnabled((Boolean) properties[10]);
+			
+		}
+	}
+
 }

@@ -8,12 +8,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import snapshots.model.IModel;
 import snapshots.views.IView;
 
-
 public class 
 ControllerDelegate 
 implements IController
 {
-	private IModel model;
+	private IModel 		model;
 	private List<IView> registered_views;
 		
 	public 

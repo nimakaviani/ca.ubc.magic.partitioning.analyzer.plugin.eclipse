@@ -44,7 +44,7 @@ import snapshots.model.PropertyChangeDelegate;
 public class 
 PartitionerGUIStateModel 
 implements IModel
-// TODO: write an adapter around the Model so were more cleanly separte
+// TODO: write an adapter around the Model so were more cleanly separate
 //		the mvc interface from the program logic
 {
 	private PropertyChangeDelegate 	property_change_delegate;
@@ -58,6 +58,8 @@ implements IModel
 	private volatile String 		module_exposer;
 	private volatile String 		host_configuration; 
 	
+	private volatile Boolean		configuration_panel_enabled = true;
+	
 	private ModuleModelHandler mmHandler;
 	private SimulationFramework mSimFramework; 
 	
@@ -68,11 +70,11 @@ implements IModel
 	private volatile EntityConstraintModel	mConstraintModel;
 
 	// volatile due to visibility concerns
-	private volatile boolean enable_module_exposure;
-	private volatile boolean enable_synthetic_node;
-	private volatile boolean preset_module_graph;
+	private volatile Boolean enable_module_exposure = false;
+	private volatile Boolean enable_synthetic_node = false;
+	private volatile Boolean preset_module_graph = false;
 	 
-	private volatile boolean perform_partitioning;
+	private volatile Boolean perform_partitioning = false;
 	
 	private Map<String, IFilter> mFilterMap; 
 	 	
@@ -84,12 +86,9 @@ implements IModel
 	public
 	PartitionerGUIStateModel()
 	{
-		this.profiler_trace
-			= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/Profile-20120504-190723.xml";
-		this.module_exposer	
-			= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/moduleconstraints-aries3.xml";
-		this.host_configuration
-			= "C:/cygwin/home/dillesca/eece_496_workspace/plugin/resources/dist-model/host-magic.xml";
+		this.profiler_trace = "";
+		this.module_exposer	= "";
+		this.host_configuration = "";
        	
 		this.mSimFramework
        		= new SimulationFramework(Boolean.FALSE);
@@ -188,8 +187,8 @@ implements IModel
 		 	= profiler_trace.replace("/", "\\");
 		this.profiler_trace = formatted_profiler_trace;
 		
-		System.err.println(old_trace);
-		System.err.println(this.profiler_trace);
+		System.out.println( old_trace );
+		System.out.println( this.profiler_trace + " " );
 		
 		this.property_change_delegate.firePropertyChange(
 			Constants.GUI_PROFILER_TRACE, 
@@ -690,11 +689,13 @@ implements IModel
 			Constants.GUI_PARTITIONER_TYPE,
 			Constants.GUI_INTERACTION_COST,
 			Constants.GUI_EXECUTION_COST,
+			Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL
 		};
 		
 		Object[] properties
 			= {
 			this.mModuleType,
+			// problem: profiler trace is not being modified
 			this.profiler_trace,
 			this.module_exposer,
 			this.host_configuration,
@@ -704,7 +705,10 @@ implements IModel
 			this.perform_partitioning,
 			this.partitioner_type,
 			this.interaction_cost_type,
-			this.execution_cost_type
+			this.execution_cost_type,
+			// does not need to be a member field, since now
+			// it is in the map
+			this.configuration_panel_enabled
 		};
 		
 		assert property_names.length == properties.length 

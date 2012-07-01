@@ -35,6 +35,7 @@ import org.eclipse.ui.part.MultiPageEditorPart;
 import partitioner.models.PartitionerGUIStateModel;
 import plugin.Constants;
 import snapshots.controller.ControllerDelegate;
+import snapshots.controller.IController;
 import snapshots.views.IView;
 
 import ca.ubc.magic.profiler.dist.model.ModulePair;
@@ -79,6 +80,7 @@ implements IView
 	private Label 					best_run_cost_label;
 	private Label 					total_simulation_units;
 	private ModelConfigurationPage 	model_configuration_page;
+	private PartitionerGUIStateModel partitioner_gui_state_model;
 
 	public 
 	ModelCreationEditor() 
@@ -86,10 +88,10 @@ implements IView
 		this.controller = new ControllerDelegate();
 		this.controller.addView(this);
 		
-	    PartitionerGUIStateModel partitioner_gui_state_model
+	    this.partitioner_gui_state_model
     		= new PartitionerGUIStateModel();
 	    
-		this.controller.addModel(partitioner_gui_state_model);
+		this.controller.addModel( this.partitioner_gui_state_model );
 	}
 
 	@Override
@@ -463,7 +465,7 @@ implements IView
 			return_value = "";
 		}
 		
-		System.err.println("New profiler trace: " + return_value);
+	//	System.err.println("New profiler trace: " + return_value);
 		ModelCreationEditor.this.controller.setModelProperty(
 			Constants.GUI_PROFILER_TRACE, 
 			return_value
@@ -487,7 +489,7 @@ implements IView
 			);
 			break;
 		case Constants.GUI_PROFILER_TRACE:
-			System.err.println("Profiler trace event");
+	//		System.err.println("Profiler trace event");
 			this.model_configuration_page.setProfilerTracePath(
 				(String) evt.getNewValue()
 			);
@@ -548,8 +550,31 @@ implements IView
 	}
 
 	public Object 
-	getState() 
+	getConfigurationState() 
+	// TODO: problematic: this could be called from any thread
 	{
-		return null;
+		String[] args 
+			= new String[]{
+			Constants.GUI_PROFILER_TRACE,
+			Constants.GUI_MODULE_EXPOSER,
+			Constants.GUI_HOST_CONFIGURATION,
+			Constants.GUI_MODULE_COARSENER,
+			Constants.GUI_SET_MODULE_EXPOSURE,
+			Constants.GUI_SET_SYNTHETIC_NODE,
+			Constants.GUI_PERFORM_PARTITIONING,
+			Constants.GUI_EXECUTION_COST,
+			Constants.GUI_INTERACTION_COST,
+			Constants.GUI_PARTITIONER_TYPE
+		};
+		
+		
+		return this.partitioner_gui_state_model.request(args);
+	}
+
+	public IController 
+	getController() 
+	// this is going to create problems when we switch references
+	{
+		return this.controller;
 	}
 }

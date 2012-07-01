@@ -115,8 +115,6 @@ implements IView
 	createPartControl
 	( Composite parent ) 
 	{
-		setupViewCommunication();
-		
 		this.file_tree_content_provider
 			= (FileTreeContentProvider)
 				Activator.getDefault().getTreeContentProvider();
@@ -294,68 +292,6 @@ implements IView
 		context.registerService(EventHandler.class, handler, properties);
 	}
 	
-	private void 
-	setupViewCommunication() 
-	{
-		IWorkbench wb = PlatformUI.getWorkbench();
-		IWorkbenchWindow win = wb.getActiveWorkbenchWindow();
-		IWorkbenchPage page = win.getActivePage();
-		   
-		//the active part
-		IWorkbenchPart active = page.getActivePart();
-		//adding a listener
-		IPartListener2 pl = new IPartListener2() {
-			public void partActivated( IWorkbenchPartReference part_ref ){
-				if(part_ref.getPart(false) instanceof ModelCreationEditor ){
-					ModelCreationEditor editor
-						= (ModelCreationEditor) part_ref.getPart(false);
-					
-					System.out.println( "Active: " + part_ref.getTitle() );
-					
-					BundleContext context 
-						= FrameworkUtil.getBundle(
-							ModelConfigurationPage.class
-						).getBundleContext();
-			        ServiceReference<EventAdmin> ref 
-			        	= context.getServiceReference(EventAdmin.class);
-			        EventAdmin eventAdmin 
-			        	= context.getService( ref );
-			        Map<String,Object> properties 
-			        	= new HashMap<String, Object>();
-			        properties.put( "ACTIVE_EDITOR", editor.getState() );
-			        Event event 
-			        	= new Event("viewcommunication/syncEvent", properties);
-			        eventAdmin.sendEvent(event);
-			        event = new Event("viewcommunication/asyncEvent", properties);
-			        eventAdmin.postEvent(event);
-				}
-			}
-		
-			@Override
-			public void partBroughtToTop(IWorkbenchPartReference partRef) {	}
-			
-			@Override
-			public void partClosed(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partDeactivated(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partOpened(IWorkbenchPartReference partRef) { } 
-			
-			@Override
-			public void partHidden(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partVisible(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partInputChanged(IWorkbenchPartReference partRef) {	}
-		};
-	
-		//page.addPartListener(pl);
-	}
-
 	@Override
 	public void 
 	setFocus() 

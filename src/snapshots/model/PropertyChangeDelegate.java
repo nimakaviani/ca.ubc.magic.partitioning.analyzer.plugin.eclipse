@@ -47,7 +47,11 @@ PropertyChangeDelegate
     firePropertyChange
     ( String prop, Object old, Object newValue )
     {
-    	System.err.println(this.listeners.getPropertyChangeListeners().length);
+    	// should always be 1
+    	System.err.println( this.listeners.getPropertyChangeListeners().length );
+    	
+    	// to deal with reference switches
+    	this.property_map.put(prop, newValue);
     	
         if (this.listeners.hasListeners(prop)) {
             this.listeners.firePropertyChange(prop, old, newValue);
@@ -79,6 +83,10 @@ PropertyChangeDelegate
 		= new ArrayList<Object>(property_names.length);
 	
 		for( String property_name : property_names ){
+			if(this.property_map.get(property_name) == null){
+				System.out.println("Null " + property_name);
+			}
+			System.out.println( property_name + " " + this.property_map.get(property_name).toString() );
 			return_values.add( 
 				this.property_map.get(property_name) 
 			);
