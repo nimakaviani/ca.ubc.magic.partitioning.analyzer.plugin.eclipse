@@ -1,8 +1,6 @@
 package snapshots.model;
 
 import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
-import java.util.List;
 
 import plugin.Constants;
 
@@ -14,10 +12,14 @@ implements ISnapshotInfoModel
 // you must register any visible fields with the property
 // change delegate
 {
-	private String path = new String("");
-	private String name = new String("");
-	private String port = new String("");
-	private String host = new String("");
+	private String path 
+		= new String("");
+	private String name 
+		= new String("");
+	private String port 
+		= new String("15599");
+	private String host 
+		= new String("localhost");
 	
 	private PropertyChangeDelegate property_change_delegate
 		= new PropertyChangeDelegate();
@@ -26,33 +28,28 @@ implements ISnapshotInfoModel
 	ActiveSnapshotModel()
 	{
 		this.property_change_delegate
-			.registerProperty(Constants.PATH_PROPERTY, this.path);
+			.registerProperty( Constants.PATH_PROPERTY, this.path );
 		this.property_change_delegate
-			.registerProperty(Constants.NAME_PROPERTY, this.name);
+			.registerProperty( Constants.NAME_PROPERTY, this.name );
 		this.property_change_delegate
-			.registerProperty(Constants.PORT_PROPERTY, this.port);
+			.registerProperty( Constants.PORT_PROPERTY, this.port );
 		this.property_change_delegate
-			.registerProperty(Constants.HOST_PROPERTY, this.host);
+			.registerProperty( Constants.HOST_PROPERTY, this.host );
 	}
 	
+	/*
 	@Override
 	public String
 	getSnapshotPath() 
 	{
 		return this.path;
 	}
-
+	
 	@Override
-	public void 
-	setSnapshotPath
-	(String path) 
+	public String 
+	getSnapshotPort() 
 	{
-		String old_path = this.path;
-		this.path = path;
-		
-		System.out.println(this.path);
-		this.property_change_delegate.
-			firePropertyChange(Constants.PATH_PROPERTY, old_path);
+		return this.port;
 	}
 	
 	@Override
@@ -60,6 +57,27 @@ implements ISnapshotInfoModel
 	getSnapshotName() 
 	{
 		return this.name;
+	}
+	
+	@Override
+	public String 
+	getSnapshotHost() 
+	{
+		return this.host;
+	} */
+
+	@Override
+	public void 
+	setSnapshotPath
+	(String path) 
+	{
+		System.out.println("New path: " + path);
+		String old_path = this.path;
+		this.path = path;
+		
+		System.out.println(this.path);
+		this.property_change_delegate.
+			firePropertyChange(Constants.PATH_PROPERTY, old_path);
 	}
 	
 	@Override
@@ -76,13 +94,6 @@ implements ISnapshotInfoModel
 	}
 
 	@Override
-	public String 
-	getSnapshotPort() 
-	{
-		return this.port;
-	}
-	
-	@Override
 	public void
 	setSnapshotPort
 	(String port)
@@ -95,13 +106,6 @@ implements ISnapshotInfoModel
 		);
 	}
 
-	@Override
-	public String 
-	getSnapshotHost() 
-	{
-		return this.host;
-	}
-	
 	@Override
 	public void
 	setSnapshotHost

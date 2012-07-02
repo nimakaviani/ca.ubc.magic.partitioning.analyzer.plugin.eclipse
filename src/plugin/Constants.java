@@ -3,6 +3,8 @@ package plugin;
 public class 
 Constants
 {
+	// the following are used to communicate with the
+	// active snapshot model
 	public static final String PATH_PROPERTY 				
 		= "SnapshotPath";
 	public static final String NAME_PROPERTY
@@ -10,7 +12,8 @@ Constants
 	public static final String HOST_PROPERTY 				
 		= "SnapshotHost";
 	public static final String PORT_PROPERTY 				
-		= "SnapshotPort";
+		= "SnapshotPort";	
+	
 	public static final String KEY_ERR_DLGTITLE 			
 		= "err_dlgttle";
 	public static final String KEY_ERR_MSSG 				

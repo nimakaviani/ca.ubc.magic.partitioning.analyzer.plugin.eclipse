@@ -20,11 +20,6 @@ extends AbstractUIPlugin
 	private EventLogListModel event_log_list_model;
 	private Object file_tree_content_provider;
 	
-	// to implement persistence in the snapshot view I have...options:
-	//		1) store the necessary data in the activator when it needs to 
-	//		be saved, and restore upon load
-	//		2) store in the file system
-	//		3) 
 	public 
 	Activator() 
 	{}

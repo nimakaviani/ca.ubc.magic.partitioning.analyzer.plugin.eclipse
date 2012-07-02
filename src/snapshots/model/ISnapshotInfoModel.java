@@ -39,12 +39,12 @@ public interface
 ISnapshotInfoModel 
 extends IModel
 {
-    public String getSnapshotName();
+  //  public String getSnapshotName();
     public void setSnapshotName(String name);
-    public String getSnapshotPort();
+   // public String getSnapshotPort();
     public void setSnapshotPort( String port);
-    public String getSnapshotHost();
+  //  public String getSnapshotHost();
     public void setSnapshotHost( String host);
-    public String getSnapshotPath();
+  //  public String getSnapshotPath();
     public void setSnapshotPath(String path);
 }

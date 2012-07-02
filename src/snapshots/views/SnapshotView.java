@@ -63,7 +63,6 @@ import snapshots.events.logging.EventLogEvent;
 import snapshots.events.logging.EventLogger;
 import snapshots.events.logging.LogAction;
 import snapshots.model.ActiveSnapshotModel;
-import snapshots.model.ISnapshotInfoModel;
 import snapshots.model.Snapshot;
 
 public class 
@@ -85,17 +84,12 @@ implements IView
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 	
-	private ActiveSnapshotModel 	active_snapshot_model;
-
 	private IController 			event_log_controller
 		= new ControllerDelegate();
 
 	public 
 	SnapshotView() 
-	{
-		this.active_snapshot_model
-			= new ActiveSnapshotModel();
-	}
+	{ }
 
 	@Override
 	public void 
@@ -112,6 +106,11 @@ implements IView
 	createPartControl
 	( Composite parent ) 
 	{
+		ActiveSnapshotModel active_snapshot_model
+			= new ActiveSnapshotModel();
+		this.active_snapshot_controller.addView(this);
+		this.active_snapshot_controller.addModel( active_snapshot_model );
+	
 		this.file_tree_content_provider
 			= (FileTreeContentProvider)
 				Activator.getDefault().getTreeContentProvider();
@@ -124,6 +123,9 @@ implements IView
 			= new Group(parent, SWT.SHADOW_ETCHED_IN | SWT.FILL);
 		initializeGridLayout(configuration_group);
 		configuration_group.setText("New Snapshot Properties");
+		// the following also initializes the text values used
+		// in calls to other constructors, so it must happen
+		// very early
 		initializeInputRows(configuration_group);
 		
 		GridData grid_data 
@@ -145,7 +147,10 @@ implements IView
 		
 		if( this.file_tree_content_provider == null ){
 			this.file_tree_content_provider
-				= new FileTreeContentProvider(this.getPreviousPath(), this.snapshot_tree_viewer); 
+				= new FileTreeContentProvider(
+					this.path_text.getText(), 
+					this.snapshot_tree_viewer
+				); 
 		}
 		snapshot_tree_viewer.setContentProvider( 
 			this.file_tree_content_provider
@@ -230,9 +235,6 @@ implements IView
 		);
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
-		
-		this.active_snapshot_controller.addView(this);
-		this.active_snapshot_controller.addModel( this.active_snapshot_model );
 		
 		this.log_console_table
 			= new EventLogTable(parent, "Event Log", null);
@@ -456,15 +458,25 @@ implements IView
 	private void 
 	setWidgetText()
 	{
-		this.path_text.setText(this.getPreviousPath());
-		if(this.getPreviousName() == null){
-			System.out.println("Null name odd");
-		}
-		this.name_text.setText(this.getPreviousName());
-		this.port_text.setText(this.getPreviousPort());
-		this.host_text.setText(this.getPreviousHost());
+		String[] property_names
+			= {
+				Constants.PATH_PROPERTY,
+				Constants.NAME_PROPERTY,
+				Constants.HOST_PROPERTY,
+				Constants.PORT_PROPERTY
+			};
+		Object[] returned_properties
+			= this.active_snapshot_controller.requestProperties(
+				property_names
+			);
+		
+		this.path_text.setText( (String) returned_properties[0] );
+		this.name_text.setText( (String) returned_properties[1] );
+		this.host_text.setText( (String) returned_properties[2] );
+		this.port_text.setText( (String) returned_properties[3] );
 	}
 	
+	/*
 	public String 
 	getPreviousPath() 
 	{
@@ -520,6 +532,7 @@ implements IView
 		
 		return prevHost;
 	}
+	*/
 	
 	@Override
 	public void 
@@ -527,7 +540,8 @@ implements IView
 	( PropertyChangeEvent evt ) 
 	{
 		System.out.println("modelPropertyChange(): Property changed");
-		switch(evt.getPropertyName()){
+		switch(evt.getPropertyName())
+		{
 		case Constants.PATH_PROPERTY:
 			this.path_text.setText((String) evt.getNewValue());
 			break;
@@ -537,14 +551,12 @@ implements IView
 		case Constants.NAME_PROPERTY:
 			this.name_text.setText( (String) evt.getNewValue());
 			break;
+		case Constants.PORT_PROPERTY:
+			this.port_text.setText( (String) evt.getNewValue() );
+			break;
 		case Constants.SNAPSHOT_CAPTURED_PROPERTY:
 			this.snapshot_tree_viewer.setInput("hello");
 			this.snapshot_tree_viewer.refresh();
-			break;
-		case Constants.PORT_PROPERTY:
-			this.port_text.setText( (String) evt.getNewValue() );
-			System.out.println(this.port_text.getText());
-			System.out.println(this.host_text.getText());
 			break;
 		case Constants.EVENT_LIST_PROPERTY:
 			this.log_console_table.refresh();
@@ -823,11 +835,10 @@ implements IView
 		private Snapshot 
 		getSnapshot() 
 		{
-			ISnapshotInfoModel info_model
-				= SnapshotView.this.active_snapshot_model;
-			
 		    // check path specified
-		    String path = info_model.getSnapshotPath();	    
+		    String path 
+		    	= SnapshotView.this.path_text.getText();	    
+		    
 		    if (path == null || path.trim().length() == 0) {
 		    	EventLogEvent event
 		    		= this.event_logger.getErrorEvent();
@@ -889,22 +900,18 @@ implements IView
 		    	return null;
 		    }
 		    
-		    String port 		
-		    	= info_model.getSnapshotPort();
-		    String host 		
-		    	= info_model.getSnapshotHost();
-		    final String origName 	
-		    	= info_model.getSnapshotName();
-		    
 		    String newName 				
-		    	=  this.setNewName(origName, pathFile);
+		    	=  this.setNewName( 
+		    		SnapshotView.this.name_text.getText(),
+		    		pathFile
+		    	);
 		   
 		    return new Snapshot(
 		        pathFile.getPath(),
 		        newName,
-		        origName,
-		        port,
-		        host
+		        SnapshotView.this.name_text.getText(),
+		        SnapshotView.this.port_text.getText(),
+		        SnapshotView.this.host_text.getText()
 		    );
 		  }
 		
@@ -960,14 +967,15 @@ implements IView
 		modelPropertyChange
 		( PropertyChangeEvent evt ) 
 		{
-			switch (evt.getPropertyName()) {
-			    case Constants.SNAPSHOT_CAPTURED_PROPERTY:
-			    case Constants.SNAPSHOT_CAPTURE_FAILED:
-				    this.setEnabled(true);
-				    break;
-			    default:
-			    	System.out.println("StartAction swallowed message.");
-			    	break;
+			switch (evt.getPropertyName()) 
+			{
+			case Constants.SNAPSHOT_CAPTURED_PROPERTY:
+			case Constants.SNAPSHOT_CAPTURE_FAILED:
+				this.setEnabled(true);
+				break;
+			default:
+				System.out.println("StartAction swallowed message.");
+			    break;
 			}
 		}
 	}
@@ -1059,7 +1067,7 @@ implements ITreeContentProvider
 	{
 		File directory
 			= new File( path );
-		snapshot_folders.add(directory);
+		this.snapshot_folders.add(directory);
 	}
 
 	public void 
@@ -1128,7 +1136,6 @@ implements ITreeContentProvider
 	public void 
 	dispose() 
 	{
-		// Nothing to dispose
 	}
 
 	@Override
@@ -1206,7 +1213,7 @@ implements ILabelProvider
   addListener
   ( ILabelProviderListener arg0 ) 
   {
-    listeners.add(arg0);
+	  this.listeners.add(arg0);
   }
 
   @Override
@@ -1214,6 +1221,6 @@ implements ILabelProvider
   removeListener
   ( ILabelProviderListener arg0 ) 
   {
-    listeners.remove(arg0);
+	  this.listeners.remove(arg0);
   }
 }

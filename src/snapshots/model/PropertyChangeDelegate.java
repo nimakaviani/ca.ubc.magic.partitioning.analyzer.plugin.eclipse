@@ -63,11 +63,11 @@ PropertyChangeDelegate
     
     public void
     firePropertyChange
-    ( String property_name, Object old_value )
+    ( String property_name, Object new_value )
     {
     	if( this.listeners.hasListeners(property_name) ) {
     		if(this.property_map.containsKey(property_name)){
-    			Object new_value
+    			Object old_value
     				= this.property_map.get(property_name);
     			this.listeners.firePropertyChange(
     				property_name, 
@@ -87,7 +87,7 @@ PropertyChangeDelegate
 	
 		for( String property_name : property_names ){
 			return_values.add( 
-				this.property_map.get(property_name) 
+				this.property_map.get( property_name ) 
 			);
 		}
 		
