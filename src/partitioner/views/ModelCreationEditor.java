@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Frame;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JFrame;
@@ -22,15 +23,24 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.IPartListener2;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.MultiPageEditorPart;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventAdmin;
 
 import partitioner.models.PartitionerGUIStateModel;
 import plugin.Constants;
@@ -71,6 +81,11 @@ implements IView
     Object current_vp_lock 
     	= new Object();
     
+    private volatile Boolean perform_partitioning 
+    	= false;
+    
+	private Map<ModulePair, InteractionData> module_exchange_map;
+	
     private Frame 				frame;
 	private ControllerDelegate 	controller;
 	
@@ -79,8 +94,11 @@ implements IView
 	private Label 					best_run_algorithm_label;
 	private Label 					best_run_cost_label;
 	private Label 					total_simulation_units;
-	private ModelConfigurationPage 	model_configuration_page;
+	//private ModelConfigurationPage 	model_configuration_page;
 	private PartitionerGUIStateModel partitioner_gui_state_model;
+	
+	private String algorithm;
+	private String solution;
 
 	public 
 	ModelCreationEditor() 
@@ -92,6 +110,64 @@ implements IView
     		= new PartitionerGUIStateModel();
 	    
 		this.controller.addModel( this.partitioner_gui_state_model );
+	}
+	
+	private void 
+	setupViewCommunication() 
+	{
+		IWorkbenchPage page = this.getSite().getPage();
+		   
+		//adding a listener
+		IPartListener2 pl = new IPartListener2() {
+			public void partActivated( IWorkbenchPartReference part_ref ){
+				if(part_ref.getPart(false) instanceof ModelCreationEditor ){
+					ModelCreationEditor editor
+						= (ModelCreationEditor) part_ref.getPart(false);
+					
+					System.out.println( "Active: " + part_ref.getTitle() );
+					
+					BundleContext context 
+						= FrameworkUtil.getBundle(
+							ModelConfigurationPage.class
+						).getBundleContext();
+			        ServiceReference<EventAdmin> ref 
+			        	= context.getServiceReference(EventAdmin.class);
+			        EventAdmin eventAdmin 
+			        	= context.getService( ref );
+			        Map<String,Object> properties 
+			        	= new HashMap<String, Object>();
+			        properties.put( "ACTIVE_EDITOR", editor.getController() );
+			        Event event 
+			        	= new Event("viewcommunication/syncEvent", properties);
+			        eventAdmin.sendEvent(event);
+			        event = new Event("viewcommunication/asyncEvent", properties);
+			        eventAdmin.postEvent(event);
+				}
+			}
+		
+			@Override
+			public void partBroughtToTop(IWorkbenchPartReference partRef) {	}
+			
+			@Override
+			public void partClosed(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partDeactivated(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partOpened(IWorkbenchPartReference partRef) { } 
+			
+			@Override
+			public void partHidden(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partVisible(IWorkbenchPartReference partRef) { }
+			
+			@Override
+			public void partInputChanged(IWorkbenchPartReference partRef) {	}
+		};
+	
+		page.addPartListener(pl);
 	}
 
 	@Override
@@ -168,6 +244,7 @@ implements IView
 	    this.frame 
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
 
+	    /*
 	    this.model_configuration_page
 			= new ModelConfigurationPage( 
 				parent, 
@@ -183,11 +260,15 @@ implements IView
 		
 		int index
 			= super.addPage( this.model_configuration_page );
-		super.setPageText( index, "Model Configuration" );
+		super.setPageText( index, "Model Configuration" );*/
 		
 		this.createModelAnalysisPage( model_analysis_composite );
 		this.createModelTestPage();
 		this.updateTitle();
+
+		// this should happen after the controller is assigned
+		// to so we don't get any null pointer surprises
+		setupViewCommunication();
 	}
 
 	private void 
@@ -465,7 +546,6 @@ implements IView
 			return_value = "";
 		}
 		
-	//	System.err.println("New profiler trace: " + return_value);
 		ModelCreationEditor.this.controller.setModelProperty(
 			Constants.GUI_PROFILER_TRACE, 
 			return_value
@@ -488,8 +568,8 @@ implements IView
 				"The module coarsener was modified to " + mc.getText()
 			);
 			break;
+		/*	
 		case Constants.GUI_PROFILER_TRACE:
-	//		System.err.println("Profiler trace event");
 			this.model_configuration_page.setProfilerTracePath(
 				(String) evt.getNewValue()
 			);
@@ -503,39 +583,98 @@ implements IView
 			this.model_configuration_page.setHostConfigurationPath(
 				(String) evt.getNewValue()
 			);
-			break;
+			break; 
+		
+			 
 		case Constants.GUI_PERFORM_PARTITIONING:
-			{
-				boolean enabled 
-					= (boolean) evt.getNewValue();
-				this.model_configuration_page
-					.set_partitioning_widgets_enabled( enabled );
-			}
-			break;
+		{
+			boolean enabled 
+				= (boolean) evt.getNewValue();
+			this.model_configuration_page
+				.set_partitioning_widgets_enabled( enabled );
+		}
+		break; */
 		case Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL:
 			boolean enabled
 				= (boolean) evt.getNewValue();
-			this.model_configuration_page.visualizeModuleModel();
-			this.model_configuration_page.set_configuration_widgets_enabled( enabled );
+			this.visualizeModuleModel();
+			//this.model_configuration_page.set_configuration_widgets_enabled( enabled );
 			break;
 		case Constants.MODULE_EXCHANGE_MAP:
 			Map<ModulePair, InteractionData> map
 				= (Map<ModulePair, InteractionData>) evt.getNewValue();
-			this.model_configuration_page.setModuleMap(map);
+			this.setModuleMap(map);
 			break;
-		case Constants.ALGORITHM:
-			String algorithm
-				= (String) evt.getNewValue();
-			this.model_configuration_page.setAlgorithm( algorithm );
+		case Constants.GUI_PERFORM_PARTITIONING:
+			this.perform_partitioning
+				= (Boolean) evt.getNewValue();
 			break;
-		case Constants.SOLUTION:
-			String solution
-				= (String) evt.getNewValue();
-			this.model_configuration_page.setSolution( solution );
-			break;
+			
 		default:
 			System.out.println("Swallowing message.");
 		};
+	}
+	
+	void 
+	visualizeModuleModel() 
+	{
+		SwingUtilities.invokeLater( new Runnable(){
+			@Override
+			public void
+			run()
+			{
+				synchronized( ModelCreationEditor.this.current_vp_lock ){
+					ModelCreationEditor.this.currentVP
+						= new VisualizePartitioning( frame );
+
+					// problem: drawModules is both a view type component and
+					// a model type component: where does it go? 
+					ModelCreationEditor.this.currentVP.drawModules(
+							ModelCreationEditor.this.module_exchange_map
+					);  
+					
+					try {
+						ModelCreationEditor.this.frame.pack();
+						SwingUtilities.updateComponentTreeUI(
+								ModelCreationEditor.this.frame
+						);
+						
+					} catch (Exception e) {
+						e.printStackTrace();
+					};
+					
+					// the following can be done after the creation of the VP, but can be
+					// done easily using the existing
+					// framework; so we may treat it as a something unrelated to the above
+					Display.getDefault().asyncExec(
+						new Runnable(){
+							@Override
+							public void run() {
+								if(ModelCreationEditor.this.perform_partitioning){
+									ModelCreationEditor.this.currentVP
+					            		.setAlgorithm( ModelCreationEditor.this.algorithm );
+									System.out.println("Algorithm: "+ ModelCreationEditor.this.algorithm );
+									ModelCreationEditor.this.currentVP
+					            		.setSolution( ModelCreationEditor.this.solution );
+									System.out.println("Solution: " + ModelCreationEditor.this.algorithm );
+								}
+							}
+						}
+					);
+				}
+			}
+		});
+	}	
+	
+	public void 
+	setModuleMap
+	( Map<ModulePair, InteractionData> map ) 
+	// TODO: EXTREMELY dangerous to pass a reference 
+	//	from the model like this: see if you can create a copy
+	// 	or refactor (split the VP object into parts, or something)
+	{
+		this.module_exchange_map
+			= map;
 	}
 	
 	@Override
@@ -549,32 +688,24 @@ implements IView
 		}
 	}
 
-	public Object 
-	getConfigurationState() 
-	// TODO: problematic: this could be called from any thread
-	{
-		String[] args 
-			= new String[]{
-			Constants.GUI_PROFILER_TRACE,
-			Constants.GUI_MODULE_EXPOSER,
-			Constants.GUI_HOST_CONFIGURATION,
-			Constants.GUI_MODULE_COARSENER,
-			Constants.GUI_SET_MODULE_EXPOSURE,
-			Constants.GUI_SET_SYNTHETIC_NODE,
-			Constants.GUI_PERFORM_PARTITIONING,
-			Constants.GUI_EXECUTION_COST,
-			Constants.GUI_INTERACTION_COST,
-			Constants.GUI_PARTITIONER_TYPE
-		};
-		
-		
-		return this.partitioner_gui_state_model.request(args);
-	}
-
 	public IController 
 	getController() 
 	// this is going to create problems when we switch references
 	{
 		return this.controller;
+	}
+	
+	public void 
+	setAlgorithm
+	( String algorithm ) 
+	{
+		this.algorithm = algorithm;
+	}
+
+	public void 
+	setSolution
+	( String solution ) 
+	{
+		this.solution = solution;
 	}
 }

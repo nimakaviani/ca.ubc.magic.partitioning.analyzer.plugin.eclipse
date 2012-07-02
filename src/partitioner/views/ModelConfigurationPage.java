@@ -83,8 +83,6 @@ extends ScrolledForm
 	private Object current_vp_lock;
 	private VisualizePartitioning currentVP;
 
-	private Map<ModulePair, InteractionData> module_exchange_map;
-
 	private String algorithm;
 
 	private String solution;
@@ -766,92 +764,30 @@ extends ScrolledForm
 	( boolean enabled ) 
 	{
 		Display.getDefault().asyncExec( 
-				new Runnable(){
-					@Override
-					public void run() 
-					{
-						ModelConfigurationPage.this.host_config_text.setEditable(false);
-						ModelConfigurationPage.this.module_exposer_text.setEditable(false);
-						
-						ModelConfigurationPage.this.actions_composite.setVisible(false);
-						
-						ModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
-						ModelConfigurationPage.this.exposure_button.setEnabled(false);
-						
-						ModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
-						ModelConfigurationPage.this.host_config_browse.setVisible(false);
-						ModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
-						
-						ModelConfigurationPage.this
-							.perform_partitioning_button.setEnabled(false);
-						ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
-						
-						ModelConfigurationPage.this.updateModelName();
-					}
-				});
-	}
-
-	public void 
-	setModuleMap
-	( Map<ModulePair, InteractionData> map ) 
-	// TODO: EXTREMELY dangerous to pass a reference 
-	//	from the model like this: see if you can create a copy
-	// 	or refactor (split the VP object into parts, or something)
-	{
-		this.module_exchange_map
-			= map;
-	}
-
-	void 
-	visualizeModuleModel() 
-	{
-		SwingUtilities.invokeLater( new Runnable(){
-			@Override
-			public void
-			run()
-			{
-				synchronized(ModelConfigurationPage.this.current_vp_lock){
-					ModelConfigurationPage.this.currentVP
-						= new VisualizePartitioning( frame );
-
-					// problem: drawModules is both a view type component and
-					// a model type component: where does it go? 
-					ModelConfigurationPage.this.currentVP.drawModules(
-						ModelConfigurationPage.this.module_exchange_map
-					);  
+			new Runnable(){
+				@Override
+				public void run() 
+				{
+					ModelConfigurationPage.this.host_config_text.setEditable(false);
+					ModelConfigurationPage.this.module_exposer_text.setEditable(false);
 					
-					try {
-						ModelConfigurationPage.this.frame.pack();
-						SwingUtilities.updateComponentTreeUI(
-								ModelConfigurationPage.this.frame
-						);
-						
-					} catch (Exception e) {
-						e.printStackTrace();
-					};
+					ModelConfigurationPage.this.actions_composite.setVisible(false);
 					
-					// the following can be done after the creation of the VP, but can be
-					// done easily using the existing
-					// framework; so we may treat it as a something unrelated to the above
-					Display.getDefault().asyncExec(
-						new Runnable(){
-							@Override
-							public void run() {
-								if(ModelConfigurationPage.this.perform_partitioning_button.getSelection()){
-									ModelConfigurationPage.this.currentVP
-					            		.setAlgorithm( ModelConfigurationPage.this.algorithm );
-									System.out.println("Algorithm: "+ ModelConfigurationPage.this.algorithm );
-									ModelConfigurationPage.this.currentVP
-					            		.setSolution( ModelConfigurationPage.this.solution );
-									System.out.println("Solution: " + ModelConfigurationPage.this.algorithm );
-								}
-							}
-						}
-					);
+					ModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
+					ModelConfigurationPage.this.exposure_button.setEnabled(false);
+					
+					ModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
+					ModelConfigurationPage.this.host_config_browse.setVisible(false);
+					ModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
+					
+					ModelConfigurationPage.this
+						.perform_partitioning_button.setEnabled(false);
+					ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
+					
+					ModelConfigurationPage.this.updateModelName();
 				}
-			}
-		});
-	}	
+			});
+	}
 
 	public void 
 	setAlgorithm

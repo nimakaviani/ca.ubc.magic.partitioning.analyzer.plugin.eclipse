@@ -1,24 +1,9 @@
 package partitioner_configuration.views;
 
-import java.awt.Frame;
 import java.beans.PropertyChangeEvent;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Map;
 
-import javax.swing.SwingUtilities;
-
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -32,11 +17,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IPartListener2;
-import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPartReference;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.forms.widgets.ScrolledForm;
@@ -46,9 +26,7 @@ import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.ViewPart;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
-import org.osgi.service.event.EventAdmin;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 
@@ -59,16 +37,12 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
-import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 
-import partitioner.models.PartitionerGUIStateModel;
-import partitioner.views.ModelConfigurationPage;
 import partitioner.views.ModelCreationEditor;
 import plugin.Constants;
 
 import snapshots.controller.IController;
 import snapshots.views.IView;
-import snapshots.views.VirtualModelFileInput;
 
 public class 
 PartitionerConfigurationView 
@@ -98,14 +72,6 @@ implements IView
 	private Combo 	interaction_model_combo;
 	private Combo 	execution_model_combo;
 
-	private Object 	current_vp_lock = new Object();
-
-	private VisualizePartitioning currentVP;
-
-	private Frame 	frame;
-
-	private ModelCreationEditor model_creation_editor;
-	
 	private Object controller_lock = new Object();
 	
 	@Override
@@ -113,8 +79,6 @@ implements IView
 	createPartControl
 	( Composite parent ) 
 	{
-		setupViewCommunication();
-		
 		// the following code is a view-communication solution
 			// found in:
 			// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
@@ -133,7 +97,7 @@ implements IView
 						if( display.getThread() == Thread.currentThread() ){
 							IController controller 
 								= (IController) event.getProperty("ACTIVE_EDITOR");
-							PartitionerConfigurationView.this.setValues(controller);
+							PartitionerConfigurationView.this.setValues( controller );
 						}
 						else {
 							display.syncExec( 
@@ -263,6 +227,7 @@ implements IView
 		this.initializeActionsWidgets(actions_client, toolkit);
 		
 		this.set_partitioning_widgets_enabled(false); 
+		
 	}
 	
 
@@ -281,8 +246,6 @@ implements IView
 			"The string is not contained in the combo box."
 		);
 	}
-
-
 	
 	private void 
 	initializeSetPathsBarGrid
@@ -512,9 +475,9 @@ implements IView
 		GridData grid_data 
 			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
 		grid_data.horizontalSpan = 1;
-		perform_partitioning_button.setLayoutData(grid_data);
+		this.perform_partitioning_button.setLayoutData(grid_data);
 		
-		perform_partitioning_button.addSelectionListener(
+		this.perform_partitioning_button.addSelectionListener(
 			new SelectionAdapter()
 			{
 				@Override
@@ -565,6 +528,7 @@ implements IView
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
+					System.out.println("Selected partitioner");
 					PartitionerConfigurationView.this.controller.setModelProperty(
 						Constants.GUI_PARTITIONER_TYPE,
 						PartitionerType.fromString(
@@ -700,48 +664,9 @@ implements IView
 	public void
 	setVisualizationAction()
 	{
-		// david - make sure we are not in the middle of creating a new model
-		synchronized( this.current_vp_lock ){
-			if(this.currentVP != null){
-				return;
-			}
-		}
-		
-		try{ 
-			// for concurrency, we cache the references we will work with
-			final String profiler_trace_path
-				 = null;
-			// this.partitioner_gui_state_model.getProfilerTracePath();
-			final PartitionerGUIStateModel gui_state_model 
-				= null;
-			// this.partitioner_gui_state_model;
-			
-			if(  	profiler_trace_path == null 
-					|| profiler_trace_path.equals("") ) {
-				throw new Exception("No profiler dump data is provided.");   
-			}
-			
-           	if( gui_state_model.getHostConfigurationPath()
-           			.equals("") ) {
-           		throw new Exception ("No host layout is provided.");
-           	}
-           	
-           	gui_state_model.initializeHostModel();
-           
-           	// reading the input stream for the profiling XML document 
-           	// provided to the tool.
-           	PartitionerConfigurationView.Job job 
-           		= new PartitionerConfigurationView.Job(
-           			profiler_trace_path,
-           			gui_state_model
-           		);
-           	
-           	job.setUser(true);
-           	job.setPriority(PartitionerConfigurationView.Job.SHORT);
-           	job.schedule();
-        }catch(Exception e){    
-        	e.printStackTrace();
-        }
+		this.controller.notifyModel(
+			Constants.GENERATE_MODEL_EVENT
+		);
 	}
 	
 	void
@@ -772,49 +697,55 @@ implements IView
 		return return_value;
 	}
 	
-	private void 
-	updateModelName() 
-	{
-		String name_suffix
-			= new SimpleDateFormat("HH:mm:ss")
-				.format( new Date() );
-		String coarsener
-			= this.set_coarsener_combo.getText();
-		String new_name
-			= coarsener + "_" + name_suffix;
-		
-		VirtualModelFileInput input
-			= (VirtualModelFileInput) 
-				this.model_creation_editor.getEditorInput();
-		
-		input.setSecondaryName(new_name);
-		
-		BundleContext context 
-			= FrameworkUtil.getBundle(
-				ModelConfigurationPage.class
-			).getBundleContext();
-        ServiceReference<EventAdmin> ref 
-        	= context.getServiceReference(EventAdmin.class);
-        EventAdmin eventAdmin 
-        	= context.getService(ref);
-        Map<String,Object> properties 
-        	= new HashMap<String, Object>();
-        properties.put("REFRESH", new Boolean(true));
-        Event event 
-        	= new Event("viewcommunication/syncEvent", properties);
-        eventAdmin.sendEvent(event);
-        event = new Event("viewcommunication/asyncEvent", properties);
-        eventAdmin.postEvent(event);
-        
-        this.model_creation_editor.updateTitle();
-	}
-	
 	@Override
 	public void 
 	modelPropertyChange
 	( PropertyChangeEvent evt ) 
 	{
+		switch(evt.getPropertyName())
+		{
+		// TODO: for every change in the input, we have to trigger
+		// 	a change in the model: this will ensure persistence;
+		// 	we also need to move the handlers from model events into here
+		case Constants.GUI_MODULE_COARSENER:
+			ModuleCoarsenerType mc 
+				= (ModuleCoarsenerType) evt.getNewValue();
+			System.out.println(
+				"The module coarsener was modified to " + mc.getText()
+			);
+			break;
 		
+		case Constants.GUI_PROFILER_TRACE:
+			this.setProfilerTracePath(
+				(String) evt.getNewValue()
+			);
+			break;
+		case Constants.GUI_MODULE_EXPOSER:
+			this.setModuleExposerPath(
+				(String) evt.getNewValue()
+			);
+			break;
+		case Constants.GUI_HOST_CONFIGURATION:
+			this.setHostConfigurationPath(
+				(String) evt.getNewValue()
+			);
+			break; 
+		case Constants.GUI_PERFORM_PARTITIONING:
+			{
+				Boolean enabled 
+					= (Boolean) evt.getNewValue();
+				System.out.println("The paritioner is " + enabled.toString() );
+				this.set_partitioning_widgets_enabled( enabled );
+			}
+			break; 
+		case Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL:
+			boolean enabled
+				= (boolean) evt.getNewValue();
+			this.set_configuration_widgets_enabled( enabled );
+			break;
+		default:
+			System.out.println("Swallowing message.");
+		};
 	}
 
 	@Override
@@ -822,162 +753,6 @@ implements IView
 	setFocus() 
 	{
 		
-	}
-	
-	class 
-	Job extends org.eclipse.core.runtime.jobs.Job
-	{
-		private String profiler_trace_path;
-		private PartitionerGUIStateModel gui_state_model;
-		
-		Job
-		( String profiler_trace_path, PartitionerGUIStateModel gui_state_model )
-		{
-			super("Create Model");
-			
-			this.profiler_trace_path
-				= profiler_trace_path;
-			this.gui_state_model
-				= gui_state_model;
-		}
-		@Override
-		protected IStatus 
-		run
-		( IProgressMonitor monitor ) 
-		{
-			try {
-				final InputStream in 
-					=  new BufferedInputStream(
-						new FileInputStream(
-							this.profiler_trace_path
-						)
-					);
-				if( monitor.isCanceled()){
-				 	return Status.CANCEL_STATUS;
-				}
-				this.gui_state_model.createModuleModel(in);
-				in.close();
-				this.gui_state_model.finished();
-				visualizeModuleModel(); 
-				
-				Display.getDefault().asyncExec( 
-					new Runnable(){
-						@Override
-						public void run() 
-						{
-							PartitionerConfigurationView.this.setConfigurationWidgetsEnabled(false);
-							
-							PartitionerConfigurationView.this
-								.perform_partitioning_button.setEnabled(false);
-							PartitionerConfigurationView.this.set_partitioning_widgets_enabled(false);
-							
-							PartitionerConfigurationView.this.updateModelName();
-						}
-					});
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			return Status.OK_STATUS;
-		}
-		
-		private void 
-		visualizeModuleModel() 
-		{
-			SwingUtilities.invokeLater( new Runnable(){
-				@Override
-				public void
-				run()
-				{
-					synchronized(PartitionerConfigurationView.this.current_vp_lock){
-						PartitionerConfigurationView.this.currentVP
-							= new VisualizePartitioning( frame );
-
-						PartitionerConfigurationView.this.currentVP.drawModules(
-							Job.this.gui_state_model
-								.getModuleModel().getModuleExchangeMap()
-						);  
-						
-						try {
-							PartitionerConfigurationView.this.frame.pack();
-							SwingUtilities.updateComponentTreeUI(
-									PartitionerConfigurationView.this.frame
-							);
-							
-						} catch (Exception e) {
-							e.printStackTrace();
-						};
-						
-						if(Job.this.gui_state_model.isPartitioningEnabled()){
-							PartitionerConfigurationView.this.currentVP
-				            	.setAlgorithm(Job.this.gui_state_model.getAlgorithmString());
-							PartitionerConfigurationView.this.currentVP
-				            	.setSolution(Job.this.gui_state_model.getSolution());
-						}
-					}
-				}
-			});
-		}
-	}
-	
-	private void 
-	setupViewCommunication() 
-	{
-		IWorkbenchPage page = this.getSite().getPage();
-		   
-		//adding a listener
-		IPartListener2 pl = new IPartListener2() {
-			public void partActivated( IWorkbenchPartReference part_ref ){
-				if(part_ref.getPart(false) instanceof ModelCreationEditor ){
-					ModelCreationEditor editor
-						= (ModelCreationEditor) part_ref.getPart(false);
-					
-					System.out.println( "Active: " + part_ref.getTitle() );
-					
-					BundleContext context 
-						= FrameworkUtil.getBundle(
-							ModelConfigurationPage.class
-						).getBundleContext();
-			        ServiceReference<EventAdmin> ref 
-			        	= context.getServiceReference(EventAdmin.class);
-			        EventAdmin eventAdmin 
-			        	= context.getService( ref );
-			        Map<String,Object> properties 
-			        	= new HashMap<String, Object>();
-			        properties.put( "ACTIVE_EDITOR", editor.getController() );
-			        Event event 
-			        	= new Event("viewcommunication/syncEvent", properties);
-			        eventAdmin.sendEvent(event);
-			        event = new Event("viewcommunication/asyncEvent", properties);
-			        eventAdmin.postEvent(event);
-				}
-			}
-		
-			@Override
-			public void partBroughtToTop(IWorkbenchPartReference partRef) {	}
-			
-			@Override
-			public void partClosed(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partDeactivated(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partOpened(IWorkbenchPartReference partRef) { } 
-			
-			@Override
-			public void partHidden(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partVisible(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partInputChanged(IWorkbenchPartReference partRef) {	}
-		};
-	
-		page.addPartListener(pl);
 	}
 	
 	protected void 
@@ -995,8 +770,8 @@ implements IView
 		PartitionerConfigurationView.this.mod_exposer_browse_button.setVisible(enabled);
 		PartitionerConfigurationView.this.host_config_browse.setVisible(enabled);
 		PartitionerConfigurationView.this.set_coarsener_combo.setEnabled(enabled);
+		PartitionerConfigurationView.this.perform_partitioning_button.setEnabled(enabled);
 	}
-
 
 	protected void 
 	setValues
@@ -1016,6 +791,7 @@ implements IView
 				// this will need to be controlled by a lock
 			}
 			this.controller = controller;
+			this.controller.addView(this);
 			
 			String[] args 
 				= new String[]{
@@ -1035,12 +811,12 @@ implements IView
 			Object[] properties 
 				= this.controller.requestProperties(args);
 			
-			System.err.println("Profiler trace: " + (String) properties[0]);
+			//System.err.println("Profiler trace: " + (String) properties[0]);
 			this.profiler_trace_text.setText( (String) properties[0]);
 			this.profiler_trace_text.setSize(400, this.profiler_trace_text.getSize().y);
-			System.out.println("x : " + this.profiler_trace_text.getSize().x +
-					"y " + this.profiler_trace_text.getSize().y );
-			System.out.println("From label: " + this.profiler_trace_text.getText());
+			//System.out.println("x : " + this.profiler_trace_text.getSize().x +
+			//		"y " + this.profiler_trace_text.getSize().y );
+			//System.out.println("From label: " + this.profiler_trace_text.getText());
 			this.module_exposer_text.setText( (String) properties[1]);
 			this.host_config_text.setText( (String) properties[2]);
 			
@@ -1050,13 +826,13 @@ implements IView
 					((ModuleCoarsenerType) properties[3]).getText()
 				);
 			this.set_coarsener_combo.select( index);
-			System.out.println( "exposure_button" + properties[4].toString());
+			//System.out.println( "exposure_button" + properties[4].toString());
 			this.exposure_button.setSelection( (Boolean) properties[4]);
-			System.out.println( "synthetic_node_button" + properties[5].toString());
+			//System.out.println( "synthetic_node_button" + properties[5].toString());
 			this.synthetic_node_button.setSelection( (Boolean) properties[5]);
 			
-			this.perform_partitioning_button.setEnabled( (Boolean) properties[6]);
-			System.err.println(((ExecutionCostType) properties[7]).getText());
+			this.perform_partitioning_button.setSelection( (Boolean) properties[6]);
+			//System.err.println(((ExecutionCostType) properties[7]).getText());
 			index 
 				= this.findIndex(
 					this.execution_model_combo, 
@@ -1079,6 +855,55 @@ implements IView
 			this.setConfigurationWidgetsEnabled((Boolean) properties[10]);
 			
 		}
+	}
+	
+	public void
+	setProfilerTracePath
+	( String path )
+	{
+		this.profiler_trace_text.setText( path );
+	}
+	
+	public void 
+	setModuleExposerPath
+	( String new_value ) 
+	{
+		this.module_exposer_text.setText( new_value );
+	}
+	
+	public void
+	setHostConfigurationPath
+	( String path )
+	{
+		this.host_config_text.setText( path );
+	}
+	
+	public void 
+	set_configuration_widgets_enabled
+	( boolean enabled ) 
+	{
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void run() 
+				{
+					PartitionerConfigurationView.this.host_config_text.setEditable(false);
+					PartitionerConfigurationView.this.module_exposer_text.setEditable(false);
+					
+					PartitionerConfigurationView.this.actions_composite.setVisible(false);
+					
+					PartitionerConfigurationView.this.synthetic_node_button.setEnabled(false);
+					PartitionerConfigurationView.this.exposure_button.setEnabled(false);
+					
+					PartitionerConfigurationView.this.mod_exposer_browse_button.setVisible(false);
+					PartitionerConfigurationView.this.host_config_browse.setVisible(false);
+					PartitionerConfigurationView.this.set_coarsener_combo.setEnabled(false);
+					
+					PartitionerConfigurationView.this
+						.perform_partitioning_button.setEnabled(false);
+					PartitionerConfigurationView.this.set_partitioning_widgets_enabled(false);
+				}
+			});
 	}
 
 }

@@ -84,9 +84,9 @@ PropertyChangeDelegate
 	
 		for( String property_name : property_names ){
 			if(this.property_map.get(property_name) == null){
-				System.out.println("Null " + property_name);
+			//	System.out.println("Null " + property_name);
 			}
-			System.out.println( property_name + " " + this.property_map.get(property_name).toString() );
+			//System.out.println( property_name + " " + this.property_map.get(property_name).toString() );
 			return_values.add( 
 				this.property_map.get(property_name) 
 			);

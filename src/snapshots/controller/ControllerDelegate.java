@@ -155,7 +155,7 @@ implements IController
 	propertyChange
 	( PropertyChangeEvent evt ) 
 	{
-		System.out.println("Property Changed");
+		System.out.println("Property Changed: " + evt.getPropertyName());
 		for(IView view : registered_views){
 			view.modelPropertyChange(evt);
 		}

@@ -37,7 +37,11 @@ public class EntityConstraintParser extends DefaultHandler {
         FileReader r = new FileReader(filename);
         xr.parse(new InputSource(r));          
         
-        return mHandler.getConstraintModel();
+        EntityConstraintModel return_value = mHandler.getConstraintModel();
+        
+        assert return_value != null : "The parsing should not return a null";
+        
+        return return_value;
     }   
     
     @Override

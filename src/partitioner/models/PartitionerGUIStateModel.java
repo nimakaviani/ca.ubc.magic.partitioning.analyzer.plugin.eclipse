@@ -46,6 +46,9 @@ PartitionerGUIStateModel
 implements IModel
 // TODO: write an adapter around the Model so were more cleanly separate
 //		the mvc interface from the program logic
+// TODO: it is only by luck that the values in the model match the initial
+//		values in the view; they must be synchronized at the outset through
+//		some mechanism
 {
 	private PropertyChangeDelegate 	property_change_delegate;
 	
@@ -60,8 +63,8 @@ implements IModel
 	
 	private volatile Boolean		configuration_panel_enabled = true;
 	
-	private ModuleModelHandler mmHandler;
-	private SimulationFramework mSimFramework; 
+	private ModuleModelHandler 		mmHandler;
+	private SimulationFramework	 	mSimFramework; 
 	
 	// the following is set once in the SwingWorker thread
 	private volatile ModuleModel 			mModuleModel;
@@ -410,7 +413,8 @@ implements IModel
 			// If the Profile XML file belongs to a real trace of the application
 	        // (i.e., the "Preset Module Placement" checkbox is checked),
 	        // create the ModuleModel from the collected traces.
-	        if ( !this.preset_module_graph ){     
+	        if ( !this.preset_module_graph ){  
+	        	
 	            if( this.enable_module_exposure ){
 	                // parsing the entity constraints to be 
 	            	// exposed in the dependency graph
@@ -428,24 +432,29 @@ implements IModel
 	            // here we set the list of extra switch constraints 
 	            // that would affect the parsing of the model
 	            if (  new_constraint_model != null ){
-	            	 new_constraint_model
+	            	new_constraint_model
 	            	 	.getConstraintSwitches().setSyntheticNodeActivated(
 	            	 		this.enable_synthetic_node   
 	            	 	);
 	            }
-	            
-	            JipRun jipRun 
+	            	 
+            	JipRun jipRun 
 	            	= JipParser.parse(in);             
-	            IModuleCoarsener moduleCoarsener 
-	            	= ModuleCoarsenerFactory.getModuleCoarsener(
-	            		this.mModuleType, 
-	            		// david - the constraint model could be null here
-	            		// in which case the program will crash
-	            		new_constraint_model
-	            	);                                 
+		        IModuleCoarsener moduleCoarsener 
+		        	= ModuleCoarsenerFactory.getModuleCoarsener(
+		        		this.mModuleType, 
+		            	// david - the constraint model could be null here
+		            	// in which case the program will crash
+		        		// TODO: ask nima to fix this: it basically means 
+		        		// enable module exposure must be set
+		            	new_constraint_model
+		            );     
+	            
 	            module_model
 	            	= moduleCoarsener.getModuleModelFromParser( jipRun );
 	        }
+	        
+	        
 	        // If the Profile XML file carries only the hypothetical information for
 	        // potential module placements use the ModuleModelParser together with
 	        // host information in order to derive the ModuleModel, the ModuleHost
@@ -500,7 +509,9 @@ implements IModel
 				new DistributionModel(module_model, mHostModel))
 			);
 		
+		System.out.println( this.perform_partitioning.toString() );
 		if(this.perform_partitioning){
+			System.out.println("Performing partition");
 			this.runPartitioningAlgorithm();
 		}
 		
@@ -512,13 +523,13 @@ implements IModel
 		this.property_change_delegate.firePropertyChange(
 			Constants.ALGORITHM,
 			null,
-			this.getAlgorithmString()
+			this.partitioner_type.getText()
 		);
 		
 		this.property_change_delegate.firePropertyChange(
 			Constants.SOLUTION,
 			null,
-			this.getSolution()
+			this.partitioner_solution
 		);
 	}
 	
@@ -647,7 +658,8 @@ implements IModel
 				if( monitor.isCanceled()){
 				 	return Status.CANCEL_STATUS;
 				}
-				this.gui_state_model.createModuleModel(in);
+				assert in != null : "The input stream should have been generated correctly";
+				this.gui_state_model.createModuleModel( in );
 				in.close();
 				this.gui_state_model.finished();
 				
@@ -720,30 +732,5 @@ implements IModel
 				properties[i]
 			);
 		}
-	}
-
-	///////////////////////////////////////////////////////////////////
-	///	TODO: The following functions are quite a bit of interface for 
-	///		a single piece of functionality perhaps it would be better 
-	/// 	to display this information elsewhere, and simplify the 
-	///		code; ask Nima.
-	///////////////////////////////////////////////////////////////////
-	
-	public boolean 
-	isPartitioningEnabled() 
-	{
-		return this.perform_partitioning;
-	}
-
-	public String 
-	getAlgorithmString() 
-	{
-		return this.partitioner_type.getText();
-	}
-
-	public String 
-	getSolution() 
-	{
-		return this.partitioner_solution;
 	}
 }
