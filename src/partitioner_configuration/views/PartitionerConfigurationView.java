@@ -1,8 +1,12 @@
 package partitioner_configuration.views;
 
 import java.beans.PropertyChangeEvent;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Map;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -26,7 +30,9 @@ import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.ViewPart;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
+import org.osgi.service.event.EventAdmin;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 
@@ -43,6 +49,7 @@ import plugin.Constants;
 
 import snapshots.controller.IController;
 import snapshots.views.IView;
+import snapshots.views.VirtualModelFileInput;
 
 public class 
 PartitionerConfigurationView 
@@ -79,46 +86,7 @@ implements IView
 	createPartControl
 	( Composite parent ) 
 	{
-		// the following code is a view-communication solution
-			// found in:
-			// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
-			BundleContext context 
-				= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
-			EventHandler handler 
-				= new EventHandler() {
-					public void handleEvent
-					( final Event event )
-					{
-						// acceptable alternative, given that we run only
-						// one display
-						Display display 
-							= Display.getDefault();
-						assert( display != null) : "Display is null";
-						if( display.getThread() == Thread.currentThread() ){
-							IController controller 
-								= (IController) event.getProperty("ACTIVE_EDITOR");
-							PartitionerConfigurationView.this.setValues( controller );
-						}
-						else {
-							display.syncExec( 
-								new Runnable() {
-									public void 
-									run()
-									{
-										IController controller 
-											= (IController) event.getProperty("ACTIVE_EDITOR");
-										PartitionerConfigurationView.this.setValues(controller);
-									}
-								}
-							);
-						}
-					}
-				};
-				
-			Dictionary<String,String> properties 
-				= new Hashtable<String, String>();
-			properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
-			context.registerService(EventHandler.class, handler, properties);
+		this.setupActiveEditorCommunication();
 				
 		this.toolkit 
 			= new FormToolkit( parent.getDisplay() );
@@ -133,7 +101,7 @@ implements IView
 		sf.setText("Configure the Model");
 		
 		Section set_paths_composite
-			= toolkit.createSection(
+			= this.toolkit.createSection(
 				sf.getBody(),
 				Section.TITLE_BAR 
 					| Section.EXPANDED 
@@ -149,7 +117,7 @@ implements IView
 		Composite set_paths_client
 			= this.toolkit.createComposite( set_paths_composite, SWT.WRAP);
 		this.initializeSetPathsBarGrid( set_paths_client );
-		this.initializeSetPathsBarWidgets( set_paths_client, toolkit );
+		this.initializeSetPathsBarWidgets( set_paths_client, this.toolkit );
 		
 		this.toolkit.paintBordersFor(set_paths_client);
 
@@ -160,7 +128,7 @@ implements IView
 		set_paths_composite.setClient(set_paths_client);
 		
 		Section configure_composite
-			= toolkit.createSection(
+			= this.toolkit.createSection(
 				sf.getBody(),
 				Section.TITLE_BAR 
 					|Section.EXPANDED 
@@ -173,16 +141,16 @@ implements IView
 		);
 		
 		Composite configure_client
-			= toolkit.createComposite(configure_composite);
+			= this.toolkit.createComposite(configure_composite);
 		this.initializeConfigurationGrid(configure_client);
-		this.initializeConfigurationWidgets( configure_client, toolkit );
+		this.initializeConfigurationWidgets( configure_client, this.toolkit );
 		td 
 			= new TableWrapData(TableWrapData.FILL);
 		configure_composite.setLayoutData(td);
 		configure_composite.setClient(configure_client);
 		
 		Section partitioning_composite
-			= toolkit.createSection(
+			= this.toolkit.createSection(
 				sf.getBody(),
 				Section.TITLE_BAR 
 					|Section.EXPANDED 
@@ -195,41 +163,160 @@ implements IView
 		);
 		
 		Composite partitioning_client
-			= toolkit.createComposite(partitioning_composite);
+			= this.toolkit.createComposite(partitioning_composite);
 		this.initializePartitioningGrid(partitioning_client);
-		this.initializePartitioningWidgets( partitioning_client, toolkit );
+		this.initializePartitioningWidgets( partitioning_client, this.toolkit );
 		td 
 			= new TableWrapData(TableWrapData.FILL);
 		partitioning_composite.setLayoutData(td);
 		partitioning_composite.setClient(partitioning_client);
 		
 		this.actions_composite
-			= toolkit.createSection(
+			= this.toolkit.createSection(
 				sf.getBody(),
 				Section.TITLE_BAR 
 					| Section.EXPANDED 
 					| Section.DESCRIPTION
 					| Section.TWISTIE
 			);
-		actions_composite.setText("Activate");
-		actions_composite.setDescription(
+		this.actions_composite.setText("Activate");
+		this.actions_composite.setDescription(
 			"Activate the model"
 		);
 		
 		Composite actions_client
-			= toolkit.createComposite(actions_composite);
+			= this.toolkit.createComposite(this.actions_composite);
 		td 
 			= new TableWrapData(TableWrapData.FILL);
-		actions_composite.setLayoutData(td);
-		actions_composite.setClient(actions_client);	
+		this.actions_composite.setLayoutData(td);
+		this.actions_composite.setClient(actions_client);	
 		
 		this.initializeActionsGrid(actions_client);
-		this.initializeActionsWidgets(actions_client, toolkit);
+		this.initializeActionsWidgets(actions_client, this.toolkit);
 		
-		this.set_partitioning_widgets_enabled(false); 
-		
+		this.set_partitioning_widgets_enabled( false ); 
 	}
 	
+	private void 
+	setupActiveEditorCommunication() 
+	{
+		// the following code is a view-communication solution
+		// found in:
+		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
+		BundleContext context 
+			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
+		EventHandler handler 
+			= new EventHandler() {
+				public void handleEvent
+				( final Event event )
+				{
+					// acceptable alternative, given that we run only
+					// one display
+					Display display 
+						= Display.getDefault();
+					if( display.getThread() == Thread.currentThread() ){
+						IController controller 
+							= (IController) event.getProperty("ACTIVE_EDITOR");
+						PartitionerConfigurationView.this.setValues( controller );
+					}
+					else {
+						display.syncExec( 
+							new Runnable() {
+								public void 
+								run()
+								{
+									IController controller 
+										= (IController) event.getProperty("ACTIVE_EDITOR");
+									PartitionerConfigurationView.this.setValues(controller);
+								}
+							}
+						);
+					}
+				}
+			};
+			
+		Dictionary<String,String> properties 
+			= new Hashtable<String, String>();
+		properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
+		context.registerService(EventHandler.class, handler, properties);
+	}
+
+	protected void 
+	setValues
+	( IController controller ) 
+	// this function should only be called from swt thread,
+	// again though, we want to be concerned about threading
+	// issues
+	//
+	// problem: whenever we change anything we have to send a message
+	// to update the model; this basically means we need to controller
+	{
+		synchronized(this.controller_lock){
+			assert controller != null : "The controller argument should not be null";
+			
+			if(this.controller != null){
+				this.controller.removeView(this);
+				// this will need to be controlled by a lock
+			}
+			this.controller = controller;
+			this.controller.addView(this);
+			
+			String[] args 
+				= new String[]{
+				Constants.GUI_PROFILER_TRACE,
+				Constants.GUI_MODULE_EXPOSER,
+				Constants.GUI_HOST_CONFIGURATION,
+				Constants.GUI_MODULE_COARSENER,
+				Constants.GUI_SET_MODULE_EXPOSURE,
+				Constants.GUI_SET_SYNTHETIC_NODE,
+				Constants.GUI_PERFORM_PARTITIONING,
+				Constants.GUI_EXECUTION_COST,
+				Constants.GUI_INTERACTION_COST,
+				Constants.GUI_PARTITIONER_TYPE,
+				Constants.ACTIVE_CONFIGURATION_PANEL
+			};
+			
+			Object[] properties 
+				= this.controller.requestProperties(args);
+			
+			this.profiler_trace_text.setText( (String) properties[0]);
+			this.profiler_trace_text.setSize(400, this.profiler_trace_text.getSize().y);
+			this.module_exposer_text.setText( (String) properties[1]);
+			this.host_config_text.setText( (String) properties[2]);
+			
+			int index 
+				= this.findIndex(
+					this.set_coarsener_combo, 
+					((ModuleCoarsenerType) properties[3]).getText()
+				);
+			this.set_coarsener_combo.select( index);
+			this.exposure_button.setSelection( (Boolean) properties[4]);
+			this.synthetic_node_button.setSelection( (Boolean) properties[5]);
+			
+			this.perform_partitioning_button.setSelection( (Boolean) properties[6]);
+			index 
+				= this.findIndex(
+					this.execution_model_combo, 
+					((ExecutionCostType) properties[7]).getText()
+				);
+			this.execution_model_combo.select( index );
+			index 
+				= this.findIndex(
+					this.interaction_model_combo, 
+					((InteractionCostType) properties[8]).getText()
+				);
+			this.interaction_model_combo.select( index );
+			index 
+				= this.findIndex(
+					this.partitioning_algorithm_combo, 
+					((PartitionerType) properties[9]).getText()
+				);
+			
+			this.partitioning_algorithm_combo.select( index ); 
+			this.setConfigurationWidgetsEnabled((Boolean) properties[10]);
+			
+		}
+	}
 
 	private int 
 	findIndex
@@ -286,9 +373,9 @@ implements IView
 		grid_data.widthHint = 600;
 		this.module_exposer_text.setLayoutData(grid_data);
 		
-		mod_exposer_browse_button 
+		this.mod_exposer_browse_button 
 			= toolkit.createButton(parent, "Browse", SWT.PUSH);
-		mod_exposer_browse_button.addSelectionListener( 
+		this.mod_exposer_browse_button.addSelectionListener( 
 			new SelectionAdapter(){
 				public void widgetSelected
 				( SelectionEvent event )
@@ -317,19 +404,19 @@ implements IView
 		toolkit.createLabel(parent, "Host Config. XML: " );
 		this.host_config_text
 			=  toolkit.createText(parent,"");
-		host_config_text.setEditable( true );
+		this.host_config_text.setEditable( true );
 		grid_data 
 			= new GridData( SWT.FILL, SWT.FILL, true, false, 1, 1);
 		
 		grid_data.grabExcessHorizontalSpace = true;
 		// hack: will need to fix
 		grid_data.widthHint = 600;
-		host_config_text.setLayoutData(grid_data);
+		this.host_config_text.setLayoutData(grid_data);
 		
 		this.host_config_browse 
 			= toolkit.createButton(parent, "Browse", SWT.PUSH);
 		
-		host_config_browse.addSelectionListener( new SelectionAdapter(){
+		this.host_config_browse.addSelectionListener( new SelectionAdapter(){
 			public void widgetSelected( SelectionEvent event ){
 				FileDialog file_dialog 
 					= new FileDialog( 
@@ -342,7 +429,8 @@ implements IView
 				String selected
 					= file_dialog.open();
 				if(selected != null){
-					host_config_text.setText(selected);
+					PartitionerConfigurationView.this
+						.host_config_text.setText(selected);
 				}
 			}
 		});
@@ -376,9 +464,9 @@ implements IView
 		GridData grid_data 
 			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
 		grid_data.horizontalSpan = 1;
-		exposure_button.setLayoutData(grid_data);
+		this.exposure_button.setLayoutData(grid_data);
 		
-		exposure_button.addSelectionListener(
+		this.exposure_button.addSelectionListener(
 			new SelectionAdapter()
 			{
 				@Override
@@ -388,7 +476,10 @@ implements IView
 				{
 					PartitionerConfigurationView.this.controller.setModelProperty(
 						Constants.GUI_SET_MODULE_EXPOSURE, 
-						new Boolean(exposure_button.getSelection())
+						new Boolean(
+							PartitionerConfigurationView.this
+								.exposure_button.getSelection()
+							)
 					);
 				}
 			}
@@ -430,10 +521,10 @@ implements IView
         for( final ModuleCoarsenerType mcType 
         		: ModuleCoarsenerFactory.ModuleCoarsenerType.values())
         {
-            set_coarsener_combo.add(mcType.getText());
+            this.set_coarsener_combo.add(mcType.getText());
         }
 		
-		set_coarsener_combo.addSelectionListener( 
+		this.set_coarsener_combo.addSelectionListener( 
 			new SelectionAdapter(){
 				public void 
 				widgetSelected( SelectionEvent se )
@@ -441,14 +532,15 @@ implements IView
 					PartitionerConfigurationView.this.controller.setModelProperty(
 						Constants.GUI_MODULE_COARSENER,
 						ModuleCoarsenerType.fromString(
-							set_coarsener_combo.getText()
+							PartitionerConfigurationView.this
+								.set_coarsener_combo.getText()
 						)
 					);
 				}
 			}
 		);
 		
-		set_coarsener_combo.select(0);
+		this.set_coarsener_combo.select(0);
 	}
 	
 	private void 
@@ -655,17 +747,11 @@ implements IView
 						PartitionerConfigurationView.this.module_exposer_text.getText()
 					);
 					
-					PartitionerConfigurationView.this.setVisualizationAction();
+					PartitionerConfigurationView.this.controller.notifyModel(
+							Constants.GENERATE_MODEL_EVENT
+						);
 				}
 			}
-		);
-	}
-	
-	public void
-	setVisualizationAction()
-	{
-		this.controller.notifyModel(
-			Constants.GENERATE_MODEL_EVENT
 		);
 	}
 	
@@ -704,45 +790,35 @@ implements IView
 	{
 		switch(evt.getPropertyName())
 		{
-		// TODO: for every change in the input, we have to trigger
-		// 	a change in the model: this will ensure persistence;
-		// 	we also need to move the handlers from model events into here
-		case Constants.GUI_MODULE_COARSENER:
-			ModuleCoarsenerType mc 
-				= (ModuleCoarsenerType) evt.getNewValue();
-			System.out.println(
-				"The module coarsener was modified to " + mc.getText()
-			);
-			break;
-		
 		case Constants.GUI_PROFILER_TRACE:
-			this.setProfilerTracePath(
-				(String) evt.getNewValue()
+			this.profiler_trace_text.setText( 
+				(String) evt.getNewValue() 
 			);
 			break;
 		case Constants.GUI_MODULE_EXPOSER:
-			this.setModuleExposerPath(
-				(String) evt.getNewValue()
+			this.module_exposer_text.setText( 
+				(String) evt.getNewValue() 
 			);
 			break;
 		case Constants.GUI_HOST_CONFIGURATION:
-			this.setHostConfigurationPath(
-				(String) evt.getNewValue()
+			this.host_config_text.setText( 
+				(String) evt.getNewValue() 
 			);
 			break; 
 		case Constants.GUI_PERFORM_PARTITIONING:
-			{
-				Boolean enabled 
-					= (Boolean) evt.getNewValue();
-				System.out.println("The paritioner is " + enabled.toString() );
-				this.set_partitioning_widgets_enabled( enabled );
-			}
+		{
+			Boolean enabled 
+				= (Boolean) evt.getNewValue();
+			this.set_partitioning_widgets_enabled( enabled );
 			break; 
-		case Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL:
+		}
+		case Constants.ACTIVE_CONFIGURATION_PANEL:
+		{
 			boolean enabled
 				= (boolean) evt.getNewValue();
 			this.set_configuration_widgets_enabled( enabled );
 			break;
+		}
 		default:
 			System.out.println("Swallowing message.");
 		};
@@ -772,111 +848,6 @@ implements IView
 		PartitionerConfigurationView.this.set_coarsener_combo.setEnabled(enabled);
 		PartitionerConfigurationView.this.perform_partitioning_button.setEnabled(enabled);
 	}
-
-	protected void 
-	setValues
-	( IController controller ) 
-	// this function should only be called from swt thread,
-	// again though, we want to be concerned about threading
-	// issues
-	//
-	// problem: whenever we change anything we have to send a message
-	// to update the model; this basically means we need to controller
-	{
-		synchronized(this.controller_lock){
-			assert controller != null : "The controller argument should not be null";
-			
-			if(this.controller != null){
-				this.controller.removeView(this);
-				// this will need to be controlled by a lock
-			}
-			this.controller = controller;
-			this.controller.addView(this);
-			
-			String[] args 
-				= new String[]{
-				Constants.GUI_PROFILER_TRACE,
-				Constants.GUI_MODULE_EXPOSER,
-				Constants.GUI_HOST_CONFIGURATION,
-				Constants.GUI_MODULE_COARSENER,
-				Constants.GUI_SET_MODULE_EXPOSURE,
-				Constants.GUI_SET_SYNTHETIC_NODE,
-				Constants.GUI_PERFORM_PARTITIONING,
-				Constants.GUI_EXECUTION_COST,
-				Constants.GUI_INTERACTION_COST,
-				Constants.GUI_PARTITIONER_TYPE,
-				Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL
-			};
-			
-			Object[] properties 
-				= this.controller.requestProperties(args);
-			
-			//System.err.println("Profiler trace: " + (String) properties[0]);
-			this.profiler_trace_text.setText( (String) properties[0]);
-			this.profiler_trace_text.setSize(400, this.profiler_trace_text.getSize().y);
-			//System.out.println("x : " + this.profiler_trace_text.getSize().x +
-			//		"y " + this.profiler_trace_text.getSize().y );
-			//System.out.println("From label: " + this.profiler_trace_text.getText());
-			this.module_exposer_text.setText( (String) properties[1]);
-			this.host_config_text.setText( (String) properties[2]);
-			
-			int index 
-				= this.findIndex(
-					this.set_coarsener_combo, 
-					((ModuleCoarsenerType) properties[3]).getText()
-				);
-			this.set_coarsener_combo.select( index);
-			//System.out.println( "exposure_button" + properties[4].toString());
-			this.exposure_button.setSelection( (Boolean) properties[4]);
-			//System.out.println( "synthetic_node_button" + properties[5].toString());
-			this.synthetic_node_button.setSelection( (Boolean) properties[5]);
-			
-			this.perform_partitioning_button.setSelection( (Boolean) properties[6]);
-			//System.err.println(((ExecutionCostType) properties[7]).getText());
-			index 
-				= this.findIndex(
-					this.execution_model_combo, 
-					((ExecutionCostType) properties[7]).getText()
-				);
-			this.execution_model_combo.select( index );
-			index 
-				= this.findIndex(
-					this.interaction_model_combo, 
-					((InteractionCostType) properties[8]).getText()
-				);
-			this.interaction_model_combo.select( index );
-			index 
-				= this.findIndex(
-					this.partitioning_algorithm_combo, 
-					((PartitionerType) properties[9]).getText()
-				);
-			
-			this.partitioning_algorithm_combo.select( index ); 
-			this.setConfigurationWidgetsEnabled((Boolean) properties[10]);
-			
-		}
-	}
-	
-	public void
-	setProfilerTracePath
-	( String path )
-	{
-		this.profiler_trace_text.setText( path );
-	}
-	
-	public void 
-	setModuleExposerPath
-	( String new_value ) 
-	{
-		this.module_exposer_text.setText( new_value );
-	}
-	
-	public void
-	setHostConfigurationPath
-	( String path )
-	{
-		this.host_config_text.setText( path );
-	}
 	
 	public void 
 	set_configuration_widgets_enabled
@@ -902,8 +873,53 @@ implements IView
 					PartitionerConfigurationView.this
 						.perform_partitioning_button.setEnabled(false);
 					PartitionerConfigurationView.this.set_partitioning_widgets_enabled(false);
+					
+					PartitionerConfigurationView.this.updateModelName();
 				}
 			});
 	}
-
+	
+	private void 
+	updateModelName() 
+	{
+		String name_suffix
+			= new SimpleDateFormat("HH:mm:ss")
+				.format( new Date() );
+		String coarsener
+			= PartitionerConfigurationView.this.set_coarsener_combo.getText();
+		String new_name
+			= coarsener + "_" + name_suffix;
+		
+		// the following may not work in all cases : i may need to pass in
+		// the editor along with the controller
+		ModelCreationEditor page 
+			= (ModelCreationEditor) 
+				this.getSite().getPage().getActiveEditor();
+		assert page instanceof ModelCreationEditor 
+			: "Uh oh. We need to pass the editor reference as an argument.";
+		VirtualModelFileInput input
+			= (VirtualModelFileInput) page.getEditorInput();
+			
+		
+		input.setSecondaryName(new_name);
+		
+		BundleContext context 
+			= FrameworkUtil.getBundle(
+				PartitionerConfigurationView.class
+			).getBundleContext();
+        ServiceReference<EventAdmin> ref 
+        	= context.getServiceReference(EventAdmin.class);
+        EventAdmin eventAdmin 
+        	= context.getService(ref);
+        Map<String,Object> properties 
+        	= new HashMap<String, Object>();
+        properties.put("REFRESH", new Boolean(true));
+        Event event 
+        	= new Event("viewcommunication/syncEvent", properties);
+        eventAdmin.sendEvent(event);
+        event = new Event("viewcommunication/asyncEvent", properties);
+        eventAdmin.postEvent(event);
+        
+        page.updateTitle();
+	}
 }

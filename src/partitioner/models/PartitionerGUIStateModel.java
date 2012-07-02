@@ -454,7 +454,6 @@ implements IModel
 	            	= moduleCoarsener.getModuleModelFromParser( jipRun );
 	        }
 	        
-	        
 	        // If the Profile XML file carries only the hypothetical information for
 	        // potential module placements use the ModuleModelParser together with
 	        // host information in order to derive the ModuleModel, the ModuleHost
@@ -665,7 +664,11 @@ implements IModel
 				
 				PartitionerGUIStateModel.this
 					.property_change_delegate.firePropertyChange(
-						Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL, true, false
+						Constants.ACTIVE_CONFIGURATION_PANEL, true, false
+					);
+				PartitionerGUIStateModel.this
+					.property_change_delegate.firePropertyChange(
+						Constants.MODEL_CREATION, null, null
 					);
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -701,7 +704,7 @@ implements IModel
 			Constants.GUI_PARTITIONER_TYPE,
 			Constants.GUI_INTERACTION_COST,
 			Constants.GUI_EXECUTION_COST,
-			Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL
+			Constants.ACTIVE_CONFIGURATION_PANEL
 		};
 		
 		Object[] properties

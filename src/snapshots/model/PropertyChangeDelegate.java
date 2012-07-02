@@ -9,6 +9,8 @@ import java.util.Map;
 
 public class 
 PropertyChangeDelegate 
+// any model which wishes to make use of the getAll() functionality must
+// register the available properties with the delegate
 {
 	protected transient PropertyChangeSupport listeners 
 		= new PropertyChangeSupport(this);
@@ -45,16 +47,17 @@ PropertyChangeDelegate
   
     public void 
     firePropertyChange
-    ( String prop, Object old, Object newValue )
+    ( String property_name, Object old_value, Object new_value )
     {
-    	// should always be 1
-    	System.err.println( this.listeners.getPropertyChangeListeners().length );
-    	
     	// to deal with reference switches
-    	this.property_map.put(prop, newValue);
+    	this.property_map.put(property_name, new_value);
     	
-        if (this.listeners.hasListeners(prop)) {
-            this.listeners.firePropertyChange(prop, old, newValue);
+        if (this.listeners.hasListeners(property_name)) {
+            this.listeners.firePropertyChange(
+            	property_name, 
+            	old_value, 
+            	new_value
+            );
         }
     }
     
@@ -80,13 +83,9 @@ PropertyChangeDelegate
 	( String[] property_names ) 
 	{
 		List<Object> return_values 
-		= new ArrayList<Object>(property_names.length);
+			= new ArrayList<Object>( property_names.length );
 	
 		for( String property_name : property_names ){
-			if(this.property_map.get(property_name) == null){
-			//	System.out.println("Null " + property_name);
-			}
-			//System.out.println( property_name + " " + this.property_map.get(property_name).toString() );
 			return_values.add( 
 				this.property_map.get(property_name) 
 			);
@@ -94,5 +93,4 @@ PropertyChangeDelegate
 		
 		return return_values.toArray(new Object[0]);
 	}
-
 }

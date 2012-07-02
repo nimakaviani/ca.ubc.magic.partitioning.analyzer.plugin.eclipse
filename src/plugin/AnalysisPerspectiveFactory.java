@@ -31,8 +31,8 @@ implements IPerspectiveFactory
 				0.65f,
 				editorArea
 			);
+		bottom.addView(Constants.PERSPECTIVE_CONFIGURATION_VIEW_ID);
 		bottom.addView(Constants.ERROR_LOG_VIEW_ID);
-		//bottom.addView(IPageLayout.ID_PROBLEM_VIEW);
 		
 		layout.addView(
 			Constants.PERSPECTIVE_SNAPSHOTS_VIEW_ID, 

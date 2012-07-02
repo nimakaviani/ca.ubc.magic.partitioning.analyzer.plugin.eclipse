@@ -1,12 +1,10 @@
-package partitioner.views;
+package trash;
 
 import java.awt.Frame;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.swing.SwingUtilities;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -32,12 +30,11 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 
+import partitioner.views.ModelCreationEditor;
 import plugin.Constants;
 import snapshots.controller.ControllerDelegate;
 import snapshots.views.VirtualModelFileInput;
-import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
-import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
@@ -47,7 +44,7 @@ import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.Partiti
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 
 public class
-ModelConfigurationPage
+JunkModelConfigurationPage
 extends ScrolledForm
 // the following code follows the example provide in 
 // http://www.eclipse.org/articles/Article-Forms/article.html
@@ -57,7 +54,6 @@ extends ScrolledForm
 	
 	private Label 	profiler_trace_text;
 	
-	//private PartitionerGUIStateModel partitioner_gui_state_model;
 	private Text module_exposer_text;
 	private Text host_config_text;
 	
@@ -76,17 +72,11 @@ extends ScrolledForm
 	private Combo interaction_model_combo;
 	private Combo execution_model_combo;
 
-	private Frame frame;
-
 	private ModelCreationEditor model_creation_editor;
 	
 	private Object current_vp_lock;
 	private VisualizePartitioning currentVP;
 
-	private String algorithm;
-
-	private String solution;
-	
 	public void
 	setProfilerTracePath
 	( String path )
@@ -94,7 +84,7 @@ extends ScrolledForm
 		this.profiler_trace_text.setText( path );
 	}
 	
-	ModelConfigurationPage
+	JunkModelConfigurationPage
 	( 	Composite parent, 
 		FormToolkit toolkit, 
 		ControllerDelegate controller,
@@ -110,9 +100,6 @@ extends ScrolledForm
 		
 		this.current_vp_lock
 			= current_vp_lock;
-		
-		this.frame
-			= frame;
 		
 		this.currentVP
 			= currentVP;
@@ -304,13 +291,13 @@ extends ScrolledForm
 						);
 					file_dialog.setText("Select File");
 					file_dialog.setFilterPath( 
-						ModelConfigurationPage.this
+						JunkModelConfigurationPage.this
 							.profiler_trace_text.getText() 
 					);
 					String selected
 						= file_dialog.open();
 					if(selected != null){
-						ModelConfigurationPage.this
+						JunkModelConfigurationPage.this
 							.module_exposer_text.setText(selected);
 					}
 				}
@@ -389,7 +376,7 @@ extends ScrolledForm
 				widgetSelected
 				( SelectionEvent e )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_SET_MODULE_EXPOSURE, 
 						new Boolean(exposure_button.getSelection())
 					);
@@ -414,7 +401,7 @@ extends ScrolledForm
 				widgetSelected
 				( SelectionEvent e )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_SET_SYNTHETIC_NODE,
 						new Boolean(synthetic_node_button.getSelection())
 					);
@@ -441,7 +428,7 @@ extends ScrolledForm
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_MODULE_COARSENER,
 						ModuleCoarsenerType.fromString(
 							set_coarsener_combo.getText()
@@ -488,10 +475,10 @@ extends ScrolledForm
 				widgetSelected
 				( SelectionEvent e )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_PERFORM_PARTITIONING, 
 						new Boolean(
-							ModelConfigurationPage.this
+							JunkModelConfigurationPage.this
 								.perform_partitioning_button.getSelection()
 						)
 					);
@@ -549,10 +536,10 @@ extends ScrolledForm
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_PARTITIONER_TYPE,
 						PartitionerType.fromString(
-							ModelConfigurationPage.this.
+							JunkModelConfigurationPage.this.
 								partitioning_algorithm_combo.getText()
 						)
 					);
@@ -583,10 +570,10 @@ extends ScrolledForm
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_INTERACTION_COST,
 						InteractionCostType.fromString(
-							ModelConfigurationPage.this
+							JunkModelConfigurationPage.this
 								.interaction_model_combo.getText()
 						)
 					);
@@ -617,10 +604,10 @@ extends ScrolledForm
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_EXECUTION_COST,
 						ExecutionCostType.fromString(
-							ModelConfigurationPage.this
+							JunkModelConfigurationPage.this
 								.execution_model_combo.getText()
 						)
 					);
@@ -655,16 +642,16 @@ extends ScrolledForm
 				widgetSelected
 				( SelectionEvent e )
 				{
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_HOST_CONFIGURATION, 
-						ModelConfigurationPage.this.host_config_text.getText()
+						JunkModelConfigurationPage.this.host_config_text.getText()
 					);
-					ModelConfigurationPage.this.controller.setModelProperty(
+					JunkModelConfigurationPage.this.controller.setModelProperty(
 						Constants.GUI_MODULE_EXPOSER, 
-						ModelConfigurationPage.this.module_exposer_text.getText()
+						JunkModelConfigurationPage.this.module_exposer_text.getText()
 					);
 					
-					ModelConfigurationPage.this.setVisualizationAction();
+					JunkModelConfigurationPage.this.setVisualizationAction();
 				}
 			}
 		);
@@ -677,19 +664,19 @@ extends ScrolledForm
 			= new SimpleDateFormat("HH:mm:ss")
 				.format( new Date() );
 		String coarsener
-			= ModelConfigurationPage.this.set_coarsener_combo.getText();
+			= JunkModelConfigurationPage.this.set_coarsener_combo.getText();
 		String new_name
 			= coarsener + "_" + name_suffix;
 		
 		VirtualModelFileInput input
 			= (VirtualModelFileInput) 
-				ModelConfigurationPage.this.model_creation_editor.getEditorInput();
+				JunkModelConfigurationPage.this.model_creation_editor.getEditorInput();
 		
 		input.setSecondaryName(new_name);
 		
 		BundleContext context 
 			= FrameworkUtil.getBundle(
-				ModelConfigurationPage.class
+				JunkModelConfigurationPage.class
 			).getBundleContext();
         ServiceReference<EventAdmin> ref 
         	= context.getServiceReference(EventAdmin.class);
@@ -713,9 +700,9 @@ extends ScrolledForm
 	{
 		this
 			.partitioning_algorithm_combo.setEnabled(enabled);
-		ModelConfigurationPage.this
+		JunkModelConfigurationPage.this
 			.execution_model_combo.setEnabled(enabled);
-		ModelConfigurationPage.this
+		JunkModelConfigurationPage.this
 			.interaction_model_combo.setEnabled(enabled);
 	}
 
@@ -768,38 +755,24 @@ extends ScrolledForm
 				@Override
 				public void run() 
 				{
-					ModelConfigurationPage.this.host_config_text.setEditable(false);
-					ModelConfigurationPage.this.module_exposer_text.setEditable(false);
+					JunkModelConfigurationPage.this.host_config_text.setEditable(false);
+					JunkModelConfigurationPage.this.module_exposer_text.setEditable(false);
 					
-					ModelConfigurationPage.this.actions_composite.setVisible(false);
+					JunkModelConfigurationPage.this.actions_composite.setVisible(false);
 					
-					ModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
-					ModelConfigurationPage.this.exposure_button.setEnabled(false);
+					JunkModelConfigurationPage.this.synthetic_node_button.setEnabled(false);
+					JunkModelConfigurationPage.this.exposure_button.setEnabled(false);
 					
-					ModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
-					ModelConfigurationPage.this.host_config_browse.setVisible(false);
-					ModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
+					JunkModelConfigurationPage.this.mod_exposer_browse_button.setVisible(false);
+					JunkModelConfigurationPage.this.host_config_browse.setVisible(false);
+					JunkModelConfigurationPage.this.set_coarsener_combo.setEnabled(false);
 					
-					ModelConfigurationPage.this
+					JunkModelConfigurationPage.this
 						.perform_partitioning_button.setEnabled(false);
-					ModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
+					JunkModelConfigurationPage.this.set_partitioning_widgets_enabled(false);
 					
-					ModelConfigurationPage.this.updateModelName();
+					JunkModelConfigurationPage.this.updateModelName();
 				}
 			});
-	}
-
-	public void 
-	setAlgorithm
-	( String algorithm ) 
-	{
-		this.algorithm = algorithm;
-	}
-
-	public void 
-	setSolution
-	( String solution ) 
-	{
-		this.solution = solution;
 	}
 }

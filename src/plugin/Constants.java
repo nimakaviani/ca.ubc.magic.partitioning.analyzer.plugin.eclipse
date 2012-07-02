@@ -69,7 +69,7 @@ Constants
 	
 	public static final String GENERATE_MODEL_EVENT 
 		= "ModelGeneration";
-	public static final String MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL 
+	public static final String ACTIVE_CONFIGURATION_PANEL 
 		= "ActiveConfigurationPanel";
 	public static final String MODULE_EXCHANGE_MAP 
 		= "ModuleExchageMap";
@@ -77,4 +77,8 @@ Constants
 		= "Solution";
 	public static final String ALGORITHM 
 		= "Algorithm";
+	public static final String PERSPECTIVE_CONFIGURATION_VIEW_ID 
+		= "plugin.views.partitioner_configuration_view";
+	public static final String MODEL_CREATION 
+		= "ModelCreation";
 }

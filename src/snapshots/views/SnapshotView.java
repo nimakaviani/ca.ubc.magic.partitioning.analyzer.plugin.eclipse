@@ -44,13 +44,10 @@ import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
-import org.osgi.service.event.EventAdmin;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
 
-import partitioner.views.ModelConfigurationPage;
 import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;

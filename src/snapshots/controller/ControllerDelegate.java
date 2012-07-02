@@ -32,6 +32,7 @@ implements IController
 				"The model passed to the delegate cannot be null"
 			);
 		}
+		
 		if(this.model == null){
 			this.model = model;
 			this.model.addPropertyChangeListener(this);
@@ -54,7 +55,7 @@ implements IController
 	addView
 	(IView view) 
 	{
-		registered_views.add(view);
+		this.registered_views.add(view);
 	}
 
 	@Override
@@ -62,7 +63,7 @@ implements IController
 	removeView
 	(IView view)
 	{
-		registered_views.remove(view);
+		this.registered_views.remove(view);
 	}
 	
 	///////////////////////////////////////////////////////////////////////
@@ -155,8 +156,8 @@ implements IController
 	propertyChange
 	( PropertyChangeEvent evt ) 
 	{
-		System.out.println("Property Changed: " + evt.getPropertyName());
-		for(IView view : registered_views){
+		//System.out.println("Property Changed: " + evt.getPropertyName());
+		for(IView view : this.registered_views){
 			view.modelPropertyChange(evt);
 		}
 	}

@@ -128,7 +128,7 @@ implements IView
 					
 					BundleContext context 
 						= FrameworkUtil.getBundle(
-							ModelConfigurationPage.class
+							ModelCreationEditor.class
 						).getBundleContext();
 			        ServiceReference<EventAdmin> ref 
 			        	= context.getServiceReference(EventAdmin.class);
@@ -594,13 +594,11 @@ implements IView
 				.set_partitioning_widgets_enabled( enabled );
 		}
 		break; */
-		case Constants.MODEL_CREATION_AND_ACTIVE_CONFIGURATION_PANEL:
-			boolean enabled
-				= (boolean) evt.getNewValue();
+		case Constants.MODEL_CREATION:
 			this.visualizeModuleModel();
-			//this.model_configuration_page.set_configuration_widgets_enabled( enabled );
 			break;
 		case Constants.MODULE_EXCHANGE_MAP:
+			@SuppressWarnings("unchecked")
 			Map<ModulePair, InteractionData> map
 				= (Map<ModulePair, InteractionData>) evt.getNewValue();
 			this.setModuleMap(map);
