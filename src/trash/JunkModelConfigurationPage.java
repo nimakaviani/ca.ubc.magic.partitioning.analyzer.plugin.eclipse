@@ -750,8 +750,56 @@ extends ScrolledForm
 	set_configuration_widgets_enabled
 	( boolean enabled ) 
 	{
+<<<<<<< HEAD:src/trash/JunkModelConfigurationPage.java
 		Display.getDefault().asyncExec( 
 			new Runnable(){
+=======
+		private String profiler_trace_path;
+		private PartitionerGUIStateModel gui_state_model;
+		
+		Job
+		( String profiler_trace_path, PartitionerGUIStateModel gui_state_model )
+		{
+			super("Create Model");
+			
+			this.profiler_trace_path
+				= profiler_trace_path.trim();
+			this.gui_state_model
+				= gui_state_model;
+		}
+		@Override
+		protected IStatus 
+		run
+		( IProgressMonitor monitor ) 
+		{
+			try {
+				final InputStream in 
+					=  new BufferedInputStream(
+						new FileInputStream(
+							this.profiler_trace_path
+						)
+					);
+				if( monitor.isCanceled()){
+				 	return Status.CANCEL_STATUS;
+				}
+				this.gui_state_model.createModuleModel(in);
+				in.close();
+				this.gui_state_model.finished();
+				visualizeModuleModel(); 
+				
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return Status.OK_STATUS;
+		}
+		
+		private void 
+		visualizeModuleModel() 
+		{
+			SwingUtilities.invokeLater( new Runnable(){
+>>>>>>> bckend_stable_branch:src/partitioner/views/ModelConfigurationPage.java
 				@Override
 				public void run() 
 				{

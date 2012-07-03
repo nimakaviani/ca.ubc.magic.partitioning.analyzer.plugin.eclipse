@@ -152,14 +152,14 @@ implements IView
 					this.snapshot_tree_viewer
 				); 
 		}
-		snapshot_tree_viewer.setContentProvider( 
+		this.snapshot_tree_viewer.setContentProvider( 
 			this.file_tree_content_provider
 		);
 		
-		snapshot_tree_viewer.setLabelProvider( new FileTreeLabelProvider() );
-		snapshot_tree_viewer.getTree().setLayoutData(grid_data);
-		snapshot_tree_viewer.getTree().pack();
-		snapshot_tree_viewer.setInput("hello");
+		this.snapshot_tree_viewer.setLabelProvider( new FileTreeLabelProvider() );
+		this.snapshot_tree_viewer.getTree().setLayoutData(grid_data);
+		this.snapshot_tree_viewer.getTree().pack();
+		this.snapshot_tree_viewer.setInput("hello");
 		
 		// from example code found in the eclipse plugins book
 		// pp. 202
@@ -475,64 +475,6 @@ implements IView
 		this.host_text.setText( (String) returned_properties[2] );
 		this.port_text.setText( (String) returned_properties[3] );
 	}
-	
-	/*
-	public String 
-	getPreviousPath() 
-	{
-		String prevPath = null;
-		
-		prevPath 
-			= this.active_snapshot_model
-				.getSnapshotPath();
-		if(prevPath == null){
-			prevPath = ""; 
-		}
-		
-		System.out.println("Previous Path " + prevPath);
-		return prevPath;		
-	}
-	
-	public String
-	getPreviousName()
-	{
-		String prevName = null;
-		prevName = this.active_snapshot_model.getSnapshotName();
-		
-		if(prevName == null){
-			prevName = "";
-		}
-		
-		return prevName;
-	}
-	
-	public String
-	getPreviousPort()
-	{
-		String prevPort = null;
-		
-		prevPort = this.active_snapshot_model.getSnapshotPort();
-		if(prevPort == null || prevPort.equals("") ){
-			prevPort = "15599";
-		}
-		
-		return prevPort;
-	}
-	
-	public String
-	getPreviousHost()
-	{
-		String prevHost = null;
-		
-		prevHost = this.active_snapshot_model.getSnapshotHost();
-		
-		if(prevHost == null || prevHost.equals("") ){
-			prevHost = "localhost";
-		}
-		
-		return prevHost;
-	}
-	*/
 	
 	@Override
 	public void 
@@ -1213,7 +1155,7 @@ implements ILabelProvider
   addListener
   ( ILabelProviderListener arg0 ) 
   {
-	  this.listeners.add(arg0);
+	  this.listeners.add( arg0 );
   }
 
   @Override
@@ -1221,6 +1163,6 @@ implements ILabelProvider
   removeListener
   ( ILabelProviderListener arg0 ) 
   {
-	  this.listeners.remove(arg0);
+	  this.listeners.remove( arg0 );
   }
 }

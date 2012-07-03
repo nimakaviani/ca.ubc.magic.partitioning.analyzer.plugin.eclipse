@@ -187,7 +187,7 @@ implements IModel
 		
 		String old_trace = this.profiler_trace;
 		String formatted_profiler_trace 
-		 	= profiler_trace.replace("/", "\\");
+		 	= profiler_trace.replace("/", System.getProperty("file.separator"));
 		this.profiler_trace = formatted_profiler_trace;
 		
 		System.out.println( old_trace );
