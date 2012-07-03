@@ -37,6 +37,9 @@ extends AbstractUIPlugin
 			= new EventLogActionHandler();
 		this.event_log_list_model
 			= new EventLogListModel();
+		
+		System.loadLibrary("lpsolve55");
+		System.loadLibrary("lpsolve55j");
 	}
 
 	public void 

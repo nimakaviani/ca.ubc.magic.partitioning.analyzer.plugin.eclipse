@@ -40,3 +40,4 @@ Bundle-ClassPath: lib/commons-math/commons-math-2.2.jar,
  lib/swing-layout-1.0.2.jar,
  lib/swing-worker-1.1.jar,
  lib/lpsolve55j.jar
+

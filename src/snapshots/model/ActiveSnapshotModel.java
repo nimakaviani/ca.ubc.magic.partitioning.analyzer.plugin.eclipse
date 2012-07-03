@@ -36,35 +36,6 @@ implements ISnapshotInfoModel
 		this.property_change_delegate
 			.registerProperty( Constants.HOST_PROPERTY, this.host );
 	}
-	
-	/*
-	@Override
-	public String
-	getSnapshotPath() 
-	{
-		return this.path;
-	}
-	
-	@Override
-	public String 
-	getSnapshotPort() 
-	{
-		return this.port;
-	}
-	
-	@Override
-	public String 
-	getSnapshotName() 
-	{
-		return this.name;
-	}
-	
-	@Override
-	public String 
-	getSnapshotHost() 
-	{
-		return this.host;
-	} */
 
 	@Override
 	public void 

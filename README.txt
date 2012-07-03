@@ -7,3 +7,6 @@ really). Then I will focus on connecting the two parts and gluing them together.
 made note of the technical debt present in the snapshots portion of the project (in the form of TODO
 statements).
 
+
+Bundle-NativeCode: lpsolve55.dll; lpsolve55j.dll; osname=win32; processor=x86_64;
+
