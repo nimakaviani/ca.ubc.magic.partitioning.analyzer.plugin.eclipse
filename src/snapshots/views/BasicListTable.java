@@ -85,20 +85,21 @@ BasicListTable
 			| SWT.BORDER | SWT.FULL_SELECTION | SWT.HIDE_SELECTION;
 	
 		this.table 
-			= new Table(parent, style);
+			= new Table( parent, style );
 		
 		TableColumn col 
 			= new TableColumn( table, SWT.LEFT, 0 );
 		col.setText(column_name);
 	
 		//this.setContentProvider(new ArrayContentProvider());
-		GridData grid_data = new GridData(SWT.FILL, SWT.FILL, true, true);
-		table.setLayoutData(grid_data);
+		GridData grid_data 
+			= new GridData(SWT.FILL, SWT.FILL, true, true);
+		this.table.setLayoutData(grid_data);
 		
-		table.setHeaderVisible(true);
-		table.setLinesVisible(true);
+		this.table.setHeaderVisible(true);
+		this.table.setLinesVisible(true);
 		
-		table.addListener(
+		this.table.addListener(
 			SWT.Selection, 
 			new Listener(){
 				@Override
