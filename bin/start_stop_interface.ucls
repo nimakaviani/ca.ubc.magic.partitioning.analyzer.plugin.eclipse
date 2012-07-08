@@ -1,0 +1,296 @@
+<class-diagram version="1.0.9" icons="true" always-add-relationships="false" generalizations="true" realizations="true" 
+  associations="true" dependencies="false" nesting-relationships="true">  
+  <class id="1" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.SnapshotView" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/SnapshotView.java" binary="false">    
+    <position height="-1" width="-1" x="112" y="832"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <interface id="2" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.jface.viewers.ITreeContentProvider" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.jface_3.7.0.v20110928-1505.jar" binary="true">    
+    <position height="-1" width="-1" x="989" y="574"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="false"/>      
+      <operations public="true" package="true" protected="true" private="false"/>    
+    </display>  
+  </interface>  
+  <interface id="3" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.jface.viewers.IStructuredContentProvider" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.jface_3.7.0.v20110928-1505.jar" binary="true">    
+    <position height="-1" width="-1" x="982" y="447"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <interface id="4" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.jface.viewers.IContentProvider" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.jface_3.7.0.v20110928-1505.jar" binary="true">    
+    <position height="-1" width="-1" x="986" y="321"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <class id="5" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.ActiveSnapshotModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/ActiveSnapshotModel.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="265" y="246"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <interface id="6" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.IController" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/IController.java" binary="false">    
+    <position height="-1" width="-1" x="588" y="492"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <class id="7" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.EventLogTable" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/EventLogTable.java" binary="false">    
+    <position height="-1" width="-1" x="656" y="1191"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="false"/>      
+      <operations public="true" package="true" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <class id="8" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.jface.viewers.TreeViewer" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.jface_3.7.0.v20110928-1505.jar" binary="true">    
+    <position height="-1" width="-1" x="624" y="731"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="false" package="false" protected="false" private="false"/>    
+    </display>  
+  </class>  
+  <class id="9" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.ui.part.ViewPart" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.ui.workbench_3.7.1.v20120104-1859.jar" binary="true">    
+    <position height="-1" width="-1" x="151" y="504"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="false" package="false" protected="false" private="false"/>    
+    </display>  
+  </class>  
+  <class id="10" corner="BOTTOM_RIGHT" language="java" name="java.io.File" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" file="C:/Program Files/Java/jre7/lib/rt.jar" 
+    binary="true">    
+    <position height="-1" width="-1" x="1207" y="828"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="false" package="false" protected="false" private="false"/>    
+    </display>  
+  </class>  
+  <class id="11" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.SnapshotView.StartAction" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/SnapshotView.java" binary="false">    
+    <position height="-1" width="-1" x="303" y="1174"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="false"/>      
+      <operations public="true" package="true" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <class id="12" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.PropertyChangeDelegate" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/PropertyChangeDelegate.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="664" y="248"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="false"/>      
+      <operations public="true" package="true" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <interface id="13" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.ISnapshotInfoModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/ISnapshotInfoModel.java" binary="false">    
+    <position height="-1" width="-1" x="-79" y="264"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="false" protected="true" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </interface>  
+  <interface id="14" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.IModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/IModel.java" binary="false">    
+    <position height="95" width="325" x="-242" y="11"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <interface id="15" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.IView" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/IView.java" binary="false">    
+    <position height="-1" width="-1" x="-7" y="1202"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <class id="16" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.BasicListTable" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/BasicListTable.java" binary="false">    
+    <position height="-1" width="-1" x="966" y="1169"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <class id="17" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.VirtualModelFileInput" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/VirtualModelFileInput.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="1246" y="1058"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <interface id="18" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.core.resources.IStorage" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.core.resources_3.7.101.v20120125-1505.jar" binary="true">    
+    <position height="-1" width="-1" x="1282" y="649"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <interface id="19" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.ui.IStorageEditorInput" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.ui.ide_3.7.0.v20110928-1505.jar" binary="true">    
+    <position height="-1" width="-1" x="1251" y="1288"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <class id="20" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.VirtualModelFile" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/VirtualModelFile.java" binary="false">    
+    <position height="-1" width="-1" x="1273" y="435"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <association id="21">    
+    <end type="SOURCE" refId="5" navigable="false">      
+      <attribute id="22" name="property_change_delegate"/>      
+      <multiplicity id="23" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="12" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <nesting id="24">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="11"/>  
+  </nesting>  
+  <association id="25">    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="26" name="controller"/>      
+      <multiplicity id="27" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="6" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <realization id="28">    
+    <end type="SOURCE" refId="11"/>    
+    <end type="TARGET" refId="15"/>  
+  </realization>  
+  <generalization id="29">    
+    <end type="SOURCE" refId="7"/>    
+    <end type="TARGET" refId="16"/>  
+  </generalization>  
+  <association id="30">    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="31" name="log_console_table"/>      
+      <multiplicity id="32" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="7" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <generalization id="33">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="3"/>  
+  </generalization>  
+  <association id="34">    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="35" name="active_snapshot_model"/>      
+      <multiplicity id="36" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="5" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <realization id="37">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="13"/>  
+  </realization>  
+  <association id="38">    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="39" name="controller"/>      
+      <multiplicity id="40" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="6" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <generalization id="41">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="9"/>  
+  </generalization>  
+  <association id="42">    
+    <end type="SOURCE" refId="17" navigable="false">      
+      <attribute id="43" name="storage"/>      
+      <multiplicity id="44" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="18" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <generalization id="45">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="4"/>  
+  </generalization>  
+  <realization id="46">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="15"/>  
+  </realization>  
+  <realization id="47">    
+    <end type="SOURCE" refId="17"/>    
+    <end type="TARGET" refId="19"/>  
+  </realization>  
+  <realization id="48">    
+    <end type="SOURCE" refId="20"/>    
+    <end type="TARGET" refId="18"/>  
+  </realization>  
+  <generalization id="49">    
+    <end type="SOURCE" refId="13"/>    
+    <end type="TARGET" refId="14"/>  
+  </generalization>  
+  <association id="50">    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="51" name="snapshot_tree_viewer"/>      
+      <multiplicity id="52" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="8" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <generalization id="53">    
+    <end type="SOURCE" refId="17"/>    
+    <end type="TARGET" refId="10"/>  
+  </generalization>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true"/>    
+    <operations public="true" package="true" protected="true" private="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>
