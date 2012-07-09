@@ -125,5 +125,4 @@ extends ViewPart
 	@Override
 	public void setFocus() {
 	}
-
 }

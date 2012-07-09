@@ -97,7 +97,7 @@ implements IView
 		TableWrapLayout layout 
 			= new TableWrapLayout();
 		layout.numColumns = 1;
-		sf.getBody().setLayout(layout);
+		sf.getBody().setLayout( layout );
 		sf.setText("Configure the Model");
 		
 		Section set_paths_composite
@@ -374,7 +374,7 @@ implements IView
 		this.module_exposer_text.setLayoutData(grid_data);
 		
 		this.mod_exposer_browse_button 
-			= toolkit.createButton(parent, "Browse", SWT.PUSH);
+			= toolkit.createButton( parent, "Browse", SWT.PUSH );
 		this.mod_exposer_browse_button.addSelectionListener( 
 			new SelectionAdapter(){
 				public void widgetSelected
@@ -396,6 +396,9 @@ implements IView
 					if(selected != null){
 						PartitionerConfigurationView.this
 							.module_exposer_text.setText(selected);
+						
+						PartitionerConfigurationView.this.controller
+							.setModelProperty( Constants.GUI_MODULE_EXPOSER, selected );
 					}
 				}
 			}
@@ -431,6 +434,9 @@ implements IView
 				if(selected != null){
 					PartitionerConfigurationView.this
 						.host_config_text.setText(selected);
+					
+					PartitionerConfigurationView.this.controller
+						.setModelProperty( Constants.GUI_HOST_CONFIGURATION, selected );
 				}
 			}
 		});
@@ -719,7 +725,7 @@ implements IView
 	initializeActionsWidgets
 	( Composite parent, FormToolkit toolkit ) 
 	{
-		final Button exposure_button
+		final Button generate_model
 			= toolkit.createButton(
 				parent, 
 				"Generate Model", 
@@ -728,9 +734,9 @@ implements IView
 		GridData grid_data 
 			= new GridData( SWT.BEGINNING, SWT.FILL, false, false);
 		grid_data.horizontalSpan = 1;
-		exposure_button.setLayoutData( grid_data );
+		generate_model.setLayoutData( grid_data );
 		
-		exposure_button.addSelectionListener(
+		generate_model.addSelectionListener(
 			new SelectionAdapter()
 			{
 				@Override
@@ -747,9 +753,11 @@ implements IView
 						PartitionerConfigurationView.this.module_exposer_text.getText()
 					);
 					
+					// generate a model, and if partitioning is set, also 
+					// initialize the test framework
 					PartitionerConfigurationView.this.controller.notifyModel(
-							Constants.GENERATE_MODEL_EVENT
-						);
+						Constants.GENERATE_MODEL_EVENT
+					);
 				}
 			}
 		);

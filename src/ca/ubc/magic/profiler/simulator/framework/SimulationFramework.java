@@ -155,37 +155,55 @@ public class SimulationFramework implements ISimulatorListener {
         listenerList.remove(listener);
     }
     
-    public void run(ISimulator simulator){        
+    public void run(ISimulator simulator){   
+    	System.err.println("Running Simulation Framework");
+    	int count = 0;
         for (SimulationUnit unit : mSimulationMap.values()){
             runSimulationForUnit(simulator, unit);
+            System.err.println("Count: " + ++count);
         }
+        System.err.println("Finished running simulation framework");
     }
     
-    private synchronized void runSimulationForUnit(ISimulator simulator, SimulationUnit unit){
+    private synchronized void
+    runSimulationForUnit
+    ( ISimulator simulator, SimulationUnit unit )
+    {
         try{       
-            mCurrentUnit = unit;            
+            this.mCurrentUnit = unit;            
             simulator.addListener(this);  
             simulator.simulate(unit);
             Thread t = new Thread((Runnable) simulator);
-            mCurrentSimThread= t;
+            
+            this.mCurrentSimThread= t;
             t.start();        
-            t.join();            
+            t.join();    
+            
+            // try
+            //simulator.removeListener(this);
         }catch(Exception e){
             e.printStackTrace();
         }
     }
     
     public void valueChanged(ReportModel report) {
-        for (IFrameworkListener l : listenerList)                       
-            l.updateSimulationReport(mCurrentUnit, report);                    
+    	int count = 0;
+        for (IFrameworkListener l : listenerList){          
+        	System.err.println("Value changed list count: " + ++count);
+            l.updateSimulationReport(mCurrentUnit, report); 
+        }
     }
     
     public void unitSimulationOver(ReportModel report){
-        mCurrentUnit.setUnitCost(report.getCostModel().getTotalCost());
-        if (mBestSimUnit == null || mCurrentUnit.getUnitCost() < mBestSimUnit.getUnitCost() )
-            mBestSimUnit = mCurrentUnit;
-        for (IFrameworkListener l : listenerList)
+    	System.err.println("Inside simulation over");
+    	
+        this.mCurrentUnit.setUnitCost(report.getCostModel().getTotalCost());
+        if (this.mBestSimUnit == null || this.mCurrentUnit.getUnitCost() < this.mBestSimUnit.getUnitCost() ){
+            this.mBestSimUnit = this.mCurrentUnit;
+        }
+        for( IFrameworkListener l : listenerList ){
             l.updateBestSimReport(mBestSimUnit);
+        }
     }
     
     private void checkAgainstTemplate(SimulationUnit unit){

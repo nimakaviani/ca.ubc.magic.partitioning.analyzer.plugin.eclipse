@@ -15,16 +15,9 @@ import javax.swing.UIManager;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IPartListener2;
@@ -32,9 +25,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.forms.widgets.FormToolkit;
-import org.eclipse.ui.forms.widgets.ScrolledForm;
-import org.eclipse.ui.forms.widgets.Section;
-import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -53,8 +43,6 @@ import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
-import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
-import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 
 // TODO: problem: the controller is responsible for deciding how
 //		events are handled, but there is view code that directly calls
@@ -81,7 +69,7 @@ implements IView
     Object current_vp_lock 
     	= new Object();
     
-    private volatile Boolean perform_partitioning 
+    private volatile Boolean 				perform_partitioning 
     	= false;
     
 	private Map<ModulePair, InteractionData> module_exchange_map;
@@ -93,6 +81,7 @@ implements IView
 	
 	private String algorithm;
 	private String solution;
+	private ModelTestPage test_page;
 
 	public 
 	ModelCreationEditor() 
@@ -238,25 +227,7 @@ implements IView
 	    this.frame 
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
 
-	    /*
-	    this.model_configuration_page
-			= new ModelConfigurationPage( 
-				parent, 
-				this.toolkit, 
-				this.controller,
-				this.currentVP,
-				this.current_vp_lock,
-				this.frame,
-				this
-			);
-	    
-		this.toolkit.adapt(this.model_configuration_page);
-		
-		int index
-			= super.addPage( this.model_configuration_page );
-		super.setPageText( index, "Model Configuration" );*/
-		
-		this.createModelAnalysisPage( model_analysis_composite );
+	  	this.createModelAnalysisPage( model_analysis_composite );
 		this.createModelTestPage();
 		this.updateTitle();
 
@@ -300,7 +271,7 @@ implements IView
 		);
 	    
 		int index
-			= super.addPage(model_analysis_composite);
+			= super.addPage( model_analysis_composite );
 		super.setPageText(index, "Model Analysis");
 	}
 	
@@ -310,11 +281,12 @@ implements IView
 		Composite parent 
 			= super.getContainer();
 		
-		ModelTestPage test_page
+		this.test_page
 			= new ModelTestPage(
 				this.toolkit, 
 				parent,
-				this.controller
+				this.controller,
+				this
 			);
 		this.toolkit.adapt(test_page);
 		
@@ -347,8 +319,9 @@ implements IView
 	{
 		IEditorInput input
 			= super.getEditorInput();
+		
 		super.setPartName( input.getName() );
-		super.setTitleToolTip(this.getTitleToolTip());
+		super.setTitleToolTip( this.getTitleToolTip() );
 	}
 	
 	@Override
@@ -410,7 +383,6 @@ implements IView
 			this.perform_partitioning
 				= (Boolean) evt.getNewValue();
 			break;
-			
 		default:
 			System.out.println("Swallowing message.");
 		};
@@ -509,4 +481,18 @@ implements IView
 	{
 		this.solution = solution;
 	}
+	
+	public void
+	addSimulation()
+	{
+		this.test_page.customSimulationButtonActionPerformed(null);
+	}
+
+	public void 
+	simTableMouseClicked
+	( Integer id ) 
+	{
+		this.test_page.simTableMouseClicked(id);
+	}
+	
 }

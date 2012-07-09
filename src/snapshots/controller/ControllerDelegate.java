@@ -5,6 +5,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
+
 import snapshots.model.IModel;
 import snapshots.views.IView;
 
@@ -160,5 +162,36 @@ implements IController
 		for(IView view : this.registered_views){
 			view.modelPropertyChange(evt);
 		}
+	}
+
+	@Override
+	public Object 
+	index
+	( String event_name, Object key ) 
+	{
+        Object obj
+        	= null;
+        
+		 try {
+	            Method method 
+	            	= this.model.getClass().getMethod( 
+	            		"find" + event_name,
+	            		new Class[]{ key.getClass() }
+	            	);
+	            	obj = method.invoke(this.model, key);
+	            System.out.printf(
+	            	"Calling method find%s() in class %s\n",
+	            	event_name, 
+	            	this.model.getClass()
+	            );
+	        } catch (NoSuchMethodException ex) {
+	        	System.err.printf( 
+	        		"No method find%s() in class %s\n", 
+	        		event_name, this.model.getClass()
+	        	);
+	        } catch (Exception ex) {
+	        	ex.printStackTrace();
+			}
+         return obj;
 	}
 }

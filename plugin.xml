@@ -84,28 +84,15 @@
       </menuContribution>
       <menuContribution
             allPopups="false"
-            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
-         <toolbar id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.analysis_toolbar">
-            <command
-                  commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.MouseMode"
-                  icon="icons/mouse2.png"
-                  id="MouseMode"
-                  label="MouseMode"
-                  style="pulldown">
-            </command>
-         </toolbar>
-      </menuContribution>
-      <menuContribution
-            allPopups="false"
-            locationURI="menu:plugin.addSnapshotFolder">
+            locationURI="popup:plugin.views.model_creation_editor">
          <command
-               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.command7"
-               id="Picking"
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.add_simulation"
+               id="AddSimulation"
                style="push">
          </command>
          <command
-               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.transforming"
-               id="Transforming"
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation"
+               id="ModifySimulation"
                style="push">
          </command>
       </menuContribution>
@@ -131,16 +118,12 @@
             commandId="plugin.RemoveModel">
       </handler>
       <handler
-            class="addSnapshotFolder"
-            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.MouseMode">
+            class="AddSimulation"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.add_simulation">
       </handler>
       <handler
-            class="addSnapshotFolder"
-            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.transforming">
-      </handler>
-      <handler
-            class="addSnapshotFolder"
-            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.picking">
+            class="ModifySimulation"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation">
       </handler>
    </extension>
    
@@ -159,20 +142,16 @@
             name="Clear Contents">
       </command>
       <command
-            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.MouseMode"
-            name="Set Mouse Mode">
-      </command>
-      <command
-            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.transforming"
-            name="Transforming">
-      </command>
-      <command
-            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.picking"
-            name="Picking">
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.add_simulation"
+            name="Add Simulation">
       </command>
       <command
             id="plugin.RemoveModel"
-            name="Remove Model">
+            name="RemoveModel">
+      </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation"
+            name="Create Modified Simulation">
       </command>
    </extension>
 </plugin>

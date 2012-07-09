@@ -2,6 +2,8 @@ package snapshots.controller;
 
 import java.beans.PropertyChangeListener;
 
+import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
+
 
 
 import snapshots.model.IModel;
@@ -20,4 +22,5 @@ extends PropertyChangeListener
 	public void setModelProperty(String property_name, Object new_value);
 	public void notifyPeers(String event_name, Object source, Object new_value);
 	public void notifyModel(String event_name);
+	Object index(String simulationUnits, Object key);
 }

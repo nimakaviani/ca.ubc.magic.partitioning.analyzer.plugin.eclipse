@@ -16,9 +16,9 @@ extends AbstractUIPlugin
 		= "plugin";
 	private static Activator plugin;
 	
-	private EventLogActionHandler action_handler;
-	private EventLogListModel event_log_list_model;
-	private Object file_tree_content_provider;
+	private EventLogActionHandler 	action_handler;
+	private EventLogListModel 		event_log_list_model;
+	private Object 					file_tree_content_provider;
 	
 	public 
 	Activator() 
