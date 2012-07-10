@@ -479,32 +479,41 @@ implements IView
 	@Override
 	public void 
 	modelPropertyChange
-	( PropertyChangeEvent evt ) 
+	( final PropertyChangeEvent evt ) 
 	{
-		System.out.println("modelPropertyChange(): Property changed");
-		switch(evt.getPropertyName())
-		{
-		case Constants.PATH_PROPERTY:
-			this.path_text.setText((String) evt.getNewValue());
-			break;
-		case Constants.HOST_PROPERTY:
-			this.host_text.setText((String) evt.getNewValue());
-			break;
-		case Constants.NAME_PROPERTY:
-			this.name_text.setText( (String) evt.getNewValue());
-			break;
-		case Constants.PORT_PROPERTY:
-			this.port_text.setText( (String) evt.getNewValue() );
-			break;
-		case Constants.SNAPSHOT_CAPTURED_PROPERTY:
-			this.snapshot_tree_viewer.setInput("hello");
-			this.snapshot_tree_viewer.refresh();
-			break;
-		case Constants.EVENT_LIST_PROPERTY:
-			this.log_console_table.refresh();
-			break;
-		}
-		this.refresh();
+
+		// event may be triggered by a process in a non-SWT thread
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					System.out.println("modelPropertyChange(): Property changed");
+					switch(evt.getPropertyName())
+					{
+					case Constants.PATH_PROPERTY:
+						SnapshotView.this.path_text.setText((String) evt.getNewValue());
+						break;
+					case Constants.HOST_PROPERTY:
+						SnapshotView.this.host_text.setText((String) evt.getNewValue());
+						break;
+					case Constants.NAME_PROPERTY:
+						SnapshotView.this.name_text.setText( (String) evt.getNewValue());
+						break;
+					case Constants.PORT_PROPERTY:
+						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
+						break;
+					case Constants.SNAPSHOT_CAPTURED_PROPERTY:
+						SnapshotView.this.snapshot_tree_viewer.setInput("hello");
+						SnapshotView.this.snapshot_tree_viewer.refresh();
+						break;
+					case Constants.EVENT_LIST_PROPERTY:
+						SnapshotView.this.log_console_table.refresh();
+						break;
+					}
+					SnapshotView.this.refresh();
+				}
+			});
 	}
 	
 	public void

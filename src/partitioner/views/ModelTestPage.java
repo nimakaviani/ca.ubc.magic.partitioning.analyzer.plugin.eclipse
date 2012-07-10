@@ -39,6 +39,7 @@ import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
 
 import plugin.Constants;
+import snapshots.controller.ControllerDelegate;
 import snapshots.controller.IController;
 import snapshots.views.IView;
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
@@ -51,7 +52,6 @@ import ca.ubc.magic.profiler.simulator.framework.IFrameworkListener;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
-// TODO: bring in the custom simulation callback
 public class 
 ModelTestPage 
 extends ScrolledForm
@@ -64,57 +64,35 @@ implements IFrameworkListener,
 	private Label 					best_run_cost_label;
 	private Label 					total_simulation_units;
 	
-//	private Label					total_run;
-	
-	private IController 			controller;
-	private Composite 				root_parent;
+	private IController 			partitioner_gui_state_controller;
 	private Section 				table_composite;
 	private Section 				control_composite;
 	
 	private TableViewer				simulations_table_viewer;
 	private ObservableList			table_input;
-	private ModelCreationEditor 	root_editor;
 	
 	private Integer 				current_id;
 	
+	private Table 					table;
+	private String[] 				column_names;
+	
+	// any method beginning with the term initialize are called
+	// only from the constructor and may be assumed to executed on
+	// the SWT event thread
 	public ModelTestPage
 	( 	FormToolkit toolkit, 
 		Composite parent, 
-		IController controller, 
+		IController partitioner_gui_state_controller, 
 		ModelCreationEditor model_creation_editor ) 
 	{
 		super( parent );
 		
-		this.root_parent
-			= parent;
-		
-		this.controller
-			= controller;
-		
-		this.controller.addView(this);
-		Object[] obj 
-			= this.controller.requestProperties(
-				new String[] {
-					Constants.SIMULATION_FRAMEWORK,
-				}
-			);
-		SimulationFramework simulation_framework
-			= (SimulationFramework) obj[0];
-		simulation_framework.addFrameworkListener(
-			(IFrameworkListener) this
+		this.initialize_mvc_components( 
+			partitioner_gui_state_controller 
 		);
+		this.initialize_simulation_framework();
 		
-		this.setText(
-			"Test and Simulation Framework"
-		);
-		
-		this.root_editor
-			= model_creation_editor;
-
-		TableWrapLayout layout 
-			= new TableWrapLayout();
-		layout.numColumns = 1;
-		this.getBody().setLayout(layout);
+		this.initialize_page_properties( toolkit );
 		
 		this.control_composite
 			= toolkit.createSection(
@@ -146,37 +124,59 @@ implements IFrameworkListener,
 				
 		Composite table_client
 			= toolkit.createComposite(this.table_composite);
-		this.initializeTableClientGrid(table_client);
-		this.initializeTableClientWidgets( table_client );
+		this.initialize_table_client_grid(table_client);
+		this.initialize_table_client_widgets( table_client );
 		
+		// if we want to set the size of each column relative to the parent
+		// or the table, we have to wait until the table is drawn or resized
+		// to get a value; if we simply call getClientArea() in the constructor
+		// we will get a value of 0,0
+		parent.addControlListener( 
+			new TestPageResizedAdapter(
+				parent, this.table, this.column_names, 
+				this.table_composite, this.control_composite 
+			) 
+		);
 		this.table_composite.setClient(table_client);
 		
-		this.initializeContextMenu();
+		this.initialize_context_menu(model_creation_editor);
 	}
 	
-	public void
-	initializeContextMenu()
+	private void 
+	initialize_mvc_components
+	( IController partitioner_gui_state_controller ) 
 	{
-		// First we create a menu Manager
-		MenuManager menuManager 
-			= new MenuManager();
-		
-		Menu menu 
-			= menuManager.createContextMenu(
-				this.simulations_table_viewer.getTable()
+		this.partitioner_gui_state_controller
+			= partitioner_gui_state_controller;
+	
+		this.partitioner_gui_state_controller.addView(this);
+	}
+	
+	private void 
+	initialize_simulation_framework() 
+	{
+		Object[] obj 
+			= this.partitioner_gui_state_controller.requestProperties(
+				new String[] {
+					Constants.SIMULATION_FRAMEWORK,
+				}
 			);
-		// Set the MenuManager
-		this.simulations_table_viewer.getTable().setMenu(menu);
-		
-		this.root_editor.getSite().registerContextMenu(
-			menuManager, 
-			this.simulations_table_viewer
+		SimulationFramework simulation_framework
+			= (SimulationFramework) obj[0];
+		simulation_framework.addFrameworkListener(
+			(IFrameworkListener) this
 		);
-		
-		// Make the selection available
-		this.root_editor.getSite().setSelectionProvider(
-			this.simulations_table_viewer
-		); 
+	}
+	
+	private void 
+	initialize_page_properties
+	( FormToolkit toolkit) 
+	{
+		this.setText( "Test and Simulation Framework" );
+		TableWrapLayout layout 
+			= new TableWrapLayout();
+		layout.numColumns = 1;
+		this.getBody().setLayout(layout);
 	}
 
 	private void 
@@ -224,11 +224,11 @@ implements IFrameworkListener,
 				widgetSelected
 				( SelectionEvent e )
 				{
-					ModelTestPage.this.controller.setModelProperty(
+					ModelTestPage.this.partitioner_gui_state_controller.setModelProperty(
 						Constants.GUI_SIMULATION_TYPE,
 						simulation_type_combo.getText()
 					);
-					ModelTestPage.this.controller.notifyModel(
+					ModelTestPage.this.partitioner_gui_state_controller.notifyModel(
 						Constants.EVENT_RUN_SIMULATION
 					);
 				}
@@ -270,7 +270,7 @@ implements IFrameworkListener,
 	}
 	
 	private void 
-	initializeTableClientGrid
+	initialize_table_client_grid
 	( Composite parent ) 
 	{
 		final GridLayout test_framework_page_grid_layout
@@ -281,9 +281,18 @@ implements IFrameworkListener,
 	}
 	
 	private void 
-	initializeTableClientWidgets
+	initialize_table_client_widgets
 	( final Composite parent ) 
 	{
+		this.column_names
+			= new String[] {
+				"ID",
+				"Name",
+				"Algorithm",
+				"Execution Cost",
+				"Communication Cost",
+				"Total Cost",
+			};
 		
 		List<Object[]> obj 
 			= new ArrayList<Object[]>();
@@ -294,25 +303,15 @@ implements IFrameworkListener,
 			= SWT.SINGLE | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION 
 			| SWT.BORDER | SWT.FULL_SELECTION ;
 		
-		final Table table	
+		this.table	
 		 	= new Table( parent, style );
 		
 		this.simulations_table_viewer
-			= new TableViewer(table);
+			= new TableViewer( this.table );
 		
 		this.simulations_table_viewer.setContentProvider(
 			new ObservableListContentProvider()
 		);
-		
-		final String[] column_names
-			= new String[] {
-				"ID",
-				"Name",
-				"Algorithm",
-				"Execution Cost",
-				"Communication Cost",
-				"Total Cost",
-			};
 		
 		for(int i = 0; i < column_names.length; ++i )
 		{
@@ -339,12 +338,7 @@ implements IFrameworkListener,
 			);
 		}
 		this.simulations_table_viewer.setInput( this.table_input );
-		// this.table_input.add( new Object[]{
-		//		0, "string", "second string", "","",""	
-		//	});
 		this.simulations_table_viewer.refresh();
-		
-		
 		
 		// solution found in
 		// http://www.eclipse.org/forums/index.php/m/521315/
@@ -354,61 +348,15 @@ implements IFrameworkListener,
 			table.setSize(750, desiredHeight);
 		}  
 		else {
-			//table.setLayoutData(new GridData(200, desiredHeight)); 
 			// assumes GridLayout
 			GridData grid_data 
-			= new GridData( 750, desiredHeight);
+				= new GridData( 750, desiredHeight);
 			table.setLayoutData(grid_data);
 		}
 		
 		table.setHeaderVisible( true );
 		table.setLinesVisible( true );
 		
-		// if we want to set the size of each column relative to the parent
-		// or the table, we have to wait until the table is drawn or resized
-		// to get a value; if we simply call getClientArea() in the constructor
-		// we will get a value of 0,0
-		this.root_parent.addControlListener( 
-			new ControlAdapter(){
-				public void controlResized
-				( ControlEvent e)
-				{
-					// will need to ask about the correct way to do this
-					// and why 6 works
-					
-					// ask about how one detects when the scroll bar is visible
-					// or not
-					int original_width 
-						= ModelTestPage.this
-							.root_parent.getClientArea().width 
-						- 6*table.getBorderWidth();
-					if(original_width < 750){
-						int reduced_width 
-							= original_width - table.getVerticalBar().getSize().x;
-						
-						for(int i = 0; i < column_names.length; ++i){
-							table.getColumn(i).setWidth( 
-								reduced_width / column_names.length
-							); 
-						}
-							
-						table.setSize( reduced_width, table.getSize().y );
-						ModelTestPage.this.table_composite.setSize(
-							original_width,
-							ModelTestPage.this.table_composite.getSize().y
-						);
-						
-						ModelTestPage.this.control_composite.setSize(
-							original_width,
-							ModelTestPage.this.control_composite.getSize().y
-						);
-						ModelTestPage.this.setSize(
-							original_width,
-							ModelTestPage.this.getSize().y
-						);
-					}
-				}
-			});
 	}
 	
 	private void
@@ -424,7 +372,7 @@ implements IFrameworkListener,
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					ModelTestPage.this.controller.setModelProperty(
+					ModelTestPage.this.partitioner_gui_state_controller.setModelProperty(
 						Constants.GUI_SIMULATION_TYPE,
 							simulation_type_combo.getText()
 					);
@@ -435,6 +383,33 @@ implements IFrameworkListener,
 	    simulation_type_combo.select(0);
 	}
 	
+	public void
+	initialize_context_menu
+	( ModelCreationEditor root_editor )
+	{
+		// First we create a menu Manager
+		MenuManager menuManager 
+			= new MenuManager();
+		
+		Menu menu 
+			= menuManager.createContextMenu(
+				this.simulations_table_viewer.getTable()
+			);
+		
+		// Set the MenuManager
+		this.simulations_table_viewer.getTable().setMenu(menu);
+		
+		root_editor.getSite().registerContextMenu(
+			menuManager, 
+			this.simulations_table_viewer
+		);
+		
+		// Make the selection available
+		root_editor.getSite().setSelectionProvider(
+			this.simulations_table_viewer
+		); 
+	}
+	
 	@Override
 	public void 
 	modelPropertyChange
@@ -442,6 +417,7 @@ implements IFrameworkListener,
 	{
 		System.err.println("inside modeltestpage modelPropertyChange");
 		
+		// event may be triggered by a process in a non-SWT thread
 		Display.getDefault().asyncExec(
 			new Runnable(){
 				@Override
@@ -524,7 +500,6 @@ implements IFrameworkListener,
 				}
 			}
 		);
-		
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////
@@ -542,7 +517,7 @@ implements IFrameworkListener,
 		System.err.println("performing callback");
 		
 		// update state of gui on the callback
-		this.controller.setModelProperty(
+		this.partitioner_gui_state_controller.setModelProperty(
 			Constants.GUI_SIMULATION_ADDED,
 			unit
 		);
@@ -553,7 +528,7 @@ implements IFrameworkListener,
 	simulationRemoved
 	( SimulationUnit unit ) 
 	{
-		this.controller.setModelProperty(
+		this.partitioner_gui_state_controller.setModelProperty(
 			Constants.GUI_SIMULATION_REMOVED, 
 			unit
 		);
@@ -564,7 +539,7 @@ implements IFrameworkListener,
 	updateSimulationReport
 	( SimulationUnit unit, ReportModel report ) 
 	{    
-		this.controller.setModelProperty(
+		this.partitioner_gui_state_controller.setModelProperty(
 			Constants.GUI_UPDATE_SIMULATION_REPORT, 
 			new Object[]{ unit, report }
 		);
@@ -574,13 +549,12 @@ implements IFrameworkListener,
     updateBestSimReport
     ( SimulationUnit unit )
     {
-    	this.controller.setModelProperty(
+    	this.partitioner_gui_state_controller.setModelProperty(
     		Constants.GUI_UPDATE_BEST_SIMULATION_REPORT, 
     		unit
     	);
     }
     
-    // functionality to go into context menus
     public void 
     customSimulationButtonActionPerformed
     ( java.awt.event.ActionEvent evt ) 
@@ -591,7 +565,7 @@ implements IFrameworkListener,
     	// model and possibly introduce something to allow splitting of
     	// state or passing of partial state through a controller
     	Object[] args 
-    		= this.controller.requestProperties(
+    		= this.partitioner_gui_state_controller.requestProperties(
     			new String[]{
     				Constants.SIMULATION_FRAMEWORK,
     				Constants.MODULE_MODEL,
@@ -631,7 +605,7 @@ implements IFrameworkListener,
     ( int id ) 
     {	
         SimulationUnit unit
-        	= (SimulationUnit) this.controller.index(
+        	= (SimulationUnit) this.partitioner_gui_state_controller.index(
         		Constants.SIMULATION_UNITS,
         		new Integer(id)
         	);
@@ -639,7 +613,7 @@ implements IFrameworkListener,
         assert unit != null : "There is a bug in the program if we received a null unit";
         
         Object[] args 
-        	= this.controller.requestProperties(
+        	= this.partitioner_gui_state_controller.requestProperties(
         		new String[]{
         			Constants.SIMULATION_FRAMEWORK,
         		}
@@ -656,4 +630,91 @@ implements IFrameworkListener,
     		System.err.println("Returned ok");
     	} 	
     }
+    
+    /////////////////////////////////////////////////////////////////////////////////////////
+    
+    private class
+	TestPageResizedAdapter
+	extends ControlAdapter
+	{
+		Composite 	parent;
+		Table		table;
+		String[] 	column_names;
+		Section 	table_composite;
+		Section 	control_composite;
+		
+		// Struct-style adapter class used to ensure
+		// sequencing: the object is not created until all
+		// of the fields are initialized to non-null values;
+		// Please Read: the arguments to this object must be final, or
+		// the control resized handler will not work correctly down the line
+		TestPageResizedAdapter
+		( Composite parent, Table table, String[] column_names, Section table_composite, Section control_composite)
+		{
+			if(parent == null){
+				throw new NullPointerException();
+			}
+			
+			if(table == null){
+				throw new NullPointerException();
+			}
+			
+			if(column_names == null){
+				throw new NullPointerException();
+			}
+			
+			if( table_composite == null){
+				throw new NullPointerException();
+			}
+			
+			if( control_composite == null){
+				throw new NullPointerException();
+			}
+			
+			this.parent = parent;
+			this.table = table;
+			this.column_names = column_names;
+			this.table_composite = table_composite;
+			this.control_composite = control_composite;
+		}
+		
+		
+		public void controlResized
+		( ControlEvent e)
+		{
+			// will need to ask about the correct way to do this
+			// and why 6 works
+			
+			// ask about how one detects when the scroll bar is visible
+			// or not
+			int original_width 
+				= this.parent.getClientArea().width 
+				- 6*this.table.getBorderWidth();
+			if(original_width < 750){
+				int reduced_width 
+					= original_width - this.table.getVerticalBar().getSize().x;
+				
+				for(int i = 0; i < column_names.length; ++i){
+					this.table.getColumn(i).setWidth( 
+						reduced_width / column_names.length
+					); 
+				}
+					
+				this.table.setSize( reduced_width, ModelTestPage.this.table.getSize().y );
+				this.table_composite.setSize(
+					original_width,
+					this.table_composite.getSize().y
+				);
+				
+				this.control_composite.setSize(
+					original_width,
+					this.control_composite.getSize().y
+				);
+				ModelTestPage.this.setSize(
+					original_width,
+					ModelTestPage.this.getSize().y
+				);
+			}
+		}
+	}
 }

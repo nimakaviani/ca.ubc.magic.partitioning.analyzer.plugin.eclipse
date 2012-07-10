@@ -5,8 +5,6 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
-
 import snapshots.model.IModel;
 import snapshots.views.IView;
 

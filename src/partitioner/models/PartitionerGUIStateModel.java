@@ -54,6 +54,8 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 import snapshots.model.IModel;
 import snapshots.model.PropertyChangeDelegate;
 
+// this object is for sure accessed from the swt and swing threads
+// it must be made thread safe!!!!!!!!!
 public class 
 PartitionerGUIStateModel 
 implements IModel
