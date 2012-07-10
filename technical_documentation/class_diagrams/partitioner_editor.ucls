@@ -1,0 +1,125 @@
+<class-diagram version="1.0.9" icons="true" always-add-relationships="false" generalizations="true" realizations="true" 
+  associations="true" dependencies="false" nesting-relationships="true">  
+  <class id="1" corner="BOTTOM_RIGHT" language="java" name="partitioner.views.ModelCreationEditor" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/views/ModelCreationEditor.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="207" y="326"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <class id="2" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.ui.part.MultiPageEditorPart" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.ui.workbench_3.7.1.v20120104-1859.jar" binary="true">    
+    <position height="-1" width="-1" x="209" y="48"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="false" package="false" protected="false" private="false"/>    
+    </display>  
+  </class>  
+  <class id="3" corner="BOTTOM_RIGHT" language="java" name="partitioner.views.ModelTestPage" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/views/ModelTestPage.java" binary="false">    
+    <position height="-1" width="-1" x="202" y="757"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="4" corner="BOTTOM_RIGHT" language="java" name="partitioner.views.ModelView.ViewContentProvider" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/views/ModelView.java" binary="false">    
+    <position height="-1" width="-1" x="836" y="752"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="5" corner="BOTTOM_RIGHT" language="java" name="partitioner.views.ModelView.ViewLabelProvider" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/views/ModelView.java" binary="false">    
+    <position height="129" width="186" x="493" y="682"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="6" corner="BOTTOM_RIGHT" language="java" name="partitioner.views.ModelView" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/views/ModelView.java" binary="false">    
+    <position height="-1" width="-1" x="716" y="584"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="7" corner="BOTTOM_RIGHT" language="java" name="partitioner.models.PartitionerGUIStateModel.Job" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/models/PartitionerGUIStateModel.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="557" y="413"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <class id="8" corner="BOTTOM_RIGHT" language="java" name="partitioner.models.PartitionerGUIStateModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/models/PartitionerGUIStateModel.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="906" y="268"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <class id="9" corner="BOTTOM_RIGHT" language="java" name="org.eclipse.ui.forms.widgets.ScrolledForm" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="C:/eclipse/plugins/org.eclipse.ui.forms_3.5.101.v20111011-1919.jar" binary="true">    
+    <position height="-1" width="-1" x="370" y="570"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="false" package="false" protected="false" private="false"/>    
+    </display>  
+  </class>  
+  <association id="10">    
+    <end type="SOURCE" refId="7" navigable="false">      
+      <attribute id="11" name="gui_state_model"/>      
+      <multiplicity id="12" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="8" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <nesting id="13">    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="5"/>  
+  </nesting>  
+  <dependency id="14">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="3"/>  
+  </dependency>  
+  <generalization id="15">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="9"/>  
+  </generalization>  
+  <association id="16">    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="17" name="partitioner_gui_state_model"/>      
+      <multiplicity id="18" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="8" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <nesting id="19">    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="4"/>  
+  </nesting>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true"/>    
+    <operations public="true" package="true" protected="true" private="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>

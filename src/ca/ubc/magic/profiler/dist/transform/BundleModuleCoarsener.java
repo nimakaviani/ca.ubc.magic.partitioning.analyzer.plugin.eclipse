@@ -33,9 +33,12 @@ public class BundleModuleCoarsener implements IModuleCoarsener {
     
     public ModuleModel getModuleModelFromParser(JipRun jipRun) {
     	
-    	mIgnoreSet = mConstraintModel.getIgnoreSet();
+    	// this throws an exception because the constraint model
+    	// can be null
+    //	assert mConstraintModel != null: "The constraint model cannot be null";
+  //  	mIgnoreSet = mConstraintModel.getIgnoreSet();
         
-        mModuleModel.setName("Profile " + jipRun.getDate());
+    //    mModuleModel.setName("Profile " + jipRun.getDate());
         for(Long threadId: jipRun.threads()) {
                 for (JipFrame f: jipRun.interactions(threadId)) {
                     visitFrameForModuling(f);

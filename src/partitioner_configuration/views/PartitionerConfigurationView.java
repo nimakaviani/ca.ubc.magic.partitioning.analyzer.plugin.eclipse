@@ -58,35 +58,35 @@ implements IView
 {
 	private FormToolkit toolkit;
 	
-	private Section actions_composite;
-	private Label 	profiler_trace_text;
+	private Section 	actions_composite;
+	private Label 		profiler_trace_text;
 
-	private Text 	module_exposer_text;
-	private Text 	host_config_text;
+	private Text 		module_exposer_text;
+	private Text 		host_config_text;
 	
-	private Button 	mod_exposer_browse_button;
-	private Button 	host_config_browse;
+	private Button 		mod_exposer_browse_button;
+	private Button 		host_config_browse;
 	
-	private Button 	exposure_button;
-	private Button 	synthetic_node_button;
-	private Button	perform_partitioning_button;
+	private Button 		exposure_button;
+	private Button 		synthetic_node_button;
+	private Button		perform_partitioning_button;
 
 	private IController controller;
 	
-	private Combo 	set_coarsener_combo;
+	private Combo 		set_coarsener_combo;
 	
-	private Combo 	partitioning_algorithm_combo;
-	private Combo 	interaction_model_combo;
-	private Combo 	execution_model_combo;
+	private Combo 		partitioning_algorithm_combo;
+	private Combo 		interaction_model_combo;
+	private Combo 		execution_model_combo;
 
-	private Object controller_lock = new Object();
+	private Object 		controller_switch_lock = new Object();
 	
 	@Override
 	public void 
 	createPartControl
 	( Composite parent ) 
 	{
-		this.setupActiveEditorCommunication();
+		this.initialize_active_editor_configuration();
 				
 		this.toolkit 
 			= new FormToolkit( parent.getDisplay() );
@@ -97,7 +97,7 @@ implements IView
 		TableWrapLayout layout 
 			= new TableWrapLayout();
 		layout.numColumns = 1;
-		sf.getBody().setLayout(layout);
+		sf.getBody().setLayout( layout );
 		sf.setText("Configure the Model");
 		
 		Section set_paths_composite
@@ -116,8 +116,8 @@ implements IView
 		
 		Composite set_paths_client
 			= this.toolkit.createComposite( set_paths_composite, SWT.WRAP);
-		this.initializeSetPathsBarGrid( set_paths_client );
-		this.initializeSetPathsBarWidgets( set_paths_client, this.toolkit );
+		this.initialize_set_bar_paths_grid( set_paths_client );
+		this.initialize_set_paths_bar_widgets( set_paths_client, this.toolkit );
 		
 		this.toolkit.paintBordersFor(set_paths_client);
 
@@ -142,8 +142,8 @@ implements IView
 		
 		Composite configure_client
 			= this.toolkit.createComposite(configure_composite);
-		this.initializeConfigurationGrid(configure_client);
-		this.initializeConfigurationWidgets( configure_client, this.toolkit );
+		this.initialize_configuration_grid(configure_client);
+		this.initialize_configuration_widgets( configure_client, this.toolkit );
 		td 
 			= new TableWrapData(TableWrapData.FILL);
 		configure_composite.setLayoutData(td);
@@ -164,8 +164,8 @@ implements IView
 		
 		Composite partitioning_client
 			= this.toolkit.createComposite(partitioning_composite);
-		this.initializePartitioningGrid(partitioning_client);
-		this.initializePartitioningWidgets( partitioning_client, this.toolkit );
+		this.initialize_partitioning_grid(partitioning_client);
+		this.initialize_partitioning_widgets( partitioning_client, this.toolkit );
 		td 
 			= new TableWrapData(TableWrapData.FILL);
 		partitioning_composite.setLayoutData(td);
@@ -185,20 +185,22 @@ implements IView
 		);
 		
 		Composite actions_client
-			= this.toolkit.createComposite(this.actions_composite);
+			= this.toolkit.createComposite(
+				this.actions_composite
+			);
 		td 
 			= new TableWrapData(TableWrapData.FILL);
 		this.actions_composite.setLayoutData(td);
 		this.actions_composite.setClient(actions_client);	
 		
-		this.initializeActionsGrid(actions_client);
-		this.initializeActionsWidgets(actions_client, this.toolkit);
+		this.initialize_actions_grid(actions_client);
+		this.initialize_actions_widget(actions_client, this.toolkit);
 		
 		this.set_partitioning_widgets_enabled( false ); 
 	}
 	
 	private void 
-	setupActiveEditorCommunication() 
+	initialize_active_editor_configuration() 
 	{
 		// the following code is a view-communication solution
 		// found in:
@@ -217,7 +219,7 @@ implements IView
 					if( display.getThread() == Thread.currentThread() ){
 						IController controller 
 							= (IController) event.getProperty("ACTIVE_EDITOR");
-						PartitionerConfigurationView.this.setValues( controller );
+						PartitionerConfigurationView.this.setDisplayValues( controller );
 					}
 					else {
 						display.syncExec( 
@@ -227,7 +229,7 @@ implements IView
 								{
 									IController controller 
 										= (IController) event.getProperty("ACTIVE_EDITOR");
-									PartitionerConfigurationView.this.setValues(controller);
+									PartitionerConfigurationView.this.setDisplayValues(controller);
 								}
 							}
 						);
@@ -242,7 +244,7 @@ implements IView
 	}
 
 	protected void 
-	setValues
+	setDisplayValues
 	( IController controller ) 
 	// this function should only be called from swt thread,
 	// again though, we want to be concerned about threading
@@ -251,7 +253,7 @@ implements IView
 	// problem: whenever we change anything we have to send a message
 	// to update the model; this basically means we need to controller
 	{
-		synchronized(this.controller_lock){
+		synchronized(this.controller_switch_lock){
 			assert controller != null : "The controller argument should not be null";
 			
 			if(this.controller != null){
@@ -276,45 +278,52 @@ implements IView
 				Constants.ACTIVE_CONFIGURATION_PANEL
 			};
 			
-			Object[] properties 
+			final Object[] properties 
 				= this.controller.requestProperties(args);
 			
-			this.profiler_trace_text.setText( (String) properties[0]);
-			this.profiler_trace_text.setSize(400, this.profiler_trace_text.getSize().y);
-			this.module_exposer_text.setText( (String) properties[1]);
-			this.host_config_text.setText( (String) properties[2]);
-			
-			int index 
-				= this.findIndex(
-					this.set_coarsener_combo, 
-					((ModuleCoarsenerType) properties[3]).getText()
-				);
-			this.set_coarsener_combo.select( index);
-			this.exposure_button.setSelection( (Boolean) properties[4]);
-			this.synthetic_node_button.setSelection( (Boolean) properties[5]);
-			
-			this.perform_partitioning_button.setSelection( (Boolean) properties[6]);
-			index 
-				= this.findIndex(
-					this.execution_model_combo, 
-					((ExecutionCostType) properties[7]).getText()
-				);
-			this.execution_model_combo.select( index );
-			index 
-				= this.findIndex(
-					this.interaction_model_combo, 
-					((InteractionCostType) properties[8]).getText()
-				);
-			this.interaction_model_combo.select( index );
-			index 
-				= this.findIndex(
-					this.partitioning_algorithm_combo, 
-					((PartitionerType) properties[9]).getText()
-				);
-			
-			this.partitioning_algorithm_combo.select( index ); 
-			this.setConfigurationWidgetsEnabled((Boolean) properties[10]);
-			
+			Display.getDefault().asyncExec(
+				new Runnable(){
+				@Override
+				public void
+				run()
+				{
+					PartitionerConfigurationView.this.profiler_trace_text.setText( (String) properties[0]);
+					PartitionerConfigurationView.this.profiler_trace_text.setSize(400, PartitionerConfigurationView.this.profiler_trace_text.getSize().y);
+					PartitionerConfigurationView.this.module_exposer_text.setText( (String) properties[1]);
+					PartitionerConfigurationView.this.host_config_text.setText( (String) properties[2]);
+					
+					int index 
+						= PartitionerConfigurationView.this.findIndex(
+								PartitionerConfigurationView.this.set_coarsener_combo, 
+							((ModuleCoarsenerType) properties[3]).getText()
+						);
+					PartitionerConfigurationView.this.set_coarsener_combo.select( index);
+					PartitionerConfigurationView.this.exposure_button.setSelection( (Boolean) properties[4]);
+					PartitionerConfigurationView.this.synthetic_node_button.setSelection( (Boolean) properties[5]);
+					
+					PartitionerConfigurationView.this.perform_partitioning_button.setSelection( (Boolean) properties[6]);
+					index 
+						= PartitionerConfigurationView.this.findIndex(
+								PartitionerConfigurationView.this.execution_model_combo, 
+							((ExecutionCostType) properties[7]).getText()
+						);
+					PartitionerConfigurationView.this.execution_model_combo.select( index );
+					index 
+						= PartitionerConfigurationView.this.findIndex(
+								PartitionerConfigurationView.this.interaction_model_combo, 
+							((InteractionCostType) properties[8]).getText()
+						);
+					PartitionerConfigurationView.this.interaction_model_combo.select( index );
+					index 
+						=PartitionerConfigurationView.this.findIndex(
+								PartitionerConfigurationView.this.partitioning_algorithm_combo, 
+							((PartitionerType) properties[9]).getText()
+						);
+					
+					PartitionerConfigurationView.this.partitioning_algorithm_combo.select( index ); 
+					PartitionerConfigurationView.this.setConfigurationWidgetsEnabled((Boolean) properties[10]);
+				}
+			});
 		}
 	}
 
@@ -335,7 +344,7 @@ implements IView
 	}
 	
 	private void 
-	initializeSetPathsBarGrid
+	initialize_set_bar_paths_grid
 	( Composite parent ) 
 	{
 		final GridLayout model_configuration_page_grid_layout
@@ -345,7 +354,7 @@ implements IView
 	}
 	
 	private void 
-	initializeSetPathsBarWidgets
+	initialize_set_paths_bar_widgets
 	( Composite parent, FormToolkit toolkit  ) 
 	{
 		toolkit.createLabel(parent, "Profiler Trace XML: " );
@@ -374,7 +383,7 @@ implements IView
 		this.module_exposer_text.setLayoutData(grid_data);
 		
 		this.mod_exposer_browse_button 
-			= toolkit.createButton(parent, "Browse", SWT.PUSH);
+			= toolkit.createButton( parent, "Browse", SWT.PUSH );
 		this.mod_exposer_browse_button.addSelectionListener( 
 			new SelectionAdapter(){
 				public void widgetSelected
@@ -396,6 +405,9 @@ implements IView
 					if(selected != null){
 						PartitionerConfigurationView.this
 							.module_exposer_text.setText(selected);
+						
+						PartitionerConfigurationView.this.controller
+							.setModelProperty( Constants.GUI_MODULE_EXPOSER, selected );
 					}
 				}
 			}
@@ -431,13 +443,16 @@ implements IView
 				if(selected != null){
 					PartitionerConfigurationView.this
 						.host_config_text.setText(selected);
+					
+					PartitionerConfigurationView.this.controller
+						.setModelProperty( Constants.GUI_HOST_CONFIGURATION, selected );
 				}
 			}
 		});
 	}
 	
 	private void 
-	initializeConfigurationGrid
+	initialize_configuration_grid
 	( Composite parent ) 
 	{
 		final GridLayout model_configuration_page_grid_layout
@@ -448,7 +463,7 @@ implements IView
 	}
 	
 	private void 
-	initializeConfigurationWidgets
+	initialize_configuration_widgets
 	( Composite parent, FormToolkit toolkit ) 
 	{
 		toolkit.createLabel(parent, "Coarsener: " );
@@ -544,7 +559,7 @@ implements IView
 	}
 	
 	private void 
-	initializePartitioningGrid
+	initialize_partitioning_grid
 	( Composite parent ) 
 	{
 		final GridLayout model_configuration_page_grid_layout
@@ -555,7 +570,7 @@ implements IView
 	}
 
 	private void 
-	initializePartitioningWidgets
+	initialize_partitioning_widgets
 	( Composite parent, FormToolkit toolkit ) 
 	{
 		this.perform_partitioning_button
@@ -705,7 +720,7 @@ implements IView
 	
 	
 	private void 
-	initializeActionsGrid
+	initialize_actions_grid
 	( Composite parent ) 
 	{
 		final GridLayout model_configuration_page_grid_layout
@@ -716,10 +731,10 @@ implements IView
 	}
 	
 	private void 
-	initializeActionsWidgets
+	initialize_actions_widget
 	( Composite parent, FormToolkit toolkit ) 
 	{
-		final Button exposure_button
+		final Button generate_model
 			= toolkit.createButton(
 				parent, 
 				"Generate Model", 
@@ -728,9 +743,9 @@ implements IView
 		GridData grid_data 
 			= new GridData( SWT.BEGINNING, SWT.FILL, false, false);
 		grid_data.horizontalSpan = 1;
-		exposure_button.setLayoutData( grid_data );
+		generate_model.setLayoutData( grid_data );
 		
-		exposure_button.addSelectionListener(
+		generate_model.addSelectionListener(
 			new SelectionAdapter()
 			{
 				@Override
@@ -747,9 +762,11 @@ implements IView
 						PartitionerConfigurationView.this.module_exposer_text.getText()
 					);
 					
+					// generate a model, and if partitioning is set, also 
+					// initialize the test framework
 					PartitionerConfigurationView.this.controller.notifyModel(
-							Constants.GENERATE_MODEL_EVENT
-						);
+						Constants.GENERATE_MODEL_EVENT
+					);
 				}
 			}
 		);
@@ -758,6 +775,7 @@ implements IView
 	void
 	set_partitioning_widgets_enabled
 	( boolean enabled )
+	// this function must execute in the SWT thread!!!
 	{
 		this
 			.partitioning_algorithm_combo.setEnabled(enabled);
@@ -768,6 +786,7 @@ implements IView
 	private Label 
 	createDummyLabel
 	( Composite parent, FormToolkit toolkit ) 
+	// this function must execute in the SWT thread
 	{
 		Label return_value = null;
 		
@@ -786,51 +805,55 @@ implements IView
 	@Override
 	public void 
 	modelPropertyChange
-	( PropertyChangeEvent evt ) 
+	( final PropertyChangeEvent evt ) 
 	{
-		switch(evt.getPropertyName())
-		{
-		case Constants.GUI_PROFILER_TRACE:
-			this.profiler_trace_text.setText( 
-				(String) evt.getNewValue() 
-			);
-			break;
-		case Constants.GUI_MODULE_EXPOSER:
-			this.module_exposer_text.setText( 
-				(String) evt.getNewValue() 
-			);
-			break;
-		case Constants.GUI_HOST_CONFIGURATION:
-			this.host_config_text.setText( 
-				(String) evt.getNewValue() 
-			);
-			break; 
-		case Constants.GUI_PERFORM_PARTITIONING:
-		{
-			Boolean enabled 
-				= (Boolean) evt.getNewValue();
-			this.set_partitioning_widgets_enabled( enabled );
-			break; 
-		}
-		case Constants.ACTIVE_CONFIGURATION_PANEL:
-		{
-			boolean enabled
-				= (boolean) evt.getNewValue();
-			this.set_configuration_widgets_enabled( enabled );
-			break;
-		}
-		default:
-			System.out.println("Swallowing message.");
-		};
+		Display.getDefault().asyncExec( 
+			new Runnable()
+			{
+				@Override
+				public void
+				run()
+				{
+					switch(evt.getPropertyName())
+					{
+					case Constants.GUI_PROFILER_TRACE:
+						PartitionerConfigurationView.this.profiler_trace_text.setText( 
+							(String) evt.getNewValue() 
+						);
+						break;
+					case Constants.GUI_MODULE_EXPOSER:
+						PartitionerConfigurationView.this.module_exposer_text.setText( 
+							(String) evt.getNewValue() 
+						);
+						break;
+					case Constants.GUI_HOST_CONFIGURATION:
+						PartitionerConfigurationView.this.host_config_text.setText( 
+							(String) evt.getNewValue() 
+						);
+						break; 
+					case Constants.GUI_PERFORM_PARTITIONING:
+					{
+						Boolean enabled 
+							= (Boolean) evt.getNewValue();
+						PartitionerConfigurationView.this.set_partitioning_widgets_enabled( enabled );
+						break; 
+					}
+					case Constants.ACTIVE_CONFIGURATION_PANEL:
+					{
+						boolean enabled
+							= (boolean) evt.getNewValue();
+						PartitionerConfigurationView.this.set_configuration_widgets_enabled( enabled );
+						break;
+					}
+					default:
+						System.out.println("Swallowing message.");
+					};
+				}
+			}
+		);
+	
 	}
 
-	@Override
-	public void 
-	setFocus() 
-	{
-		
-	}
-	
 	protected void 
 	setConfigurationWidgetsEnabled
 	( Boolean enabled ) 
@@ -921,5 +944,9 @@ implements IView
         eventAdmin.postEvent(event);
         
         page.updateTitle();
+	}
+
+	@Override
+	public void setFocus() {
 	}
 }

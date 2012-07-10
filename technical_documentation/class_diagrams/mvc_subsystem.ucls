@@ -1,0 +1,92 @@
+<class-diagram version="1.0.9" icons="true" automaticImage="PNG" always-add-relationships="false" generalizations="true" 
+  realizations="true" associations="true" dependencies="false" nesting-relationships="true">  
+  <class id="1" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.ControllerDelegate" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/ControllerDelegate.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="343" y="408"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <interface id="2" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.IController" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/IController.java" binary="false">    
+    <position height="-1" width="-1" x="334" y="141"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <interface id="3" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.IModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/IModel.java" binary="false">    
+    <position height="-1" width="-1" x="828" y="401"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </interface>  
+  <interface id="4" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.IView" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/IView.java" binary="false">    
+    <position height="-1" width="-1" x="343" y="784"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <interface id="5" corner="BOTTOM_RIGHT" language="java" name="java.beans.PropertyChangeListener" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" file="C:/Program Files/Java/jre7/lib/rt.jar" 
+    binary="true">    
+    <position height="-1" width="-1" x="718" y="137"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <interface id="6" corner="BOTTOM_RIGHT" language="java" name="java.util.EventListener" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" file="C:/Program Files/Java/jre7/lib/rt.jar" 
+    binary="true">    
+    <position height="-1" width="-1" x="1065" y="140"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="false" package="false" protected="false" private="false"/>    
+    </display>  
+  </interface>  
+  <generalization id="7">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="5"/>  
+  </generalization>  
+  <generalization id="8">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="6"/>  
+  </generalization>  
+  <association id="9">    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="10" name="model"/>      
+      <multiplicity id="11" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="3" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="12">    
+    <end type="SOURCE" refId="1" navigable="false">      
+      <attribute id="13" name="registered_views"/>      
+      <multiplicity id="14" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="4" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <realization id="15">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="2"/>  
+  </realization>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true"/>    
+    <operations public="true" package="true" protected="true" private="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>

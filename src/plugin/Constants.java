@@ -84,4 +84,34 @@ Constants
 		= "plugin.views.partitioner_configuration_view";
 	public static final String MODEL_CREATION 
 		= "ModelCreation";
+	
+	
+	public static final String GUI_SIMULATION_ADDED 
+		= "SimulationAdded";
+	public static final String GUI_SIMULATION_REMOVED 
+		= "SimulationRemoved";
+	public static final String GUI_UPDATE_SIMULATION_REPORT 
+		= "UpdateSimulationReport";
+	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
+		= "UpdateBestSimulationReport";
+	public static final String SIMULATION_FRAMEWORK 
+		= "SimulationFramework";
+	public static final String MODULE_MODEL 
+		= "ModuleModel";
+	public static final String HOST_MODEL
+		= "HostModel";
+	public static final String INCREMENT_ID 
+		= "IncrementID";
+	public static final String EVENT_RUN_SIMULATION 
+		= "RunSimulation";
+	public static final String SIMULATION_TABLE_RUN_UPDATE 
+		= "RunSimulationTableUpdate";
+	public static final String BEST_RUN_NAME 
+		= "BestRunName";
+	public static final String BEST_RUN_ALGORITHM 
+		= "BestAlgorithmName";
+	public static final String BEST_RUN_COST 
+		= "BestRunCost";
+	public static final String SIMULATION_UNITS 
+		= "InSimulationUnits";
 }

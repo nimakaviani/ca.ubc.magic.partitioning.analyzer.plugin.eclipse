@@ -15,16 +15,9 @@ import javax.swing.UIManager;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.IPartListener2;
@@ -32,9 +25,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.forms.widgets.FormToolkit;
-import org.eclipse.ui.forms.widgets.ScrolledForm;
-import org.eclipse.ui.forms.widgets.Section;
-import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -53,8 +43,6 @@ import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
-import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
-import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 
 // TODO: problem: the controller is responsible for deciding how
 //		events are handled, but there is view code that directly calls
@@ -81,33 +69,28 @@ implements IView
     Object current_vp_lock 
     	= new Object();
     
-    private volatile Boolean perform_partitioning 
+    private volatile Boolean 	perform_partitioning 
     	= false;
     
-	private Map<ModulePair, InteractionData> module_exchange_map;
-	
     private Frame 				frame;
-	private ControllerDelegate 	controller;
+	private IController 		controller;
 	
-	private PartitionerGUIStateModel partitioner_gui_state_model;
-	
-	private String algorithm;
-	private String solution;
+	private String 				algorithm;
+	private String 				solution;
+	private ModelTestPage 		test_page;
 
 	public 
 	ModelCreationEditor() 
 	{
-		this.controller = new ControllerDelegate();
-		this.controller.addView(this);
-		
-	    this.partitioner_gui_state_model
-    		= new PartitionerGUIStateModel();
+		this.controller 
+			= new ControllerDelegate();
+		this.controller.addView( this );
 	    
-		this.controller.addModel( this.partitioner_gui_state_model );
+		this.controller.addModel( new PartitionerGUIStateModel() );
 	}
 	
 	private void 
-	setupViewCommunication() 
+	initialize_view_communication() 
 	{
 		IWorkbenchPage page = this.getSite().getPage();
 		   
@@ -238,35 +221,17 @@ implements IView
 	    this.frame 
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
 
-	    /*
-	    this.model_configuration_page
-			= new ModelConfigurationPage( 
-				parent, 
-				this.toolkit, 
-				this.controller,
-				this.currentVP,
-				this.current_vp_lock,
-				this.frame,
-				this
-			);
-	    
-		this.toolkit.adapt(this.model_configuration_page);
-		
-		int index
-			= super.addPage( this.model_configuration_page );
-		super.setPageText( index, "Model Configuration" );*/
-		
-		this.createModelAnalysisPage( model_analysis_composite );
-		this.createModelTestPage();
+	  	this.initialize_model_analysis_page( model_analysis_composite );
+		this.initialize_model_test_page();
 		this.updateTitle();
 
 		// this should happen after the controller is assigned
 		// to so we don't get any null pointer surprises
-		setupViewCommunication();
+		initialize_view_communication();
 	}
 
 	private void 
-	createModelAnalysisPage
+	initialize_model_analysis_page
 	( Composite model_analysis_composite ) 
 	// example code for dealing with swt/swing integration provided by
 	// http://www.eclipse.org/articles/article.php?file=Article-Swing-SWT-Integration/index.html
@@ -274,7 +239,9 @@ implements IView
 		// the following should be set before any SWING widgets are
 		// instantiated it reduces flicker on a resize
 		//System.setProperty("sun.awt.noerasebackground", "true");
-		model_analysis_composite.addControlListener(new CleanResizeListener(frame));
+		model_analysis_composite.addControlListener(
+				new CleanResizeListener( this.frame )
+		);
 
 		SwingUtilities.invokeLater( 
 			new Runnable(){
@@ -300,21 +267,22 @@ implements IView
 		);
 	    
 		int index
-			= super.addPage(model_analysis_composite);
+			= super.addPage( model_analysis_composite );
 		super.setPageText(index, "Model Analysis");
 	}
 	
 	private void 
-	createModelTestPage() 
+	initialize_model_test_page() 
 	{
 		Composite parent 
 			= super.getContainer();
 		
-		ModelTestPage test_page
+		this.test_page
 			= new ModelTestPage(
 				this.toolkit, 
 				parent,
-				this.controller
+				this.controller,
+				this
 			);
 		this.toolkit.adapt(test_page);
 		
@@ -345,10 +313,20 @@ implements IView
 	// the following method is recommended by the eclipse
 	// plugins book
 	{
-		IEditorInput input
+		final IEditorInput input
 			= super.getEditorInput();
-		super.setPartName( input.getName() );
-		super.setTitleToolTip(this.getTitleToolTip());
+		
+		Display.getDefault().asyncExec( new Runnable(){
+			@Override
+			public void
+			run()
+			{
+				ModelCreationEditor.super.setPartName( input.getName() );
+				ModelCreationEditor.super.setTitleToolTip( 
+					ModelCreationEditor.this.getTitleToolTip() 
+				);
+			}
+		});
 	}
 	
 	@Override
@@ -386,34 +364,34 @@ implements IView
 	@Override
 	public void 
 	modelPropertyChange
-	( PropertyChangeEvent evt ) 
+	( final PropertyChangeEvent evt ) 
 	{
-		switch(evt.getPropertyName())
-		{
-		case Constants.GUI_MODULE_COARSENER:
-			ModuleCoarsenerType mc 
-				= (ModuleCoarsenerType) evt.getNewValue();
-			System.out.println(
-				"The module coarsener was modified to " + mc.getText()
-			);
-			break;
-		case Constants.MODEL_CREATION:
-			this.visualizeModuleModel();
-			break;
-		case Constants.MODULE_EXCHANGE_MAP:
-			@SuppressWarnings("unchecked")
-			Map<ModulePair, InteractionData> map
-				= (Map<ModulePair, InteractionData>) evt.getNewValue();
-			this.setModuleMap(map);
-			break;
-		case Constants.GUI_PERFORM_PARTITIONING:
-			this.perform_partitioning
-				= (Boolean) evt.getNewValue();
-			break;
-			
-		default:
-			System.out.println("Swallowing message.");
-		};
+		// event may be triggered by a process in a non-SWT thread
+		Display.getDefault().asyncExec( new Runnable(){
+			@Override
+			public void run() 
+			{
+				switch(evt.getPropertyName())
+				{
+				case Constants.GUI_MODULE_COARSENER:
+					ModuleCoarsenerType mc 
+						= (ModuleCoarsenerType) evt.getNewValue();
+					System.out.println(
+						"The module coarsener was modified to " + mc.getText()
+					);
+					break;
+				case Constants.MODEL_CREATION:
+					ModelCreationEditor.this.visualizeModuleModel();
+					break;
+				case Constants.GUI_PERFORM_PARTITIONING:
+					ModelCreationEditor.this.perform_partitioning
+						= (Boolean) evt.getNewValue();
+					break;
+				default:
+					System.out.println("Swallowing message.");
+				};
+			}
+		});
 	}
 	
 	void 
@@ -428,10 +406,16 @@ implements IView
 					ModelCreationEditor.this.currentVP
 						= new VisualizePartitioning( frame );
 
+					Object[] obj
+						= ModelCreationEditor.this.controller.requestProperties(
+							new String[]{
+								Constants.MODULE_EXCHANGE_MAP
+							}
+						);
 					// problem: drawModules is both a view type component and
 					// a model type component: where does it go? 
 					ModelCreationEditor.this.currentVP.drawModules(
-							ModelCreationEditor.this.module_exchange_map
+							(Map<ModulePair, InteractionData>) obj[0]
 					);  
 					
 					try {
@@ -467,7 +451,7 @@ implements IView
 		});
 	}	
 	
-	public void 
+/* 	public void 
 	setModuleMap
 	( Map<ModulePair, InteractionData> map ) 
 	// TODO: EXTREMELY dangerous to pass a reference 
@@ -476,7 +460,7 @@ implements IView
 	{
 		this.module_exchange_map
 			= map;
-	}
+	} */
 	
 	@Override
 	public void 
@@ -509,4 +493,18 @@ implements IView
 	{
 		this.solution = solution;
 	}
+	
+	public void
+	addSimulation()
+	{
+		this.test_page.customSimulationButtonActionPerformed(null);
+	}
+
+	public void 
+	simTableMouseClicked
+	( Integer id ) 
+	{
+		this.test_page.simTableMouseClicked(id);
+	}
+	
 }

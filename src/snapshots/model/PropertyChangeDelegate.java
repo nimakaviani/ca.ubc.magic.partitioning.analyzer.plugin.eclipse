@@ -53,6 +53,8 @@ PropertyChangeDelegate
     	this.property_map.put(property_name, new_value);
     	
         if (this.listeners.hasListeners(property_name)) {
+        	// we have a problem: the following should fire but
+        	// nothing happens
             this.listeners.firePropertyChange(
             	property_name, 
             	old_value, 
