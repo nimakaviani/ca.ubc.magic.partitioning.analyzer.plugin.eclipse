@@ -1,11 +1,10 @@
-package snapshots.controller;
+package plugin.mvc;
 
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import snapshots.model.IModel;
 import snapshots.views.IView;
 
 public class 

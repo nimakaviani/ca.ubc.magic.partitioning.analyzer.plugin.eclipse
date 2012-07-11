@@ -30,6 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // $Id: SnapshotInfoModel.java,v 1.1 2008/09/23 04:48:18 jchapman0 Exp $
 package snapshots.model;
 
+import plugin.mvc.IModel;
+
 
 /**
  * @author not attributable

@@ -33,9 +33,10 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 
 import partitioner.models.PartitionerGUIStateModel;
+import partitioner.models.TestFrameworkModel;
 import plugin.Constants;
-import snapshots.controller.ControllerDelegate;
-import snapshots.controller.IController;
+import plugin.mvc.ControllerDelegate;
+import plugin.mvc.IController;
 import snapshots.views.IView;
 
 import ca.ubc.magic.profiler.dist.model.ModulePair;
@@ -44,15 +45,6 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 
-// TODO: problem: the controller is responsible for deciding how
-//		events are handled, but there is view code that directly calls
-//		the model. This is not such a problem, since the most important
-//		thing is to to have a model that supports multiple views...
-//		but it is annoying...get rid of it.
-// 		-> reconsideration: this is a major problem and interferes with
-//		the use of a controller as a communication mechanism between views
-// TODO: replace all initializeGrid functions with a function that
-//		takes the number of desired columns
 public class 
 ModelCreationEditor 
 extends MultiPageEditorPart 
@@ -92,57 +84,11 @@ implements IView
 	private void 
 	initialize_view_communication() 
 	{
-		IWorkbenchPage page = this.getSite().getPage();
+		IWorkbenchPage page 
+			= this.getSite().getPage();
 		   
-		//adding a listener
-		IPartListener2 pl = new IPartListener2() {
-			public void partActivated( IWorkbenchPartReference part_ref ){
-				if(part_ref.getPart(false) instanceof ModelCreationEditor ){
-					ModelCreationEditor editor
-						= (ModelCreationEditor) part_ref.getPart(false);
-					
-					System.out.println( "Active: " + part_ref.getTitle() );
-					
-					BundleContext context 
-						= FrameworkUtil.getBundle(
-							ModelCreationEditor.class
-						).getBundleContext();
-			        ServiceReference<EventAdmin> ref 
-			        	= context.getServiceReference(EventAdmin.class);
-			        EventAdmin eventAdmin 
-			        	= context.getService( ref );
-			        Map<String,Object> properties 
-			        	= new HashMap<String, Object>();
-			        properties.put( "ACTIVE_EDITOR", editor.getController() );
-			        Event event 
-			        	= new Event("viewcommunication/syncEvent", properties);
-			        eventAdmin.sendEvent(event);
-			        event = new Event("viewcommunication/asyncEvent", properties);
-			        eventAdmin.postEvent(event);
-				}
-			}
-		
-			@Override
-			public void partBroughtToTop(IWorkbenchPartReference partRef) {	}
-			
-			@Override
-			public void partClosed(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partDeactivated(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partOpened(IWorkbenchPartReference partRef) { } 
-			
-			@Override
-			public void partHidden(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partVisible(IWorkbenchPartReference partRef) { }
-			
-			@Override
-			public void partInputChanged(IWorkbenchPartReference partRef) {	}
-		};
+		IPartListener2 pl 
+			= new ModelCreationEditor.ActiveEditorEventListener();
 	
 		page.addPartListener(pl);
 	}
@@ -227,7 +173,7 @@ implements IView
 
 		// this should happen after the controller is assigned
 		// to so we don't get any null pointer surprises
-		initialize_view_communication();
+		this.initialize_view_communication();
 	}
 
 	private void 
@@ -281,7 +227,6 @@ implements IView
 			= new ModelTestPage(
 				this.toolkit, 
 				parent,
-				this.controller,
 				this
 			);
 		this.toolkit.adapt(test_page);
@@ -371,6 +316,11 @@ implements IView
 			@Override
 			public void run() 
 			{
+				System.err.println(
+					"Event generated in ModelCreationEditor: " 
+					+ evt.getPropertyName()
+				);
+				
 				switch(evt.getPropertyName())
 				{
 				case Constants.GUI_MODULE_COARSENER:
@@ -383,6 +333,18 @@ implements IView
 				case Constants.MODEL_CREATION:
 					ModelCreationEditor.this.visualizeModuleModel();
 					break;
+				case Constants.PARTITIONING_COMPLETE:
+					// this is when the initialization must occur
+					Object[] obj = ModelCreationEditor.this.controller.requestProperties(
+							new String[]{
+								Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK
+							}
+						);
+					TestFrameworkModel test_framework_model
+						= (TestFrameworkModel) obj[0];
+					ModelCreationEditor.this
+						.test_page.activate( test_framework_model );
+					break;
 				case Constants.GUI_PERFORM_PARTITIONING:
 					ModelCreationEditor.this.perform_partitioning
 						= (Boolean) evt.getNewValue();
@@ -394,10 +356,14 @@ implements IView
 		});
 	}
 	
+	// TODO the following is something that would traditionally be handled by the
+	// controller: the view detects the event, but does not decide how to handle it
+	// only how to notify the controller
 	void 
 	visualizeModuleModel() 
 	{
 		SwingUtilities.invokeLater( new Runnable(){
+			@SuppressWarnings("unchecked")
 			@Override
 			public void
 			run()
@@ -451,17 +417,6 @@ implements IView
 		});
 	}	
 	
-/* 	public void 
-	setModuleMap
-	( Map<ModulePair, InteractionData> map ) 
-	// TODO: EXTREMELY dangerous to pass a reference 
-	//	from the model like this: see if you can create a copy
-	// 	or refactor (split the VP object into parts, or something)
-	{
-		this.module_exchange_map
-			= map;
-	} */
-	
 	@Override
 	public void 
 	dispose()
@@ -471,6 +426,12 @@ implements IView
 				this.currentVP.destroy();
 			}
 		}
+		
+		this.controller.notifyPeers(
+			Constants.EDITOR_CLOSED, 
+			this, 
+			null
+		);
 	}
 
 	public IController 
@@ -507,4 +468,73 @@ implements IView
 		this.test_page.simTableMouseClicked(id);
 	}
 	
+	private class
+	ActiveEditorEventListener
+	implements IPartListener2
+	{
+
+		@Override
+		public void 
+		partActivated
+		( IWorkbenchPartReference part_ref ) 
+		{
+			if(part_ref.getPart(false) instanceof ModelCreationEditor ){
+				ModelCreationEditor editor
+					= (ModelCreationEditor) part_ref.getPart(false);
+				
+				System.out.println( "Active: " + part_ref.getTitle() );
+				
+				BundleContext context 
+					= FrameworkUtil.getBundle(
+						ModelCreationEditor.class
+					).getBundleContext();
+		        ServiceReference<EventAdmin> ref 
+		        	= context.getServiceReference(EventAdmin.class);
+		        EventAdmin eventAdmin 
+		        	= context.getService( ref );
+		        Map<String,Object> properties 
+		        	= new HashMap<String, Object>();
+		        properties.put( "ACTIVE_EDITOR", editor.getController() );
+		        Event event 
+		        	= new Event("viewcommunication/syncEvent", properties);
+		        eventAdmin.sendEvent(event);
+		        event = new Event("viewcommunication/asyncEvent", properties);
+		        eventAdmin.postEvent(event);
+			}
+		}
+
+		@Override
+		public void 
+		partBroughtToTop(IWorkbenchPartReference partRef) {}
+
+		@Override
+		public void 
+		partClosed
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partDeactivated
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partOpened
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partHidden
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partVisible
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partInputChanged
+		( IWorkbenchPartReference partRef ) {}
+	}
 }

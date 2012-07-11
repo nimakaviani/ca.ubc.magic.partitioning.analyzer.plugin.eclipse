@@ -1,4 +1,4 @@
-package snapshots.controller;
+package plugin.mvc;
 
 import java.beans.PropertyChangeEvent;
 import java.io.IOException;

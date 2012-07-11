@@ -46,8 +46,8 @@ import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.Partiti
 
 import partitioner.views.ModelCreationEditor;
 import plugin.Constants;
+import plugin.mvc.IController;
 
-import snapshots.controller.IController;
 import snapshots.views.IView;
 import snapshots.views.VirtualModelFileInput;
 
@@ -196,6 +196,7 @@ implements IView
 		this.initialize_actions_grid(actions_client);
 		this.initialize_actions_widget(actions_client, this.toolkit);
 		
+		this.set_configuration_widgets_enabled( false );
 		this.set_partitioning_widgets_enabled( false ); 
 	}
 	
@@ -275,7 +276,7 @@ implements IView
 				Constants.GUI_EXECUTION_COST,
 				Constants.GUI_INTERACTION_COST,
 				Constants.GUI_PARTITIONER_TYPE,
-				Constants.ACTIVE_CONFIGURATION_PANEL
+				Constants.DISABLE_CONFIGURATION_PANEL
 			};
 			
 			final Object[] properties 
@@ -321,7 +322,9 @@ implements IView
 						);
 					
 					PartitionerConfigurationView.this.partitioning_algorithm_combo.select( index ); 
-					PartitionerConfigurationView.this.setConfigurationWidgetsEnabled((Boolean) properties[10]);
+					PartitionerConfigurationView.this.set_configuration_widgets_enabled(
+						(Boolean) properties[10]
+					);
 				}
 			});
 		}
@@ -807,7 +810,17 @@ implements IView
 	modelPropertyChange
 	( final PropertyChangeEvent evt ) 
 	{
-		Display.getDefault().asyncExec( 
+		System.err.println(
+			"Event generated in PartitionerConfigurationView: " 
+			+ evt.getPropertyName()
+		);
+		Display display = Display.getCurrent();
+		
+		if(display == null){
+			System.err.println("Uh oh null display");
+			display = Display.getDefault();
+		}
+		display.syncExec( 
 			new Runnable()
 			{
 				@Override
@@ -838,13 +851,26 @@ implements IView
 						PartitionerConfigurationView.this.set_partitioning_widgets_enabled( enabled );
 						break; 
 					}
-					case Constants.ACTIVE_CONFIGURATION_PANEL:
+					case Constants.DISABLE_CONFIGURATION_PANEL:
 					{
 						boolean enabled
 							= (boolean) evt.getNewValue();
-						PartitionerConfigurationView.this.set_configuration_widgets_enabled( enabled );
+						PartitionerConfigurationView.this
+							.set_configuration_widgets_enabled( enabled );
+						PartitionerConfigurationView.this
+							.set_partitioning_widgets_enabled( enabled );
+						PartitionerConfigurationView.this
+							.updateModelName();
 						break;
 					}
+					case Constants.EDITOR_CLOSED:
+						PartitionerConfigurationView.this
+							.clear_all_entries();
+						PartitionerConfigurationView.this
+							.set_configuration_widgets_enabled( false );
+						PartitionerConfigurationView.this
+							.set_partitioning_widgets_enabled( false );
+						break;
 					default:
 						System.out.println("Swallowing message.");
 					};
@@ -854,11 +880,38 @@ implements IView
 	
 	}
 
-	protected void 
-	setConfigurationWidgetsEnabled
-	( Boolean enabled ) 
+	private void 
+	clear_all_entries() 
 	{
-		PartitionerConfigurationView.this.host_config_text.setEditable( enabled );
+		// TODO the following doesn't actually work
+		// 		you must figure out why
+		System.err.println("Clearing all entries");
+		
+		synchronized(this.controller_switch_lock){
+				this.controller.removeView(this);
+				this.controller 
+					= null;
+			}
+		
+		this.profiler_trace_text.setText("  ");
+		this.module_exposer_text.setText("");
+		this.host_config_text.setText("");
+		
+		this.exposure_button.setSelection(false);
+		this.synthetic_node_button.setSelection(false);
+		
+		this.perform_partitioning_button.setSelection(false);
+		
+		Display.getDefault().update();
+		this.getViewSite().getShell().layout();
+		this.getViewSite().getShell().update();
+	}
+
+	public void 
+	set_configuration_widgets_enabled
+	( final boolean enabled ) 
+	{
+		PartitionerConfigurationView.this.host_config_text.setEditable(enabled);
 		PartitionerConfigurationView.this.module_exposer_text.setEditable(enabled);
 		
 		PartitionerConfigurationView.this.actions_composite.setVisible(enabled);
@@ -869,81 +922,62 @@ implements IView
 		PartitionerConfigurationView.this.mod_exposer_browse_button.setVisible(enabled);
 		PartitionerConfigurationView.this.host_config_browse.setVisible(enabled);
 		PartitionerConfigurationView.this.set_coarsener_combo.setEnabled(enabled);
-		PartitionerConfigurationView.this.perform_partitioning_button.setEnabled(enabled);
-	}
-	
-	public void 
-	set_configuration_widgets_enabled
-	( boolean enabled ) 
-	{
-		Display.getDefault().asyncExec( 
-			new Runnable(){
-				@Override
-				public void run() 
-				{
-					PartitionerConfigurationView.this.host_config_text.setEditable(false);
-					PartitionerConfigurationView.this.module_exposer_text.setEditable(false);
-					
-					PartitionerConfigurationView.this.actions_composite.setVisible(false);
-					
-					PartitionerConfigurationView.this.synthetic_node_button.setEnabled(false);
-					PartitionerConfigurationView.this.exposure_button.setEnabled(false);
-					
-					PartitionerConfigurationView.this.mod_exposer_browse_button.setVisible(false);
-					PartitionerConfigurationView.this.host_config_browse.setVisible(false);
-					PartitionerConfigurationView.this.set_coarsener_combo.setEnabled(false);
-					
-					PartitionerConfigurationView.this
-						.perform_partitioning_button.setEnabled(false);
-					PartitionerConfigurationView.this.set_partitioning_widgets_enabled(false);
-					
-					PartitionerConfigurationView.this.updateModelName();
-				}
-			});
+		
+		PartitionerConfigurationView.this
+			.perform_partitioning_button.setEnabled(enabled);
+		
 	}
 	
 	private void 
 	updateModelName() 
 	{
-		String name_suffix
-			= new SimpleDateFormat("HH:mm:ss")
-				.format( new Date() );
-		String coarsener
-			= PartitionerConfigurationView.this.set_coarsener_combo.getText();
-		String new_name
-			= coarsener + "_" + name_suffix;
-		
-		// the following may not work in all cases : i may need to pass in
-		// the editor along with the controller
-		ModelCreationEditor page 
-			= (ModelCreationEditor) 
-				this.getSite().getPage().getActiveEditor();
-		assert page instanceof ModelCreationEditor 
-			: "Uh oh. We need to pass the editor reference as an argument.";
-		VirtualModelFileInput input
-			= (VirtualModelFileInput) page.getEditorInput();
+		Display.getDefault().asyncExec( new Runnable(){
 			
-		
-		input.setSecondaryName(new_name);
-		
-		BundleContext context 
-			= FrameworkUtil.getBundle(
-				PartitionerConfigurationView.class
-			).getBundleContext();
-        ServiceReference<EventAdmin> ref 
-        	= context.getServiceReference(EventAdmin.class);
-        EventAdmin eventAdmin 
-        	= context.getService(ref);
-        Map<String,Object> properties 
-        	= new HashMap<String, Object>();
-        properties.put("REFRESH", new Boolean(true));
-        Event event 
-        	= new Event("viewcommunication/syncEvent", properties);
-        eventAdmin.sendEvent(event);
-        event = new Event("viewcommunication/asyncEvent", properties);
-        eventAdmin.postEvent(event);
-        
-        page.updateTitle();
+			@Override
+			public void 
+			run(){
+				String name_suffix
+					= new SimpleDateFormat("HH:mm:ss")
+						.format( new Date() );
+				String coarsener
+					= PartitionerConfigurationView.this.set_coarsener_combo.getText();
+				String new_name
+					= coarsener + "_" + name_suffix;
+				
+				// the following may not work in all cases : i may need to pass in
+				// the editor along with the controller
+				ModelCreationEditor page 
+					= (ModelCreationEditor) 
+						PartitionerConfigurationView.this
+							.getSite().getPage().getActiveEditor();
+				assert page instanceof ModelCreationEditor 
+					: "Uh oh. We need to pass the editor reference as an argument.";
+				VirtualModelFileInput input
+					= (VirtualModelFileInput) page.getEditorInput();
+					
+				
+				input.setSecondaryName(new_name);
+				
+				BundleContext context 
+					= FrameworkUtil.getBundle(
+						PartitionerConfigurationView.class
+					).getBundleContext();
+		        ServiceReference<EventAdmin> ref 
+		        	= context.getServiceReference(EventAdmin.class);
+		        EventAdmin eventAdmin 
+		        	= context.getService(ref);
+		        Map<String,Object> properties 
+		        	= new HashMap<String, Object>();
+		        properties.put("REFRESH", new Boolean(true));
+		        Event event 
+		        	= new Event("viewcommunication/syncEvent", properties);
+		        eventAdmin.sendEvent(event);
+		        event = new Event("viewcommunication/asyncEvent", properties);
+		        eventAdmin.postEvent(event);
+		        
+		        page.updateTitle();
+			}
+		});
 	}
 
 	@Override

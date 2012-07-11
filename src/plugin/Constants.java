@@ -53,8 +53,6 @@ Constants
 		= "InteractionCost";
 	public static final String GUI_EXECUTION_COST
 		= "ExecutionCost";
-	public static final String GUI_SIMULATION_TYPE 
-		= "SimulationType";
 	public static final int SNAPSHOT_VIEW_UPDATE_MODEL_NAME
 		= 0;
 	
@@ -72,7 +70,7 @@ Constants
 	
 	public static final String GENERATE_MODEL_EVENT 
 		= "ModelGeneration";
-	public static final String ACTIVE_CONFIGURATION_PANEL 
+	public static final String DISABLE_CONFIGURATION_PANEL 
 		= "ActiveConfigurationPanel";
 	public static final String MODULE_EXCHANGE_MAP 
 		= "ModuleExchageMap";
@@ -86,24 +84,13 @@ Constants
 		= "ModelCreation";
 	
 	
-	public static final String GUI_SIMULATION_ADDED 
-		= "SimulationAdded";
-	public static final String GUI_SIMULATION_REMOVED 
-		= "SimulationRemoved";
-	public static final String GUI_UPDATE_SIMULATION_REPORT 
-		= "UpdateSimulationReport";
-	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
-		= "UpdateBestSimulationReport";
-	public static final String SIMULATION_FRAMEWORK 
-		= "SimulationFramework";
+
 	public static final String MODULE_MODEL 
 		= "ModuleModel";
 	public static final String HOST_MODEL
 		= "HostModel";
 	public static final String INCREMENT_ID 
 		= "IncrementID";
-	public static final String EVENT_RUN_SIMULATION 
-		= "RunSimulation";
 	public static final String SIMULATION_TABLE_RUN_UPDATE 
 		= "RunSimulationTableUpdate";
 	public static final String BEST_RUN_NAME 
@@ -114,4 +101,26 @@ Constants
 		= "BestRunCost";
 	public static final String SIMULATION_UNITS 
 		= "InSimulationUnits";
+	
+	// belonging to the test framework model
+	public static final String GUI_SIMULATION_TYPE 
+		= "SimulationType";
+	public static final String EVENT_RUN_SIMULATION 
+		= "RunSimulation";
+	public static final String GUI_SIMULATION_ADDED 
+		= "SimulationAdded";
+	public static final String GUI_SIMULATION_REMOVED 
+		= "SimulationRemoved";
+	public static final String GUI_UPDATE_SIMULATION_REPORT 
+		= "UpdateSimulationReport";
+	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
+		= "UpdateBestSimulationReport";
+	public static final String SIMULATION_FRAMEWORK 
+		= "SimulationFramework";
+	public static final String AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK 
+		= "AfterPartitioningCreateTestFramework";
+	public static final String PARTITIONING_COMPLETE 
+		= "PartitioningComplete";
+	public static final String EDITOR_CLOSED 
+		= "EditorClosed";
 }

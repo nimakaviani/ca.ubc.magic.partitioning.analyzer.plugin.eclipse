@@ -1,8 +1,7 @@
-package snapshots.controller;
+package plugin.mvc;
 
 import java.beans.PropertyChangeListener;
 
-import snapshots.model.IModel;
 import snapshots.views.IView;
 
 public interface

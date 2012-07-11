@@ -3,8 +3,6 @@ package partitioner.views;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.table.DefaultTableModel;
-
 import org.eclipse.core.databinding.observable.list.WritableList;
 import org.eclipse.jface.databinding.viewers.ObservableListContentProvider;
 import org.eclipse.jface.dialogs.Dialog;
@@ -214,17 +212,6 @@ extends Dialog
 	        	 builder.append(Integer.toString(partitionId));
 	         }
 		}
-		/*for( int i = 0; i < this.table_input.size(); ++i){
-			Object[] array 
-				 = (Object[]) this.table_input.get(i);
-			Integer partitionId = (Integer) array[2];
-			 if (partitionId == -1){
-	             builder.append(Constants.DONT_CARE_CHAR);
-			 }
-	         else {
-	        	 builder.append(Integer.toString(partitionId));
-	         }
-		}*/
 
         SimulationUnit unit 
         	= SimulationFrameworkHelper.getUnitFromSig(

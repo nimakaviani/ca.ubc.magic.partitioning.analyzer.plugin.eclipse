@@ -12,13 +12,13 @@ import java.util.Map;
 
 import javax.swing.ProgressMonitorInputStream;
 
-import org.apache.commons.collections15.keyvalue.DefaultKeyValue;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.swt.widgets.Display;
 
 import plugin.Constants;
+import plugin.mvc.IModel;
+import plugin.mvc.PropertyChangeDelegate;
 
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
@@ -28,7 +28,6 @@ import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCost
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
-import ca.ubc.magic.profiler.dist.model.report.ReportModel;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleCoarsener;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
@@ -48,11 +47,9 @@ import ca.ubc.magic.profiler.simulator.control.StaticTimeSimulator;
 import ca.ubc.magic.profiler.simulator.control.TimeSimulator;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
-import ca.ubc.magic.profiler.simulator.framework.SimulationFrameworkHelper;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
-import snapshots.model.IModel;
-import snapshots.model.PropertyChangeDelegate;
+import plugin.mvc.ADynamicProperty;
 
 // this object is for sure accessed from the swt and swing threads
 // it must be made thread safe!!!!!!!!!
@@ -61,10 +58,29 @@ PartitionerGUIStateModel
 implements IModel
 // TODO: write an adapter around the Model so were more cleanly separate
 //		the mvc interface from the program logic
-// TODO: it is only by luck that the values in the model match the initial
-//		values in the view; they must be synchronized at the outset through
-//		some mechanism
 {
+	private class
+	TestFrameworkDynamicProperty
+	extends ADynamicProperty
+	{
+		PartitionerGUIStateModel partitioner_gui_state_model;
+		
+		private 
+		TestFrameworkDynamicProperty
+		( PartitionerGUIStateModel gui_model )
+		{
+			this.partitioner_gui_state_model 
+				= gui_model;
+		}
+		
+		@Override
+		public Object instantiate() {
+			return this.partitioner_gui_state_model
+				.createTestFramework();
+		}
+	}
+	
+	
 	private PropertyChangeDelegate 	property_change_delegate;
 	
 	private ModuleCoarsenerType 	mModuleType; 
@@ -117,7 +133,7 @@ implements IModel
 	PartitionerGUIStateModel()
 	{
 		this.profiler_trace = "";
-		this.constraint_xml_path	= "";
+		this.constraint_xml_path = "";
 		this.host_configuration = "";
        	
 		this.mSimFramework
@@ -138,12 +154,31 @@ implements IModel
 		this.mFilterMap
 	 		= new HashMap<String, IFilter>();
 		
-		this.unitMap
-			= new HashMap<String, DefaultKeyValue>();
+	//	this.unitMap
+	//		= new HashMap<String, DefaultKeyValue>();
 		
 		this.initializeForActivation();
 		
 		this.registerProperties();
+	}
+
+	public Object 
+	createTestFramework() 
+	{
+		System.err.println(
+			"Profiler trace at time of test framework generation: " 
+			+ this.profiler_trace
+		);
+		
+		return new TestFrameworkModel(
+			this.partitioner_type,
+			this.mModuleModel,
+			this.mSimFramework,
+			this.mHostModel,
+			this.profiler_trace,
+			this.mModuleType,
+			this.mConstraintModel
+		);
 	}
 
 	public void 
@@ -790,7 +825,7 @@ implements IModel
 				
 				PartitionerGUIStateModel.this
 					.property_change_delegate.firePropertyChange(
-						Constants.ACTIVE_CONFIGURATION_PANEL, true, false
+						Constants.DISABLE_CONFIGURATION_PANEL, true, false
 					);
 				PartitionerGUIStateModel.this
 					.property_change_delegate.firePropertyChange(
@@ -798,10 +833,14 @@ implements IModel
 					);
 				
 				// load the test framework if partitioning was set
+				// I wonder what this was originally for
 				if(PartitionerGUIStateModel.this.perform_partitioning){
-					PartitionerGUIStateModel.this.addSimulationUnit();
+					PartitionerGUIStateModel.this
+						.property_change_delegate.firePropertyChange(
+							Constants.PARTITIONING_COMPLETE, null, null
+						);
 				}
-				else { System.err.println("Not performing partitining."); }
+				else { System.err.println("Not performing partitioning."); }
 				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -840,7 +879,7 @@ implements IModel
 			Constants.GUI_PARTITIONER_TYPE,
 			Constants.GUI_INTERACTION_COST,
 			Constants.GUI_EXECUTION_COST,
-			Constants.ACTIVE_CONFIGURATION_PANEL,
+			Constants.DISABLE_CONFIGURATION_PANEL,
 			Constants.SIMULATION_FRAMEWORK,
 			Constants.MODULE_MODEL,
 			Constants.HOST_MODEL,
@@ -877,16 +916,33 @@ implements IModel
 				properties[i]
 			);
 		}
+		
+		String[] dynamic_property_names
+			= {
+				Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK,
+			};
+		ADynamicProperty[] dynamic_properties
+			= {
+				new TestFrameworkDynamicProperty(this)
+			};
+		
+		for( int i = 0; i < dynamic_property_names.length; ++i ){
+			this.property_change_delegate.registerDynamicProperty(
+				dynamic_property_names[i], 
+				dynamic_properties[i]
+			);
+		}
 	}
 		
 	///////////////////////////////////////////////////////////
 	///	TODO: Test framework classes; to be repositioned later
 	///////////////////////////////////////////////////////////
 	
-	private Map<String, DefaultKeyValue> unitMap;
+	
+//	private Map<String, DefaultKeyValue> unitMap;
 
-	private int id;
-	  
+	//private int id;
+	/*  
 	private void 
 	addSimulationUnit()
 	{
@@ -919,7 +975,7 @@ implements IModel
 	}
 	
 	///////////////////////////////////////////////////////////////////////
-	
+	/*
 	public void
 	setSimulationAdded
 	( SimulationUnit unit )
@@ -1019,17 +1075,6 @@ implements IModel
         		report.getCostModel().getTotalCost()
         	}
         );
-        
-        /*
-        TableColumn tcol = simTable.getColumnModel().getColumn(5);
-        
-        tcol.setCellRenderer(new CustomTableCellRenderer(id, Color.RED));
-         ((DefaultTableModel)simTable.getModel()).setValueAt(
-                report.getCostModel().getExecutionCost(), id, 3);
-          ((DefaultTableModel)simTable.getModel()).setValueAt(
-                report.getCostModel().getCommunicationCost(), id, 4);
-        ((DefaultTableModel)simTable.getModel()).setValueAt(
-                report.getCostModel().getTotalCost(), id, 5); */
 	} 
 	
 	public void
@@ -1079,5 +1124,5 @@ implements IModel
 		}
 		
 		return unit;
-	}
+	} */
 }

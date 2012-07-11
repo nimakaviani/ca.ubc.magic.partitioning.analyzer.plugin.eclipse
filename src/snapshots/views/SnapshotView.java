@@ -51,12 +51,12 @@ import org.osgi.service.event.EventHandler;
 import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;
+import plugin.mvc.ControllerDelegate;
+import plugin.mvc.FinishAction;
+import plugin.mvc.IController;
+import plugin.mvc.JIPViewerAction;
 
 import snapshots.com.mentorgen.tools.util.profile.Start;
-import snapshots.controller.ControllerDelegate;
-import snapshots.controller.FinishAction;
-import snapshots.controller.IController;
-import snapshots.controller.JIPViewerAction;
 import snapshots.events.logging.ErrorDisplayAction;
 import snapshots.events.logging.EventLogActionHandler;
 import snapshots.events.logging.EventLogEvent;
@@ -163,6 +163,9 @@ implements IView
 		
 		// from example code found in the eclipse plugins book
 		// pp. 202
+		// TODO the following is something that would traditionally be handled by the
+		// controller: the view detects the event, but does not decide how to handle it
+		// only how to notify the controller
 		this.snapshot_tree_viewer.addDoubleClickListener(
 			new IDoubleClickListener() 
 			{

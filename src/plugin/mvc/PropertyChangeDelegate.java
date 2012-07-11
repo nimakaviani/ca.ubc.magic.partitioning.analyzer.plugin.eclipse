@@ -1,4 +1,4 @@
-package snapshots.model;
+package plugin.mvc;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -17,6 +17,10 @@ PropertyChangeDelegate
 	
 	Map<String, Object> property_map
 		= new HashMap<String, Object>();
+	
+	// david experiment
+	Map<String, ADynamicProperty> dynamic_property_map
+		= new HashMap<String, ADynamicProperty>();
 
 	public void
 	registerProperty
@@ -24,6 +28,19 @@ PropertyChangeDelegate
 	{
 		if(!this.property_map.containsKey(property_name)){
 			this.property_map.put(property_name, reference);
+		}
+	}
+	
+	// david experiment
+	public void
+	registerDynamicProperty
+	( String property_name, ADynamicProperty dynamic_property )
+	{
+		if(!this.dynamic_property_map.containsKey(property_name)){
+			this.dynamic_property_map.put(
+				property_name,
+				dynamic_property
+			);
 		}
 	}
 	
@@ -88,9 +105,18 @@ PropertyChangeDelegate
 			= new ArrayList<Object>( property_names.length );
 	
 		for( String property_name : property_names ){
-			return_values.add( 
-				this.property_map.get( property_name ) 
-			);
+			if( this.dynamic_property_map.containsKey( property_name )){
+				ADynamicProperty dynamic_property
+					= this.dynamic_property_map.get( property_name );
+				Object property
+					= dynamic_property.getProperty();
+				return_values.add(property);
+			}
+			else {
+				return_values.add( 
+					this.property_map.get( property_name ) 
+				);
+			}
 		}
 		
 		return return_values.toArray(new Object[0]);

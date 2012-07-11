@@ -52,7 +52,7 @@ public class SimulationFramework implements ISimulatorListener {
     }
     
     public void addUnit(SimulationUnit unit, boolean isRandom){
-        // checks to see wether the template needs to be checked
+        // checks to see whether the template needs to be checked
         // against the submitted unit.
         if (mCheckWithTemplate && mTemplate == null)
             throw new RuntimeException("No template is set to check the unit against.");
@@ -63,7 +63,7 @@ public class SimulationFramework implements ISimulatorListener {
             unit.applySignature(mTemplate);
         
         // when checking the availability of a unit in the list, check for the
-        // key of the unit(its name plys its algorithm) as well as the signature
+        // key of the unit(its name plus its algorithm) as well as the signature
         // of the two. Maybe the same algorithm for the same profiler is used on
         // a different module placement signature.
         if (mSimulationMap.get(unit.getKey()) != null)
@@ -79,9 +79,9 @@ public class SimulationFramework implements ISimulatorListener {
     
     public void removeUnit(SimulationUnit unit){
         mSimulationMap.remove(unit.getKey());
-//        for (IFrameworkListener l : listenerList){
-//            l.simulationRemoved(unit);
-//        }
+        for (IFrameworkListener l : listenerList){
+            l.simulationRemoved(unit);
+        }
     }
     
     public Map<String, SimulationUnit> getSimulationMap(){
@@ -157,6 +157,11 @@ public class SimulationFramework implements ISimulatorListener {
     
     public void run(ISimulator simulator){   
     	System.err.println("Running Simulation Framework");
+    	// problem: the msSimulationMap has a unit
+    	// that the unitMap in the TestFramework does not
+    	for(SimulationUnit unit : mSimulationMap.values()){
+    		System.err.println(unit.getKey());
+    	}
     	int count = 0;
         for (SimulationUnit unit : mSimulationMap.values()){
             runSimulationForUnit(simulator, unit);
@@ -197,7 +202,9 @@ public class SimulationFramework implements ISimulatorListener {
     public void unitSimulationOver(ReportModel report){
     	System.err.println("Inside simulation over");
     	
-        this.mCurrentUnit.setUnitCost(report.getCostModel().getTotalCost());
+        this.mCurrentUnit.setUnitCost(
+        	report.getCostModel().getTotalCost()
+        );
         if (this.mBestSimUnit == null || this.mCurrentUnit.getUnitCost() < this.mBestSimUnit.getUnitCost() ){
             this.mBestSimUnit = this.mCurrentUnit;
         }
@@ -206,11 +213,16 @@ public class SimulationFramework implements ISimulatorListener {
         }
     }
     
-    private void checkAgainstTemplate(SimulationUnit unit){
+    private void 
+    checkAgainstTemplate
+    ( SimulationUnit unit )
+    {
         if (!mCheckWithTemplate)
             return;
+        
         if (!mTemplate.getDistModel().getHostModel().equals(unit.getDistModel().getHostModel()))
             throw new RuntimeException("Template host model does not match unit host model");
+        
         Set<String> moduleNameSet = mTemplate.getDistModel().getModuleMap().keySet();
         for (String key : unit.getDistModel().getModuleMap().keySet())
             if (!moduleNameSet.contains(key))

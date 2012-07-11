@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import plugin.Constants;
+import plugin.mvc.IModel;
+import plugin.mvc.PropertyChangeDelegate;
 
 
 public class 

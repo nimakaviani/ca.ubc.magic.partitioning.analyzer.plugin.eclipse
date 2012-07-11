@@ -1,4 +1,4 @@
-package snapshots.model;
+package plugin.mvc;
 
 import java.beans.PropertyChangeListener;
 

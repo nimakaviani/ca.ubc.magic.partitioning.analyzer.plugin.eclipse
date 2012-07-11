@@ -19,9 +19,9 @@
       <operations public="true" package="true" protected="true" private="true"/>    
     </display>  
   </interface>  
-  <interface id="3" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.IModel" 
+  <interface id="3" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.IModel" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/IModel.java" binary="false">    
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/IModel.java" binary="false">    
     <position height="-1" width="-1" x="828" y="401"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
       <attributes public="false" package="false" protected="false" private="false"/>      
