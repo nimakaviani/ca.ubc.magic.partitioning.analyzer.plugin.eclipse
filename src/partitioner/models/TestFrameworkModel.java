@@ -157,7 +157,7 @@ implements IModel
 	}
 
 	@Override
-	public Object[] 
+	public Map<String, Object> 
 	request
 	( String[] property_names ) 
 	{

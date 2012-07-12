@@ -335,13 +335,16 @@ implements IView
 					break;
 				case Constants.PARTITIONING_COMPLETE:
 					// this is when the initialization must occur
-					Object[] obj = ModelCreationEditor.this.controller.requestProperties(
+					Map<String, Object> map 
+						= ModelCreationEditor.this.controller.requestProperties(
 							new String[]{
 								Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK
 							}
 						);
 					TestFrameworkModel test_framework_model
-						= (TestFrameworkModel) obj[0];
+						= (TestFrameworkModel) map.get(
+							Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK
+						);
 					ModelCreationEditor.this
 						.test_page.activate( test_framework_model );
 					break;
@@ -372,7 +375,7 @@ implements IView
 					ModelCreationEditor.this.currentVP
 						= new VisualizePartitioning( frame );
 
-					Object[] obj
+					Map<String, Object> map
 						= ModelCreationEditor.this.controller.requestProperties(
 							new String[]{
 								Constants.MODULE_EXCHANGE_MAP
@@ -381,7 +384,9 @@ implements IView
 					// problem: drawModules is both a view type component and
 					// a model type component: where does it go? 
 					ModelCreationEditor.this.currentVP.drawModules(
-							(Map<ModulePair, InteractionData>) obj[0]
+						(Map<ModulePair, InteractionData>) map.get(
+							Constants.MODULE_EXCHANGE_MAP
+						)
 					);  
 					
 					try {

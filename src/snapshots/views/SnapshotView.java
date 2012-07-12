@@ -468,15 +468,15 @@ implements IView
 				Constants.HOST_PROPERTY,
 				Constants.PORT_PROPERTY
 			};
-		Object[] returned_properties
+		Map<String, Object> map
 			= this.active_snapshot_controller.requestProperties(
 				property_names
 			);
 		
-		this.path_text.setText( (String) returned_properties[0] );
-		this.name_text.setText( (String) returned_properties[1] );
-		this.host_text.setText( (String) returned_properties[2] );
-		this.port_text.setText( (String) returned_properties[3] );
+		this.path_text.setText( (String) map.get(Constants.PATH_PROPERTY) );
+		this.name_text.setText( (String) map.get(Constants.NAME_PROPERTY) );
+		this.host_text.setText( (String) map.get(Constants.HOST_PROPERTY) );
+		this.port_text.setText( (String) map.get(Constants.PORT_PROPERTY) );
 	}
 	
 	@Override

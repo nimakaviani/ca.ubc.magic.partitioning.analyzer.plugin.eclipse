@@ -97,12 +97,12 @@ PropertyChangeDelegate
         }
     }
 
-	public Object[] 
+	public Map<String, Object> 
 	getAll
 	( String[] property_names ) 
 	{
-		List<Object> return_values 
-			= new ArrayList<Object>( property_names.length );
+		Map<String, Object> return_values 
+			= new HashMap<String, Object>( property_names.length );
 	
 		for( String property_name : property_names ){
 			if( this.dynamic_property_map.containsKey( property_name )){
@@ -110,15 +110,16 @@ PropertyChangeDelegate
 					= this.dynamic_property_map.get( property_name );
 				Object property
 					= dynamic_property.getProperty();
-				return_values.add(property);
+				return_values.put(property_name, property);
 			}
 			else {
-				return_values.add( 
+				return_values.put(
+					property_name,
 					this.property_map.get( property_name ) 
 				);
 			}
 		}
 		
-		return return_values.toArray(new Object[0]);
+		return return_values;
 	}
 }

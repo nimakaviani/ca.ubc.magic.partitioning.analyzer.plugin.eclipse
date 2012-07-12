@@ -9,6 +9,8 @@ package partitioner.views;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
@@ -164,14 +166,16 @@ implements IFrameworkListener,
 	private void 
 	initialize_simulation_framework() 
 	{
-		Object[] obj 
+		Map<String, Object> map 
 			= this.test_framework_controller.requestProperties(
 				new String[] {
 					Constants.SIMULATION_FRAMEWORK,
 				}
 			);
 		SimulationFramework simulation_framework
-			= (SimulationFramework) obj[0];
+			= (SimulationFramework) map.get(
+				Constants.SIMULATION_FRAMEWORK
+			);
 		simulation_framework.addFrameworkListener(
 			(IFrameworkListener) this
 		);
@@ -578,7 +582,7 @@ implements IFrameworkListener,
     	// model and possibly introduce something to allow splitting of
     	// state or passing of partial state through a controller
     	///
-    	Object[] args 
+    	Map<String, Object> args 
     		= this.test_framework_controller.requestProperties(
     			new String[]{
     				Constants.SIMULATION_FRAMEWORK,
@@ -588,11 +592,17 @@ implements IFrameworkListener,
     		);
     	
     	SimulationFramework simulation_framework
-    		= (SimulationFramework) args[0];
+    		= (SimulationFramework) args.get(
+    			Constants.SIMULATION_FRAMEWORK
+    		);
     	ModuleModel module_model
-    		= (ModuleModel) args[1];
+    		= (ModuleModel) args.get(
+    			Constants.MODULE_MODEL
+    		);
     	HostModel host_model
-    		= (HostModel) args[2];
+    		= (HostModel) args.get(
+    			Constants.HOST_MODEL
+    		);
     	
     	this.mSimUnitCustomization
     		= new SimulationUnitCustomizationNew(
@@ -626,7 +636,7 @@ implements IFrameworkListener,
         
         assert unit != null : "There is a bug in the program if we received a null unit";
         
-        Object[] args 
+        Map<String, Object> map 
         	= this.test_framework_controller.requestProperties(
         		new String[]{
         			Constants.SIMULATION_FRAMEWORK,
@@ -634,7 +644,10 @@ implements IFrameworkListener,
         	);
         this.mSimUnitCustomization 
         	= new SimulationUnitCustomizationNew(
-        		(SimulationFramework) args[0], unit
+        		(SimulationFramework) map.get(
+        			Constants.SIMULATION_FRAMEWORK
+        		), 
+        		unit
             );
         
         System.err.println("Created dialog window.");

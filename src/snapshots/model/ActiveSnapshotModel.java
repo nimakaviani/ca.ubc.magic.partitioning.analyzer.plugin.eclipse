@@ -1,6 +1,7 @@
 package snapshots.model;
 
 import java.beans.PropertyChangeListener;
+import java.util.Map;
 
 import plugin.Constants;
 import plugin.mvc.PropertyChangeDelegate;
@@ -109,7 +110,7 @@ implements ISnapshotInfoModel
 	}
 
 	@Override
-	public Object[] 
+	public Map<String, Object>
 	request
 	( String[] property_names ) 
 	{

@@ -1,7 +1,9 @@
 package snapshots.model;
 
 import java.beans.PropertyChangeListener;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import plugin.Constants;
@@ -61,11 +63,11 @@ implements IModel
 	}
 
 	@Override
-	public Object[] 
+	public Map<String, Object> 
 	request
 	( String[] property_names ) 
 	{
 		// not implementing this functionality here
-		return new Object[]{};
+		return new HashMap<String,Object>();
 	}
 }

@@ -123,4 +123,11 @@ Constants
 		= "PartitioningComplete";
 	public static final String EDITOR_CLOSED 
 		= "EditorClosed";
+	
+	// belong to the partitioner configuration view
+	public static final String GUI_ACTIVATE_HOST_FILTER 
+		= "ActivateHostFilter";
+	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
+		= "ActivateInteractionCostFilter";
+	
 }
