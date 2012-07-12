@@ -13,13 +13,6 @@ import java.util.Set;
  * @author nima
  */
 public interface IFilter {
-    
-    public Set getFilterSet();
-    
-    public String getFilterName();
-    
-    public void setFilterName(String name);
-    
     public String getFilterAsString();
     
     public void   setStringToFilter(ModuleModel moduleModel, HostModel hostModel, String stringFilter);
