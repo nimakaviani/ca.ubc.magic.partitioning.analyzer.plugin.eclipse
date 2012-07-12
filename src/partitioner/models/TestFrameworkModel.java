@@ -164,10 +164,6 @@ implements IModel
 		return this.property_change_delegate.getAll(property_names);
 	}
 
-	///////////////////////////////////////////////////////////
-	///	TODO: Test framework classes; to be repositioned later
-	///////////////////////////////////////////////////////////
-	
 	public void
 	setSimulationAdded
 	( SimulationUnit unit )
