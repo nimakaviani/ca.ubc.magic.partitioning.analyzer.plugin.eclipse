@@ -899,7 +899,7 @@ implements IView
 			this.activate_host_filter_button
 				= toolkit.createButton(
 					parent, 
-					"Activate Host Filter", 
+					"Activate Host Cost Filter", 
 					SWT.CHECK
 				);
 			grid_data 
@@ -920,8 +920,11 @@ implements IView
 					( SelectionEvent e )
 					{
 						PartitionerConfigurationView.this.controller.setModelProperty(
-							Constants.GUI_ACTIVATE_HOST_FILTER,
-							new Boolean(activate_host_filter_button.getSelection())
+							Constants.GUI_ACTIVATE_HOST_COST_FILTER,
+							new Boolean(
+								PartitionerWidgets.this
+									.activate_host_filter_button.getSelection()
+							)
 						);
 					}
 				}
@@ -931,7 +934,7 @@ implements IView
 			this.activate_interaction_filter_button
 				= toolkit.createButton(
 					parent, 
-					"Activate Host Filter", 
+					"Activate Interaction Cost Filter", 
 					SWT.CHECK
 				);
 			grid_data 
@@ -963,36 +966,39 @@ implements IView
 				}
 			);
 			PartitionerConfigurationView.this
-				.createDummyLabel(parent, toolkit);
+				.createDummyLabel( parent, toolkit );
 		
-			toolkit.createLabel(parent, "Execution Cost Model: ");
+			toolkit.createLabel( parent, "Execution Cost Model: " );
 			this.initialize_execution_model_combo_box(parent);
 			
-			toolkit.createLabel(parent, "Interaction Cost Model: ");
+			toolkit.createLabel( parent, "Interaction Cost Model: " );
 			this.initialize_interaction_model_combo_box(parent);
 			
-			toolkit.createLabel(parent, "Partitioning Algorithm");
+			toolkit.createLabel( parent, "Partitioning Algorithm" );
 			this.initilize_partitioning_algorithm_combo_box(parent);
 			
 			// all widgets defined for this frame except the
 			// activate partitioner widget must be added to this list
-			this.activate_and_deactivate_partitioner_list.add(
-				this.activate_host_filter_button
-			);
-			this.activate_and_deactivate_partitioner_list.add(
-				this.activate_interaction_filter_button
-			);
-			this.activate_and_deactivate_partitioner_list.add(
-				this.partitioning_algorithm_combo
-			);
-			this.activate_and_deactivate_partitioner_list.add(
-				this.interaction_model_combo
-			);
-			this.activate_and_deactivate_partitioner_list.add(
+			this.initialize_partitioner_controls_list(
+				this.activate_host_filter_button,
+				this.activate_interaction_filter_button,
+				this.partitioning_algorithm_combo,
+				this.interaction_model_combo,
 				this.execution_model_combo
 			);
 		}
 		
+		private void 
+		initialize_partitioner_controls_list
+		( Control... controls)
+		{
+			for(Control control : controls){
+				this.activate_and_deactivate_partitioner_list.add(
+					control
+				);
+			}
+		}
+
 		public void 
 		setDisplayValues
 		( 	Boolean perform_partitioning,

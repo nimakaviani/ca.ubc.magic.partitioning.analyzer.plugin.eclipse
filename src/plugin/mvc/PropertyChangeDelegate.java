@@ -23,11 +23,16 @@ PropertyChangeDelegate
 		= new HashMap<String, ADynamicProperty>();
 
 	public void
-	registerProperty
-	( String property_name, Object reference )
+	registerProperties
+	( String[] property_names, Object[] properties )
 	{
-		if(!this.property_map.containsKey(property_name)){
-			this.property_map.put(property_name, reference);
+		assert property_names.length == properties.length 
+				: "The property names list must match the properties list in length";
+		
+		for( int i = 0; i < property_names.length; ++i ){
+			if(!this.property_map.containsKey(property_names[i])){
+				this.property_map.put(property_names[i], properties[i]);
+			}
 		}
 	}
 	

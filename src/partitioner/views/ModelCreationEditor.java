@@ -399,9 +399,6 @@ implements IView
 						e.printStackTrace();
 					};
 					
-					// the following can be done after the creation of the VP, but can be
-					// done easily using the existing
-					// framework; so we may treat it as a something unrelated to the above
 					Display.getDefault().asyncExec(
 						new Runnable(){
 							@Override
@@ -409,10 +406,14 @@ implements IView
 								if(ModelCreationEditor.this.perform_partitioning){
 									ModelCreationEditor.this.currentVP
 					            		.setAlgorithm( ModelCreationEditor.this.algorithm );
-									System.out.println("Algorithm: "+ ModelCreationEditor.this.algorithm );
+									System.out.println(
+										"Algorithm: "+ ModelCreationEditor.this.algorithm 
+									);
 									ModelCreationEditor.this.currentVP
 					            		.setSolution( ModelCreationEditor.this.solution );
-									System.out.println("Solution: " + ModelCreationEditor.this.algorithm );
+									System.out.println(
+										"Solution: " + ModelCreationEditor.this.algorithm 
+									);
 								}
 							}
 						}

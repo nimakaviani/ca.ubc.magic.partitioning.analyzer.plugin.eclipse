@@ -129,15 +129,10 @@ implements IModel
 				this.mHostModel
 			};
 		
-		assert property_names.length == properties.length 
-			: "The property names list must match the properties list in length";
-			
-		for( int i = 0; i < property_names.length; ++i ){
-			this.property_change_delegate.registerProperty(
-				property_names[i], 
-				properties[i]
-			);
-		}
+		this.property_change_delegate.registerProperties(
+			property_names, 
+			properties
+		);
 	}
 
 	@Override

@@ -29,14 +29,26 @@ implements ISnapshotInfoModel
 	public 
 	ActiveSnapshotModel()
 	{
+		String[] property_names
+			= {
+				Constants.PATH_PROPERTY,
+				 Constants.NAME_PROPERTY,
+				 Constants.PORT_PROPERTY,
+				 Constants.HOST_PROPERTY
+			};
+		Object[] properties
+			= {
+				this.path,
+				this.name,
+				this.port,
+				this.host
+			};
+		
 		this.property_change_delegate
-			.registerProperty( Constants.PATH_PROPERTY, this.path );
-		this.property_change_delegate
-			.registerProperty( Constants.NAME_PROPERTY, this.name );
-		this.property_change_delegate
-			.registerProperty( Constants.PORT_PROPERTY, this.port );
-		this.property_change_delegate
-			.registerProperty( Constants.HOST_PROPERTY, this.host );
+			.registerProperties( 
+				property_names, 
+				properties 
+			);
 	}
 
 	@Override

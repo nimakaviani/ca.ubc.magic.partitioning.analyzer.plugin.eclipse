@@ -128,6 +128,9 @@ implements IModel
 	private IModuleCoarsener module_coarsener;
 	
 	private SimulationUnit mBestSimUnit;
+
+	private Boolean activate_host_cost_filter = false;
+	private Boolean activate_interaction_cost_filter = false;
 	
 	public
 	PartitionerGUIStateModel()
@@ -434,6 +437,38 @@ implements IModel
 			Constants.GUI_EXECUTION_COST,
 			old_execution,
 			execution_cost
+		);
+	}
+	
+	public void
+	setActivateHostFilter
+	( Boolean activate )
+	{
+		Boolean old_activate
+			= this.activate_host_cost_filter;
+		this.activate_host_cost_filter
+			= activate;
+		
+		this.property_change_delegate.firePropertyChange(
+			Constants.GUI_ACTIVATE_HOST_COST_FILTER,
+			old_activate,
+			this.activate_host_cost_filter
+		);
+	}
+	
+	public void
+	setActivateInteractionCostFilter
+	( Boolean activate )
+	{
+		Boolean old_activate
+			= this.activate_interaction_cost_filter;
+		this.activate_interaction_cost_filter
+			= activate;
+		
+		this.property_change_delegate.firePropertyChange(
+			Constants.GUI_ACTIVATE_INTERACTION_COST_FILTER,
+			old_activate,
+			this.activate_interaction_cost_filter
 		);
 	}
 	
@@ -883,6 +918,8 @@ implements IModel
 			Constants.SIMULATION_FRAMEWORK,
 			Constants.MODULE_MODEL,
 			Constants.HOST_MODEL,
+			Constants.GUI_ACTIVATE_HOST_COST_FILTER,
+			Constants.GUI_ACTIVATE_INTERACTION_COST_FILTER
 		};
 		
 		Object[] properties
@@ -904,16 +941,19 @@ implements IModel
 			this.configuration_panel_enabled,
 			this.mSimFramework,
 			this.mModuleModel,
-			this.mHostModel
+			this.mHostModel,
+			
+			this.activate_host_cost_filter,
+			this.activate_interaction_cost_filter
 		};
 		
 		assert property_names.length == properties.length 
 			: "The property names list must match the properties list in length";
 		
 		for( int i = 0; i < property_names.length; ++i ){
-			this.property_change_delegate.registerProperty(
-				property_names[i], 
-				properties[i]
+			this.property_change_delegate.registerProperties(
+				property_names,
+				properties
 			);
 		}
 		

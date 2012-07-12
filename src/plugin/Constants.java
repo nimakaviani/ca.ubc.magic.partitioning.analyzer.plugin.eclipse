@@ -125,7 +125,7 @@ Constants
 		= "EditorClosed";
 	
 	// belong to the partitioner configuration view
-	public static final String GUI_ACTIVATE_HOST_FILTER 
+	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
 		= "ActivateHostFilter";
 	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
 		= "ActivateInteractionCostFilter";
