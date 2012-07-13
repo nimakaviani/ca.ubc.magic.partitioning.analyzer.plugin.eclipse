@@ -169,4 +169,16 @@ PropertyChangeDelegate
 		
 		return return_values;
 	}
+	
+	public void
+	notifyViews
+	( String event_name, Object data_package )
+	// the following is sketchy...
+	// it basically means I have to throw another layer somewhere
+	// either behind the controller delegate but between the model
+	// and the delegate, or between the view and the controller
+	// or side by side as a partner object
+	{
+		this.firePropertyChange( event_name, null, data_package);
+	}
 }

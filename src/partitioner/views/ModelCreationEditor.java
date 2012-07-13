@@ -296,10 +296,10 @@ implements IView
 						"The module coarsener was modified to " + mc.getText()
 					);
 					break;
-				case Constants.MODEL_CREATION:
+				case PartitionerModel.MODEL_CREATION:
 					ModelCreationEditor.this.visualizeModuleModel();
 					break;
-				case Constants.PARTITIONING_COMPLETE:
+				case PartitionerModel.EVENT_PARTITIONING_COMPLETE:
 					// this is when the initialization must occur
 					Map<String, Object> map 
 						= ModelCreationEditor.this.controller.requestProperties(
@@ -311,6 +311,8 @@ implements IView
 						= (TestFrameworkModel) map.get(
 							Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK
 						);
+					// all the view is allowed to do is take the model and use
+					// it to generate a new view: anything more is too much logic
 					ModelCreationEditor.this
 						.activateTestPage( test_framework_model );
 					break;
@@ -378,7 +380,7 @@ implements IView
 								Constants.MODULE_EXCHANGE_MAP
 							}
 						);
-					// problem: drawModules is both a view type component and
+					// problem: currentVP is both a view type component and
 					// a model type component: where does it go? 
 					ModelCreationEditor.this.currentVP.drawModules(
 						(Map<ModulePair, InteractionData>) map.get(
@@ -389,7 +391,7 @@ implements IView
 					try {
 						ModelCreationEditor.this.frame.pack();
 						SwingUtilities.updateComponentTreeUI(
-								ModelCreationEditor.this.frame
+							ModelCreationEditor.this.frame
 						);
 						
 						Display.getDefault().syncExec( new Runnable(){

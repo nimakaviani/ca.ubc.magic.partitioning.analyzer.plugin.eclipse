@@ -8,6 +8,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import snapshots.views.IView;
 
+
+// TODO: I have my solution to the following problem:
+//		1) We transmit two kinds of objects through our controller:
+//			a property changed event, and an event event
+//			-> in order to reduce the possibility of error I want the
+//			system to be able to tell the two apart, and for the two
+//			to receive different callbacks
+//			-> I need to do this without compromising any thread
+//			safety guarantees made by the Java APIs that I am using
+//			-> my solution is to extend the PropertyChangedEvent class
+//			to implement an EventOccurredEvent class and use an 
+//			instanceof in the dispatcher to select whether to
+//			call a propertychanged callback in the views, or a
+//			eventoccurred callback in the views
+//			-> going in the other direction, we already distinguish
+//			by having the controller call different functions
+//			but this might change
 public class 
 ControllerDelegate 
 implements IController
@@ -147,21 +164,6 @@ implements IController
 		return this.model.request( property_names );
 	}
 	
-	//////////////////////////////////////////////////////////////////////////////
-	/// From the Model
-	//////////////////////////////////////////////////////////////////////////////
-	
-	@Override
-	public void 
-	propertyChange
-	( PropertyChangeEvent evt ) 
-	{
-		//System.out.println("Property Changed: " + evt.getPropertyName());
-		for(IView view : this.registered_views){
-			view.modelPropertyChange(evt);
-		}
-	}
-
 	@Override
 	public Object 
 	index
@@ -191,5 +193,19 @@ implements IController
 	        	ex.printStackTrace();
 			}
          return obj;
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////
+	/// From the Model
+	//////////////////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void 
+	propertyChange
+	( PropertyChangeEvent evt ) 
+	{
+		for(IView view : this.registered_views){
+			view.modelPropertyChange(evt);
+		}
 	}
 }

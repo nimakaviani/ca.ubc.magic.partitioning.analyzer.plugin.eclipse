@@ -1,3 +1,5 @@
+popup:org.eclipse.jdt.ui.PackageExplorer?
+
 27 May 2012:
 
 So I have finished porting over what exists in the original JIP interface,

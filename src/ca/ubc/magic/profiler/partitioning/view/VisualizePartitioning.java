@@ -106,19 +106,25 @@ implements Transformer
         return og;
     }
     
-    public void drawModules(Map<ModulePair, InteractionData> moduleMap){
-        mModuleMap = moduleMap;
-        Set<Module> moduleSet = new HashSet<Module>();
-        for (Entry<ModulePair, InteractionData> entry : moduleMap.entrySet()){
+    public void 
+    drawModules
+    ( Map<ModulePair, InteractionData> moduleMap )
+    {
+        this.mModuleMap	
+        	= moduleMap;
+        Set<Module> moduleSet 
+        	= new HashSet<Module>();
+        for (Entry<ModulePair, InteractionData> entry : moduleMap.entrySet())
+        {
             for (Module m : entry.getKey().getModules())
                 if (!moduleSet.contains(m)){                    
-                    g.addVertex(m);
+                    this.g.addVertex(m);
                     moduleSet.add(m);
                 }
-            g.addEdge(entry.getValue(), 
+            this.g.addEdge(entry.getValue(), 
                 Arrays.asList(entry.getKey().getModules()), EdgeType.UNDIRECTED);
         }
-        layout.initialize();
+        this.layout.initialize();
     }       
     
     public void redrawModules(Map<ModulePair, InteractionData> moduleMap){
