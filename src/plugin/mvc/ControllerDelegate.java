@@ -1,11 +1,11 @@
-package snapshots.controller;
+package plugin.mvc;
 
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import snapshots.model.IModel;
 import snapshots.views.IView;
 
 public class 
@@ -140,7 +140,7 @@ implements IController
 	}
 	
 	@Override
-	public Object[] 
+	public Map<String, Object> 
 	requestProperties
 	( String[] property_names ) 
 	{

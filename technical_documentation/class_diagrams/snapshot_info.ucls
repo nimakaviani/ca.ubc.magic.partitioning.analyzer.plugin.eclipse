@@ -9,9 +9,9 @@
       <operations public="true" package="true" protected="true" private="true"/>    
     </display>  
   </interface>  
-  <interface id="2" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.IModel" 
+  <interface id="2" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.IModel" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/IModel.java" binary="false">    
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/IModel.java" binary="false">    
     <position height="112" width="325" x="78" y="33"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
       <attributes public="false" package="false" protected="false" private="false"/>      
@@ -28,9 +28,9 @@
       <operations public="true" package="true" protected="true" private="true"/>    
     </display>  
   </class>  
-  <class id="4" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.PropertyChangeDelegate" 
+  <class id="4" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.PropertyChangeDelegate" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/PropertyChangeDelegate.java" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/PropertyChangeDelegate.java" 
     binary="false">    
     <position height="-1" width="-1" x="779" y="690"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      

@@ -1,4 +1,4 @@
-package snapshots.controller;
+package plugin.mvc;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.swt.SWT;

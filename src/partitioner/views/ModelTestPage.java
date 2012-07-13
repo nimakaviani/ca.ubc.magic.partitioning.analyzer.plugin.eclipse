@@ -9,6 +9,8 @@ package partitioner.views;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
@@ -38,9 +40,11 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
 
+import partitioner.models.TestFrameworkModel;
 import plugin.Constants;
-import snapshots.controller.ControllerDelegate;
-import snapshots.controller.IController;
+import plugin.mvc.ControllerDelegate;
+import plugin.mvc.IController;
+import plugin.mvc.IModel;
 import snapshots.views.IView;
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
@@ -52,6 +56,10 @@ import ca.ubc.magic.profiler.simulator.framework.IFrameworkListener;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
+// an interesting thing about the modeltestpage is that it should only
+// be active when the partitioning has completed
+// that means it will only have a proper model to communicate with
+// after the partitioning has been completed
 public class 
 ModelTestPage 
 extends ScrolledForm
@@ -64,17 +72,17 @@ implements IFrameworkListener,
 	private Label 					best_run_cost_label;
 	private Label 					total_simulation_units;
 	
-	private IController 			partitioner_gui_state_controller;
 	private Section 				table_composite;
 	private Section 				control_composite;
 	
 	private TableViewer				simulations_table_viewer;
 	private ObservableList			table_input;
 	
-	private Integer 				current_id;
+	private Integer 				current_id = 0;
 	
 	private Table 					table;
 	private String[] 				column_names;
+	private IController				test_framework_controller;
 	
 	// any method beginning with the term initialize are called
 	// only from the constructor and may be assumed to executed on
@@ -82,16 +90,12 @@ implements IFrameworkListener,
 	public ModelTestPage
 	( 	FormToolkit toolkit, 
 		Composite parent, 
-		IController partitioner_gui_state_controller, 
-		ModelCreationEditor model_creation_editor ) 
+		ModelCreationEditor model_creation_editor,
+		TestFrameworkModel test_framework_model ) 
 	{
 		super( parent );
 		
-		this.initialize_mvc_components( 
-			partitioner_gui_state_controller 
-		);
-		this.initialize_simulation_framework();
-		
+		this.activate( test_framework_model );
 		this.initialize_page_properties( toolkit );
 		
 		this.control_composite
@@ -142,27 +146,39 @@ implements IFrameworkListener,
 		this.initialize_context_menu(model_creation_editor);
 	}
 	
-	private void 
-	initialize_mvc_components
-	( IController partitioner_gui_state_controller ) 
+	/// for now we call an activate function
+	// later we may simply wait to create the page until later
+	// and have everything happen in the constructor
+	private void
+	activate
+	( IModel test_framework_model )
 	{
-		this.partitioner_gui_state_controller
-			= partitioner_gui_state_controller;
-	
-		this.partitioner_gui_state_controller.addView(this);
+		this.test_framework_controller
+			= new ControllerDelegate();
+		this.test_framework_controller.addView(this);
+		this.test_framework_controller.addModel(
+			test_framework_model
+		);
+		
+		this.initialize_simulation_framework();
+		
+		assert this.test_framework_controller != null 
+			: "The test framework controller must be initialize here";
 	}
 	
 	private void 
 	initialize_simulation_framework() 
 	{
-		Object[] obj 
-			= this.partitioner_gui_state_controller.requestProperties(
+		Map<String, Object> map 
+			= this.test_framework_controller.requestProperties(
 				new String[] {
-					Constants.SIMULATION_FRAMEWORK,
+					TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
 				}
 			);
 		SimulationFramework simulation_framework
-			= (SimulationFramework) obj[0];
+			= (SimulationFramework) map.get(
+				TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
+			);
 		simulation_framework.addFrameworkListener(
 			(IFrameworkListener) this
 		);
@@ -224,11 +240,12 @@ implements IFrameworkListener,
 				widgetSelected
 				( SelectionEvent e )
 				{
-					ModelTestPage.this.partitioner_gui_state_controller.setModelProperty(
+					///
+					ModelTestPage.this.test_framework_controller.setModelProperty(
 						Constants.GUI_SIMULATION_TYPE,
 						simulation_type_combo.getText()
 					);
-					ModelTestPage.this.partitioner_gui_state_controller.notifyModel(
+					ModelTestPage.this.test_framework_controller.notifyModel(
 						Constants.EVENT_RUN_SIMULATION
 					);
 				}
@@ -372,7 +389,7 @@ implements IFrameworkListener,
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					ModelTestPage.this.partitioner_gui_state_controller.setModelProperty(
+					ModelTestPage.this.test_framework_controller.setModelProperty(
 						Constants.GUI_SIMULATION_TYPE,
 							simulation_type_combo.getText()
 					);
@@ -435,7 +452,7 @@ implements IFrameworkListener,
 								// we may have a threading problem, under the debugger
 								// the following throws a null pointer exception
 								new String(unit.getName()), 
-								new String(unit.getAlgorithmName()), 
+								new String( unit.getAlgorithmName() ), 
 								"", "", "..."
 							}
 						);
@@ -517,7 +534,7 @@ implements IFrameworkListener,
 		System.err.println("performing callback");
 		
 		// update state of gui on the callback
-		this.partitioner_gui_state_controller.setModelProperty(
+		this.test_framework_controller.setModelProperty(
 			Constants.GUI_SIMULATION_ADDED,
 			unit
 		);
@@ -528,7 +545,7 @@ implements IFrameworkListener,
 	simulationRemoved
 	( SimulationUnit unit ) 
 	{
-		this.partitioner_gui_state_controller.setModelProperty(
+		this.test_framework_controller.setModelProperty(
 			Constants.GUI_SIMULATION_REMOVED, 
 			unit
 		);
@@ -539,7 +556,7 @@ implements IFrameworkListener,
 	updateSimulationReport
 	( SimulationUnit unit, ReportModel report ) 
 	{    
-		this.partitioner_gui_state_controller.setModelProperty(
+		this.test_framework_controller.setModelProperty(
 			Constants.GUI_UPDATE_SIMULATION_REPORT, 
 			new Object[]{ unit, report }
 		);
@@ -549,12 +566,15 @@ implements IFrameworkListener,
     updateBestSimReport
     ( SimulationUnit unit )
     {
-    	this.partitioner_gui_state_controller.setModelProperty(
+    	this.test_framework_controller.setModelProperty(
     		Constants.GUI_UPDATE_BEST_SIMULATION_REPORT, 
     		unit
     	);
     }
     
+	// TODO the following is something that would traditionally be handled by the
+	// controller: the view detects the event, but does not decide how to handle it
+	// only how to notify the controller
     public void 
     customSimulationButtonActionPerformed
     ( java.awt.event.ActionEvent evt ) 
@@ -564,21 +584,28 @@ implements IFrameworkListener,
     	// split, which is the most important thing...later refactor
     	// model and possibly introduce something to allow splitting of
     	// state or passing of partial state through a controller
-    	Object[] args 
-    		= this.partitioner_gui_state_controller.requestProperties(
+    	///
+    	Map<String, Object> args 
+    		= this.test_framework_controller.requestProperties(
     			new String[]{
-    				Constants.SIMULATION_FRAMEWORK,
-    				Constants.MODULE_MODEL,
-    				Constants.HOST_MODEL,
+					TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
+					TestFrameworkModel.TEST_MODULE_MODEL,
+					TestFrameworkModel.TEST_HOST_MODEL,
     			}
     		);
     	
     	SimulationFramework simulation_framework
-    		= (SimulationFramework) args[0];
+    		= (SimulationFramework) args.get(
+    			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
+    		);
     	ModuleModel module_model
-    		= (ModuleModel) args[1];
+    		= (ModuleModel) args.get(
+    			TestFrameworkModel.TEST_MODULE_MODEL
+    		);
     	HostModel host_model
-    		= (HostModel) args[2];
+    		= (HostModel) args.get(
+    			TestFrameworkModel.TEST_HOST_MODEL
+    		);
     	
     	this.mSimUnitCustomization
     		= new SimulationUnitCustomizationNew(
@@ -605,22 +632,25 @@ implements IFrameworkListener,
     ( int id ) 
     {	
         SimulationUnit unit
-        	= (SimulationUnit) this.partitioner_gui_state_controller.index(
+        	= (SimulationUnit) this.test_framework_controller.index(
         		Constants.SIMULATION_UNITS,
         		new Integer(id)
         	);
         
         assert unit != null : "There is a bug in the program if we received a null unit";
         
-        Object[] args 
-        	= this.partitioner_gui_state_controller.requestProperties(
+        Map<String, Object> map 
+        	= this.test_framework_controller.requestProperties(
         		new String[]{
-        			Constants.SIMULATION_FRAMEWORK,
+        			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
         		}
         	);
         this.mSimUnitCustomization 
         	= new SimulationUnitCustomizationNew(
-        		(SimulationFramework) args[0], unit
+        		(SimulationFramework) map.get(
+        			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
+        		), 
+        		unit
             );
         
         System.err.println("Created dialog window.");
