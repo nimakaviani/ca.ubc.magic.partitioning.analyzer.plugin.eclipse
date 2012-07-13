@@ -293,7 +293,15 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
         	e.printStackTrace();
         	throw new RuntimeException("Initializing the module models failed");
         }
+        
+        postRecursion();
     }
+    
+    /**
+     * A method allowing for post analysis of the NodeObj model generated
+     * from the set of all frame coming into the model.
+     */
+    protected void postRecursion(){}
 
     protected void applyRecursion(NodeObj rootNode) {
         int i = 0;
