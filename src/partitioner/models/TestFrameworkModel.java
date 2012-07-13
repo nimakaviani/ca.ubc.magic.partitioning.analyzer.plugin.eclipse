@@ -113,6 +113,8 @@ implements IModel
 			= ModuleCoarsenerFactory.getModuleCoarsener(
 				module_type, constraint_model
 			);
+		this.profiler_trace 
+			= profiler_trace;
 		
 		this.registerProperties();
 		

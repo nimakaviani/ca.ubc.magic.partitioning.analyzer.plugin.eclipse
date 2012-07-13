@@ -15,6 +15,7 @@ import javax.swing.UIManager;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -50,11 +51,9 @@ ModelCreationEditor
 extends MultiPageEditorPart 
 implements IView
 {
-	private static final int MODEL_CONFIGURATION_PAGE 	
+	protected static final int MODEL_ANALYSIS_PAGE 
 		= 0;
-	private static final int MODEL_ANALYSIS_PAGE 		
-		= 1;
-	
+
 	private FormToolkit toolkit;
 	
     VisualizePartitioning currentVP;
@@ -128,24 +127,6 @@ implements IView
 	}
 
 	@Override
-	public void 
-	setFocus() 
-	// according to the plugins book, the setFocus method
-	// should have the following form
-	// 
-	// this method shows why the primary widgets on each
-	// page need to be class fields
-	{
-		switch(super.getActivePage())
-		{
-		case MODEL_CONFIGURATION_PAGE:
-			break;
-		case MODEL_ANALYSIS_PAGE:
-			break;
-		}
-	}
-
-	@Override
 	protected void 
 	createPages() 
 	{
@@ -184,10 +165,7 @@ implements IView
 	{
 		// the following should be set before any SWING widgets are
 		// instantiated it reduces flicker on a resize
-		//System.setProperty("sun.awt.noerasebackground", "true");
-		model_analysis_composite.addControlListener(
-				new CleanResizeListener( this.frame )
-		);
+		System.setProperty("sun.awt.noerasebackground", "true");
 
 		SwingUtilities.invokeLater( 
 			new Runnable(){
@@ -205,6 +183,12 @@ implements IView
 					ModelCreationEditor.this.frame.setBackground(
 						Color.white
 					);
+//					///
+//					Rectangle bounds
+//						= ModelCreationEditor.this.getContainer().getBounds();
+//					int width = bounds.width;
+//					int height = bounds.height;
+//					ModelCreationEditor.this.frame.setSize(width, height);
 					ModelCreationEditor.this.frame.pack();
 					ModelCreationEditor.this.frame.setVisible(true);
 					SwingUtilities.updateComponentTreeUI(frame);	
@@ -371,6 +355,13 @@ implements IView
 	void 
 	visualizeModuleModel() 
 	{
+		Rectangle bounds 
+			= this.getContainer().getBounds();
+		final int width
+			= bounds.width;
+		final int height
+			= bounds.height;
+		
 		SwingUtilities.invokeLater( new Runnable(){
 			@SuppressWarnings("unchecked")
 			@Override
@@ -379,7 +370,7 @@ implements IView
 			{
 				synchronized( ModelCreationEditor.this.current_vp_lock ){
 					ModelCreationEditor.this.currentVP
-						= new VisualizePartitioning( frame );
+						= new VisualizePartitioning( frame, width, height );
 
 					Map<String, Object> map
 						= ModelCreationEditor.this.controller.requestProperties(
@@ -401,6 +392,19 @@ implements IView
 								ModelCreationEditor.this.frame
 						);
 						
+						Display.getDefault().syncExec( new Runnable(){
+							@Override
+							public void run() {
+								ModelCreationEditor.this
+									.getControl(ModelCreationEditor.MODEL_ANALYSIS_PAGE)
+									.pack(true);
+								ModelCreationEditor.this.getContainer().layout();
+							}
+							
+						});
+						
+						
+					
 					} catch (Exception e) {
 						e.printStackTrace();
 					};
