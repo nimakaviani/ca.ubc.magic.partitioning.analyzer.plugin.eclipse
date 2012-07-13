@@ -10,8 +10,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.ProgressMonitorInputStream;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -43,8 +41,6 @@ import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.simulator.control.ISimulator;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
-import ca.ubc.magic.profiler.simulator.control.StaticTimeSimulator;
-import ca.ubc.magic.profiler.simulator.control.TimeSimulator;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
@@ -99,6 +95,13 @@ implements IModel
 	
 	public static final String EDITOR_CLOSED 
 		= "EditorClosed";
+	public static final String GUI_GENERATE_TEST_FRAMEWORK 
+		= "GenerateTestFramework";
+	
+	public static final String MODEL_CREATION 
+		= "ModelCreation";
+	public static final String EVENT_PARTITIONING_COMPLETE 
+		= "PartitioningComplete";
 	
 	private class
 	TestFrameworkDynamicProperty
@@ -159,12 +162,13 @@ implements IModel
 				"Static Time Simulator (No Trace Replay)"
 			)
 	  	);
-    private javax.swing.JFileChooser fileChooser;
+   // private javax.swing.JFileChooser fileChooser;
 
-	private JipRun jipRun;
+	//private JipRun jipRun;
 
 	private Boolean activate_host_cost_filter = false;
 	private Boolean activate_interaction_cost_filter = false;
+	private Boolean generate_test_framework = false;;
 	
 	public
 	PartitionerModel()
@@ -421,6 +425,22 @@ implements IModel
 	}
 	
 	public void
+	setGenerateTestFramework
+	( Boolean generate )
+	{
+		Boolean old_generate
+			= this.generate_test_framework ;
+		this.generate_test_framework
+			= generate;
+		
+		this.property_change_delegate.firePropertyChange(
+			PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK,
+			old_generate,
+			this.generate_test_framework
+		);
+	}
+	
+	public void
 	setActivateInteractionCostFilter
 	( Boolean activate )
 	{
@@ -594,18 +614,13 @@ implements IModel
 		// After parsing the input of a profiling trace, a template is added
 		// to the simulation framework to be later on used to create multiple
 		// instances of the test units for testing against the distribution.
-		SimulationFramework simulation_framework 
-			= this.mSimFramework;
-		ModuleCoarsenerType module_type
-			= this.mModuleType;
+		assert this.mSimFramework != null : "mSimFramework needs to be initialized!";
+		assert this.mModuleType != null : "mModuleType needs to be initialized!";
 		
-		assert simulation_framework != null : "mSimFramework needs to be initialized!";
-		assert module_type != null : "mModuleType needs to be initialized!";
-		
-		simulation_framework.addTemplate(
+		this.mSimFramework.addTemplate(
 			new SimulationUnit(
 				module_model.getName(), 
-				module_type.getText(), 
+				this.mModuleType.getText(), 
 				new DistributionModel(module_model, mHostModel))
 			);
 		
@@ -771,15 +786,16 @@ implements IModel
 						);
 				PartitionerModel.this
 					.property_change_delegate.firePropertyChange(
-						Constants.MODEL_CREATION, null, null
+						PartitionerModel.MODEL_CREATION, null, null
 					);
 				
 				// load the test framework if partitioning was set
 				// I wonder what this was originally for
-				if(PartitionerModel.this.perform_partitioning){
+				if( PartitionerModel.this.generate_test_framework ){
 					PartitionerModel.this
-						.property_change_delegate.firePropertyChange(
-							Constants.PARTITIONING_COMPLETE, null, null
+						.property_change_delegate.notifyViews(
+							PartitionerModel.EVENT_PARTITIONING_COMPLETE, 
+							null
 						);
 				}
 				else { System.err.println("Not performing partitioning."); }
@@ -826,7 +842,8 @@ implements IModel
 				PartitionerModel.MODULE_MODEL,
 				PartitionerModel.HOST_MODEL,
 				PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
-				PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER
+				PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
+				PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK
 			};
 		
 		Object[] properties
@@ -851,7 +868,8 @@ implements IModel
 			this.mHostModel,
 			
 			this.activate_host_cost_filter,
-			this.activate_interaction_cost_filter
+			this.activate_interaction_cost_filter,
+			this.generate_test_framework
 		};
 		
 		this.property_change_delegate.registerProperties(

@@ -57,8 +57,6 @@ Constants
 		= "Algorithm";
 	public static final String PERSPECTIVE_CONFIGURATION_VIEW_ID 
 		= "plugin.views.partitioner_configuration_view";
-	public static final String MODEL_CREATION 
-		= "ModelCreation";
 	
 	public static final String INCREMENT_ID 
 		= "IncrementID";
@@ -88,6 +86,5 @@ Constants
 		= "UpdateBestSimulationReport";
 	public static final String AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK 
 		= "AfterPartitioningCreateTestFramework";
-	public static final String PARTITIONING_COMPLETE 
-		= "PartitioningComplete";
+
 }

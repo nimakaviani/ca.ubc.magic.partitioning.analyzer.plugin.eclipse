@@ -96,6 +96,15 @@
                style="push">
          </command>
       </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="org.eclipse.debug.ui.contextualLaunch.run.submenu">
+         <command
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.run_on_profiler"
+               label="Run on Profiler"
+               style="push">
+         </command>
+      </menuContribution>
    </extension>
    
    
@@ -125,6 +134,10 @@
             class="ModifySimulation"
             commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation">
       </handler>
+      <handler
+            class="RunOnProfiler"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.run_on_profiler">
+      </handler>
    </extension>
    
    
@@ -153,5 +166,36 @@
             id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation"
             name="Create Modified Simulation">
       </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.run_on_profiler"
+            name="Run On Profiler">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="LaunchDelegate"
+            id="plugin.profiled_application"
+            modes="run, debug"
+            name="Java Profile"
+            public="true">
+      </launchConfigurationType>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      <launchConfigurationTypeImage
+            configTypeID="plugin.profiled_application"
+            icon="icons/disconnect_co2.gif"
+            id="plugin.javaProfile">
+      </launchConfigurationTypeImage>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchShortcuts">
+      <shortcut
+            class="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.LaunchShortcut1"
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.java_profile"
+            label="Java Profile"
+            modes="run, debug">
+      </shortcut>
    </extension>
 </plugin>

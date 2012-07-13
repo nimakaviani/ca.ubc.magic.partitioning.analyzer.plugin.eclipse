@@ -285,6 +285,7 @@ implements IView
 				
 					PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
 					PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
+					PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK
 				};
 			
 			final Map<String, Object> properties 
@@ -866,6 +867,19 @@ implements IView
 	////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////
 	
+	// Adding a widget to the partitioner box involves the following steps:
+	//	1) create the widget
+	//	2) create an associated state constant and object in the model
+	//	3) register that constant with the propertychangedelegate
+	//	4) write a setter for that state constant
+	//	5) in the view, register the partitioner widget with the list of
+	//		controls
+	//	6) if necessary, add the widget to the clear selections function
+	//	TODO: Yes...I agree there is something fundamentally wrong with the way the
+	//		model is organized...I will need to fix this, and I will need to 
+	//		remove the control decision logic in some of the views ( very minor,
+	//		but I don't like)
+	
 	private class
 	PartitionerWidgets
 	// the following class exists solely to group together all of the 
@@ -881,6 +895,7 @@ implements IView
 
 		private List<Control> activate_and_deactivate_partitioner_list
 			= new ArrayList<Control>(10);
+		private Button generate_test_framework_button;
 		
 		PartitionerWidgets
 		( Composite parent, FormToolkit toolkit)
@@ -923,6 +938,43 @@ implements IView
 			PartitionerConfigurationView.this
 				.createDummyLabel(parent, toolkit);
 			
+			this.generate_test_framework_button
+				= toolkit.createButton(
+					parent, 
+					"Generate Test Framework Page", 
+					SWT.CHECK
+				);
+			grid_data 
+				= new GridData(
+					SWT.BEGINNING, 
+					SWT.FILL, 
+					false, false
+				);
+			grid_data.horizontalSpan = 1;
+			this.generate_test_framework_button.setLayoutData( grid_data );
+			
+			this.generate_test_framework_button.addSelectionListener(
+				new SelectionAdapter()
+				{
+					@Override
+					public void
+					widgetSelected
+					( SelectionEvent e )
+					{
+						PartitionerConfigurationView.this
+							.controller.setModelProperty(
+								PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK,
+								new Boolean(
+									PartitionerWidgets.this
+										.generate_test_framework_button.getSelection()
+								)
+							);
+					}
+				}
+			);
+			PartitionerConfigurationView.this
+				.createDummyLabel( parent, toolkit );
+		
 			this.activate_host_filter_button
 				= toolkit.createButton(
 					parent, 
@@ -1014,7 +1066,8 @@ implements IView
 				this.activate_interaction_filter_button,
 				this.partitioning_algorithm_combo,
 				this.interaction_model_combo,
-				this.execution_model_combo
+				this.execution_model_combo,
+				this.generate_test_framework_button
 			);
 		}
 		
@@ -1037,6 +1090,10 @@ implements IView
 				= (Boolean) map.get(
 						PartitionerModel.GUI_PERFORM_PARTITIONING
 				);
+			boolean generate_test_framework
+				= (Boolean) map.get(
+					PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK
+				);
 			ExecutionCostType execution_cost_type
 				= (ExecutionCostType) map.get(
 						PartitionerModel.GUI_EXECUTION_COST
@@ -1055,13 +1112,16 @@ implements IView
 				);
 			boolean activate_interaction_cost_filter
 				= (Boolean) map.get(
-						PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER
+					PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER
 				);
-			int index;
 			
+			int index;
 			
 			this.perform_partitioning_button
 				.setSelection( perform_partitioning );
+			this.generate_test_framework_button.setSelection( 
+				generate_test_framework
+			);
 			this.activate_host_filter_button
 				.setSelection( activate_host_cost_filter );
 			this.activate_interaction_filter_button
@@ -1099,6 +1159,7 @@ implements IView
 		public void 
 		clear_selections() 
 		{
+			this.generate_test_framework_button.setSelection(false);
 			this.activate_host_filter_button.setSelection(false);
 			this.activate_interaction_filter_button.setSelection(false);
 			this.perform_partitioning_button.setSelection(false);
