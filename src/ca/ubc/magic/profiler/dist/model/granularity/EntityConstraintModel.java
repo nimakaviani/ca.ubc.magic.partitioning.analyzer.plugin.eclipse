@@ -4,11 +4,13 @@
  */
 package ca.ubc.magic.profiler.dist.model.granularity;
 
-import ca.ubc.magic.profiler.parser.JipFrame;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
+import ca.ubc.magic.profiler.parser.JipFrame;
 
 /**
  *
@@ -24,6 +26,8 @@ public class EntityConstraintModel {
     private Set<CodeEntity> mNonReplicableSet;
     private List<List<CodeEntity>> mRootEntityList;
     
+    private FilterConstraintModel mFilterConstraintModel;
+    
     private ConstraintSwitches mConstraintSwitches;
     
     public EntityConstraintModel(){
@@ -34,6 +38,8 @@ public class EntityConstraintModel {
         mReplicableSet = new HashSet<CodeEntity>();
         mNonReplicableSet = new HashSet<CodeEntity>();
         mRootEntityList = new ArrayList<List<CodeEntity>>();
+        
+        mFilterConstraintModel = new FilterConstraintModel();
         
         mConstraintSwitches = new ConstraintSwitches();
     }
@@ -56,6 +62,10 @@ public class EntityConstraintModel {
             default:
                 throw new RuntimeException("Unsupported CodeUnitTye");
         }
+    }
+    
+	public FilterConstraintModel getFilterConstraintModel(){
+    	return mFilterConstraintModel;
     }
     
     public Set<CodeEntity> getIgnoreSet(){

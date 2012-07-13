@@ -53,7 +53,7 @@ public class FrameBasedModuleCoarsener extends ThreadBasedBundleModuleCoarsener 
     private  String getConstrainedNodeName(NodeObj node, int id){
     	if (isNonReplicable(node.getName()))
             return node.getName();
-    	return node.getName()+"_"+id;
+    	return node.getName()+"-"+id;
     }
     
 	private boolean recursiveSanitizeGraph(NodeObj node){
@@ -100,7 +100,7 @@ public class FrameBasedModuleCoarsener extends ThreadBasedBundleModuleCoarsener 
 		NodeObj modelNodeObj = new NodeObj(rootNode);
 
 		mCurrentHeadNode = modelNodeObj.getNodeVisit();
-		System.out.println("Found refs for " + 
+		System.out.print("Found refs for " + 
 				modelNodeObj.getName() + ": " + mCurrentHeadNode);
 		
 		
@@ -110,10 +110,14 @@ public class FrameBasedModuleCoarsener extends ThreadBasedBundleModuleCoarsener 
 //	    	printTree(mModelNodeObj, 0, b);
 //	    	System.out.println(b.toString()+"\n\n\n");
     	
+		int startCounter = mCounter;
+		
 		ExtendedNodeObj modelNodeObjExtended = new ExtendedNodeObj(modelNodeObj);
 		NodeObj mergedNodeObj = modelNodeObjExtended.mergeWebNodes();
 		mergedNodeObj.setIsRoot(Boolean.TRUE);
 		recursiveWriteGraph(mergedNodeObj);
+		
+		System.out.println(" -- size (" + (mCounter - startCounter + 1) + ")");
 		
     }
 }

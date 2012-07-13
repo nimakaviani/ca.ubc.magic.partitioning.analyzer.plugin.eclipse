@@ -29,6 +29,8 @@ public class FilterConstraintModel {
 			return new HostFilterConstraint();
 		case INTERACTION_CUT:
 			return new InteractionFilterConstraint();
+		case COLOCATION_CUT:
+			return new ColocationFilterConstraint();
 		default:
 			throw new RuntimeException("Unknown filter type for instantiation");
 		}
@@ -36,7 +38,8 @@ public class FilterConstraintModel {
 	
 	public enum FilterType{
 		HOST_CUT("HOST_CUT"),
-        INTERACTION_CUT ("INTERACTION_CUT");
+        INTERACTION_CUT ("INTERACTION_CUT"),
+        COLOCATION_CUT("COLOCATION_CUT");
         
          private String text;
 

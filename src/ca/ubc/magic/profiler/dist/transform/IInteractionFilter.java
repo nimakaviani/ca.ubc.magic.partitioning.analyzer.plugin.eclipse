@@ -12,8 +12,6 @@ import ca.ubc.magic.profiler.dist.model.ModulePairHostPair;
  */
 public interface IInteractionFilter extends IFilter {
     
-    public boolean isFilterable(ModulePairHostPair mph);
-    
     public double filter(ModulePairHostPair mph);
     
 }

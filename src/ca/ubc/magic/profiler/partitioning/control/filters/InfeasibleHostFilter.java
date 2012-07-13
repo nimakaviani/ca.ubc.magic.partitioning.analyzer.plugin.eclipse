@@ -2,49 +2,45 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package ca.ubc.magic.profiler.partitioning.control.filter;
+package ca.ubc.magic.profiler.partitioning.control.filters;
 
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.springframework.util.StringUtils;
-
-import ca.ubc.magic.profiler.dist.control.Constants;
 import ca.ubc.magic.profiler.dist.model.Host;
-import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.Module;
 import ca.ubc.magic.profiler.dist.model.ModuleHost;
-import ca.ubc.magic.profiler.dist.model.ModuleModel;
-import ca.ubc.magic.profiler.dist.model.granularity.HostFilterConstraint;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
+import ca.ubc.magic.profiler.dist.control.Constants;
+import ca.ubc.magic.profiler.dist.model.HostModel;
+import ca.ubc.magic.profiler.dist.model.ModuleModel;
+import java.util.HashSet;
+import java.util.Set;
+import org.springframework.util.StringUtils;
 
 /**
  *
  * @author nima
  */
-public class ConstrainedInfeasibleHostFilter implements IModuleFilter {
+public class InfeasibleHostFilter implements IModuleFilter {
     public static final String HOST_DELIMITER = "::";
         
     protected Set<Module> mModuleSet;
     protected Host        mHost;
     protected String mName;
 
-    public ConstrainedInfeasibleHostFilter(
-    		ModuleModel moduleModel, 
-    		HostModel hostModel,
-    		HostFilterConstraint hostFilter){     
+    public InfeasibleHostFilter(ModuleModel moduleModel, HostModel hostModel,
+            String name, String[] moduleNames, int hostId){     
         
         // initializing the filter
-        initFilter(moduleModel, hostModel, hostFilter);
+        initFilter(moduleModel, hostModel, moduleNames, hostId);
+        mName = name;
     }
     
-    public boolean isFilterable(ModuleHost mh) {
-        
+    public boolean isFilterable(Object mh) {
+    	if (!(mh instanceof ModuleHost))
+			return Boolean.FALSE;
         // finds the corresponding modules from the modulemodel and updates
         // their edge weights to infinite
-        if (mh.getHost().equals(mHost)){
-            Module m = mh.getModule();
+        if (((ModuleHost) mh).getHost().equals(mHost)){
+            Module m = ((ModuleHost) mh).getModule();
             for (Module tmpM : mModuleSet){
                 if (m.equals(tmpM)){
                     return Boolean.TRUE;
@@ -63,6 +59,14 @@ public class ConstrainedInfeasibleHostFilter implements IModuleFilter {
         return mModuleSet;
     }
     
+    public void setFilterName(String name){
+        mName = name;
+    }
+    
+    public String getFilterName(){
+        return mName;
+    }
+    
     public String getFilterAsString() {
         String[] moduleNames = new String[mModuleSet.size()];
         int index = 0;
@@ -74,17 +78,23 @@ public class ConstrainedInfeasibleHostFilter implements IModuleFilter {
     }
 
     public void setStringToFilter(ModuleModel moduleModel, HostModel hostModel, String stringFilter) {
-//    	throw new UnsupportedOperationException("Not applicable.");
+        stringFilter = stringFilter.replaceAll(", ", ",");
+        String[] moduleNames = StringUtils.commaDelimitedListToStringArray(
+                stringFilter.substring(0, stringFilter.indexOf(HOST_DELIMITER)));
+        int hostId = Integer.valueOf(stringFilter.substring(
+                stringFilter.indexOf(HOST_DELIMITER) + HOST_DELIMITER.length()));
+        initFilter(moduleModel, hostModel, moduleNames, hostId);
     }
     
-    protected void initFilter(ModuleModel moduleModel, HostModel hostModel, HostFilterConstraint hostFilter){        
+    protected void initFilter(ModuleModel moduleModel, HostModel hostModel, String[] moduleNames, int hostId){        
         if (hostModel != null && moduleModel != null){
            mModuleSet = new HashSet<Module>(); 
-           for (Entry<String, Module> moduleEntry : moduleModel.getModuleMap().entrySet()){
-               if (hostFilter.getEntity().getEntityPattern().matches(moduleEntry.getKey(), null, null))
-                    mModuleSet.add(new Module(moduleEntry.getValue()));
+           for (String moduleName : moduleNames){
+               moduleName = moduleName.trim();
+               if (moduleModel.getModuleMap().get(moduleName) != null)
+                    mModuleSet.add(new Module(moduleModel.getModuleMap().get(moduleName)));
            }
-           mHost = hostModel.getHostMap().get((int) hostFilter.getHostId());
+           mHost = hostModel.getHostMap().get(hostId);
            
            // when applying the filter, first sets the partition Id for all
            // the modules stored in the filter to the partition Id of the host

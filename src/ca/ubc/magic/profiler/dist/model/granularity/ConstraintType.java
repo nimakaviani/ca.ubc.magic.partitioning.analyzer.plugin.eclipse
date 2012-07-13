@@ -17,7 +17,8 @@ public enum ConstraintType {
     EXPOSE("expose"),
     IGNORE("ignore"),
     REPLICABLE("replicable"),
-    NON_REPLICABLE("non-replicable");
+    NON_REPLICABLE("non-replicable"),
+    FILTERS("filters"),;
 
     private String text;
 

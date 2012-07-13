@@ -1,16 +1,12 @@
 package ca.ubc.magic.profiler.dist.model.granularity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class HostFilterConstraint extends FilterConstraint {
 	
 	private long mHostId;		
-	private CodeEntity mEntity;
-	
-	public void setEntity(CodeEntity entity){
-		if (mEntity == null)
-			mEntity = entity;
-		else
-			throw new RuntimeException("Too many host filter entities");
-	}
+	private Set<CodeEntity> mEntities = new HashSet<CodeEntity>();
 	
 	public void setHostId(long id){
 		mHostId = id;
@@ -20,22 +16,21 @@ public class HostFilterConstraint extends FilterConstraint {
 		return mHostId;
 	}
 	
-	public CodeEntity getEntity(){
-		return mEntity;
+	public Set<CodeEntity> getEntities(){
+		return mEntities;
 	}
 	
 	public void addEntity(CodeEntity entity){
-		mEntity = entity;
+		mEntities.add(entity);
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
-		int result = 1;
+		int result = super.hashCode();
 		result = prime * result
-				+ ((mEntity == null) ? 0 : mEntity.hashCode());
-		result = prime * result + (int) mHostId;
-		result = prime * result + ((mName == null) ? 0 : mName.hashCode());
+				+ ((mEntities == null) ? 0 : mEntities.hashCode());
+		result = prime * result + (int) (mHostId ^ (mHostId >>> 32));
 		return result;
 	}
 
@@ -43,22 +38,17 @@ public class HostFilterConstraint extends FilterConstraint {
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj == null)
+		if (!super.equals(obj))
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
 		HostFilterConstraint other = (HostFilterConstraint) obj;
-		if (mEntity == null) {
-			if (other.mEntity != null)
+		if (mEntities == null) {
+			if (other.mEntities != null)
 				return false;
-		} else if (!mEntity.equals(other.mEntity))
+		} else if (!mEntities.equals(other.mEntities))
 			return false;
 		if (mHostId != other.mHostId)
-			return false;
-		if (mName == null) {
-			if (other.mName != null)
-				return false;
-		} else if (!mName.equals(other.mName))
 			return false;
 		return true;
 	}

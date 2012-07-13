@@ -2,26 +2,24 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package ca.ubc.magic.profiler.partitioning.control.filter;
-
-import java.util.HashSet;
-import java.util.Set;
-
-import org.springframework.util.StringUtils;
+package ca.ubc.magic.profiler.partitioning.control.filters;
 
 import ca.ubc.magic.profiler.dist.control.Constants;
 import ca.ubc.magic.profiler.dist.model.HostModel;
+import ca.ubc.magic.profiler.dist.model.ModuleHost;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.ModulePairHostPair;
-import ca.ubc.magic.profiler.dist.model.granularity.InteractionFilterConstraint;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
+import java.util.HashSet;
+import java.util.Set;
+import org.springframework.util.StringUtils;
 
 /**
  *
  * @author nima
  */
-public class ConstrainedInfeasibleEdgeCutFilter implements IInteractionFilter {
+public class InfeasibleEdgeCutFilter implements IInteractionFilter {
    
     public static final String COMMA_CHAR = ",";
     public static final String MODULE_PAIR_BOUNDARY_CHAR = "{";
@@ -33,17 +31,16 @@ public class ConstrainedInfeasibleEdgeCutFilter implements IInteractionFilter {
     
     String mName;
     
-    public ConstrainedInfeasibleEdgeCutFilter (
-    		ModuleModel moduleModel, 
-    		InteractionFilterConstraint edgeFilter){
-    	
-        mName = edgeFilter.getName();
-        initFilter(moduleModel, edgeFilter);
+    public InfeasibleEdgeCutFilter (ModuleModel moduleModel, String name, String[][] mpstr){
+        mName = name;
+        initFilter(moduleModel, mpstr);
     }
     
-    public boolean isFilterable(ModulePairHostPair mph) {
+    public boolean isFilterable(Object mph) {
+    	if (!(mph instanceof ModulePairHostPair))
+			return Boolean.FALSE;
         for (ModulePair mp : mModulePairSet){
-            if (mph.getModulePair().equals(mp)){
+            if (((ModulePairHostPair) mph).getModulePair().equals(mp)){
                 return true;
             }
         }
@@ -78,22 +75,35 @@ public class ConstrainedInfeasibleEdgeCutFilter implements IInteractionFilter {
     }
 
     public void setStringToFilter(ModuleModel moduleModel, HostModel hostModel, String stringFilter) {
-//    	throw new UnsupportedOperationException("Not applicable.");
+        stringFilter = stringFilter.replaceAll( COMMA_CHAR + SPACE_CHAR, COMMA_CHAR);
+        String[] pairStr = StringUtils.commaDelimitedListToStringArray(stringFilter);        
+        String[][] modulePairNames = new String[pairStr.length][2];
+        int index = 0;
+        for (String str : pairStr){
+            if (str == null || str.equals(""))
+                continue;
+            String parsedPairStr = str.substring(1, str.length() - 1);
+            modulePairNames[index++] = StringUtils.delimitedListToStringArray(
+                    parsedPairStr, MODULE_PAIR_DELIMITER);
+        }
+        initFilter(moduleModel, modulePairNames);
     }
     
-    protected void initFilter(ModuleModel moduleModel, InteractionFilterConstraint iFilter){
+    protected void initFilter(ModuleModel moduleModel, String[][] modulePairNames){
         if (moduleModel == null)
             throw new RuntimeException("Module model is not defined");
-        if (iFilter == null)
+        if (modulePairNames == null)
             throw new RuntimeException("Pair names for the filter is not available");
         
         mModulePairSet = new HashSet<ModulePair>();
-                
-        for (ModulePair mp : moduleModel.getModuleExchangeMap().keySet())
-            if ((iFilter.getEntities()[0].getEntityPattern().matches(mp.getModules()[0].getName(), null, null) &&
-            	 iFilter.getEntities()[1].getEntityPattern().matches(mp.getModules()[1].getName(), null, null)) ||
-           		(iFilter.getEntities()[0].getEntityPattern().matches(mp.getModules()[1].getName(), null, null) &&
-                 iFilter.getEntities()[1].getEntityPattern().matches(mp.getModules()[0].getName(), null, null)))
-                mModulePairSet.add(mp);
+        
+        for (String[] modulePairName :modulePairNames){
+            for (ModulePair mp : moduleModel.getModuleExchangeMap().keySet())
+                if ((mp.getModules()[0].getName().equals(modulePairName[0]) &&
+                        mp.getModules()[1].getName().equals(modulePairName[1])) ||
+                    (mp.getModules()[0].getName().equals(modulePairName[1]) &&
+                        mp.getModules()[1].getName().equals(modulePairName[0])))
+                    mModulePairSet.add(mp);
+        }
     }
 }
