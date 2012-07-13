@@ -7,7 +7,6 @@ package ca.ubc.magic.profiler.partitioning.control.filter;
 import java.util.HashMap;
 import java.util.Map;
 
-import ca.ubc.magic.profiler.dist.control.Constants;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraint;

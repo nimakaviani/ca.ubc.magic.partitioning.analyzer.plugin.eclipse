@@ -32,7 +32,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 
-import partitioner.models.PartitionerGUIStateModel;
+import partitioner.models.PartitionerModel;
 import partitioner.models.TestFrameworkModel;
 import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
@@ -78,7 +78,7 @@ implements IView
 			= new ControllerDelegate();
 		this.controller.addView( this );
 	    
-		this.controller.addModel( new PartitionerGUIStateModel() );
+		this.controller.addModel( new PartitionerModel() );
 	}
 	
 	private void 
@@ -168,7 +168,7 @@ implements IView
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
 
 	  	this.initialize_model_analysis_page( model_analysis_composite );
-		this.initialize_model_test_page();
+		//this.initialize_model_test_page();
 		this.updateTitle();
 
 		// this should happen after the controller is assigned
@@ -216,24 +216,6 @@ implements IView
 			= super.addPage( model_analysis_composite );
 		super.setPageText(index, "Model Analysis");
 	}
-	
-	private void 
-	initialize_model_test_page() 
-	{
-		Composite parent 
-			= super.getContainer();
-		
-		this.test_page
-			= new ModelTestPage(
-				this.toolkit, 
-				parent,
-				this
-			);
-		this.toolkit.adapt(test_page);
-		
-		int index
-			= super.addPage( test_page );
-		super.setPageText( index, "Simulate and Test" );	}
 	
 	private void 
 	setSwingLookAndFeel() 
@@ -299,7 +281,7 @@ implements IView
 		}
 		
 		ModelCreationEditor.this.controller.setModelProperty(
-			Constants.GUI_PROFILER_TRACE, 
+			PartitionerModel.GUI_PROFILER_TRACE, 
 			return_value
 		);
 		
@@ -323,7 +305,7 @@ implements IView
 				
 				switch(evt.getPropertyName())
 				{
-				case Constants.GUI_MODULE_COARSENER:
+				case PartitionerModel.GUI_MODULE_COARSENER:
 					ModuleCoarsenerType mc 
 						= (ModuleCoarsenerType) evt.getNewValue();
 					System.out.println(
@@ -346,9 +328,9 @@ implements IView
 							Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK
 						);
 					ModelCreationEditor.this
-						.test_page.activate( test_framework_model );
+						.activateTestPage( test_framework_model );
 					break;
-				case Constants.GUI_PERFORM_PARTITIONING:
+				case PartitionerModel.GUI_PERFORM_PARTITIONING:
 					ModelCreationEditor.this.perform_partitioning
 						= (Boolean) evt.getNewValue();
 					break;
@@ -359,6 +341,30 @@ implements IView
 		});
 	}
 	
+	private void 
+	activateTestPage
+	( TestFrameworkModel test_framework_model ) 
+	{
+		Composite parent 
+			= super.getContainer();
+			
+		this.test_page
+			= new ModelTestPage(
+				this.toolkit, 
+				parent,
+				this,
+				test_framework_model
+			);
+		this.toolkit.adapt( this.test_page );
+			
+		int index
+			= super.addPage( this.test_page );
+		super.setPageText( 
+			index, 
+			"Simulate and Test" 
+		);
+	}
+
 	// TODO the following is something that would traditionally be handled by the
 	// controller: the view detects the event, but does not decide how to handle it
 	// only how to notify the controller
@@ -434,7 +440,7 @@ implements IView
 		}
 		
 		this.controller.notifyPeers(
-			Constants.EDITOR_CLOSED, 
+			PartitionerModel.EDITOR_CLOSED, 
 			this, 
 			null
 		);

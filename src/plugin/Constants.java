@@ -31,28 +31,7 @@ Constants
 		=  "AdditionalEvent";
 	public static final String SELECTED_ENTRY_PROPERTY 		
 		= "EntrySelected";
-	public static final String GUI_MODULE_COARSENER 		
-		= "ModuleCoarsener";
-	public static final String GUI_PROFILER_TRACE   		
-		= "ProfilerTracePath";
-	public static final String GUI_MODULE_EXPOSER 			
-		= "ModuleExposer";
-	public static final String GUI_HOST_CONFIGURATION 		
-		= "HostConfiguration";
-	public static final String GUI_SET_MODULE_EXPOSURE 		
-		= "ModuleExposure";
-	public static final String GUI_SET_SYNTHETIC_NODE 		
-		= "SyntheticNode";
-	public static final String GUI_SET_PRESET_MODULE_GRAPH 	
-		= "PresetModuleGraph";
-	public static final String GUI_PERFORM_PARTITIONING 
-		= "PerformPartitioning";
-	public static final String GUI_PARTITIONER_TYPE 
-		= "PartitionerType";
-	public static final String GUI_INTERACTION_COST 
-		= "InteractionCost";
-	public static final String GUI_EXECUTION_COST
-		= "ExecutionCost";
+	
 	public static final int SNAPSHOT_VIEW_UPDATE_MODEL_NAME
 		= 0;
 	
@@ -70,8 +49,6 @@ Constants
 	
 	public static final String GENERATE_MODEL_EVENT 
 		= "ModelGeneration";
-	public static final String DISABLE_CONFIGURATION_PANEL 
-		= "ActiveConfigurationPanel";
 	public static final String MODULE_EXCHANGE_MAP 
 		= "ModuleExchageMap";
 	public static final String SOLUTION 
@@ -83,12 +60,6 @@ Constants
 	public static final String MODEL_CREATION 
 		= "ModelCreation";
 	
-	
-
-	public static final String MODULE_MODEL 
-		= "ModuleModel";
-	public static final String HOST_MODEL
-		= "HostModel";
 	public static final String INCREMENT_ID 
 		= "IncrementID";
 	public static final String SIMULATION_TABLE_RUN_UPDATE 
@@ -115,19 +86,8 @@ Constants
 		= "UpdateSimulationReport";
 	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
 		= "UpdateBestSimulationReport";
-	public static final String SIMULATION_FRAMEWORK 
-		= "SimulationFramework";
 	public static final String AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK 
 		= "AfterPartitioningCreateTestFramework";
 	public static final String PARTITIONING_COMPLETE 
 		= "PartitioningComplete";
-	public static final String EDITOR_CLOSED 
-		= "EditorClosed";
-	
-	// belong to the partitioner configuration view
-	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
-		= "ActivateHostFilter";
-	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
-		= "ActivateInteractionCostFilter";
-	
 }

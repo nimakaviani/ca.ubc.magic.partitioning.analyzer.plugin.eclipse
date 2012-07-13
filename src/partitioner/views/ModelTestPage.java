@@ -40,6 +40,7 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
 
+import partitioner.models.TestFrameworkModel;
 import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
@@ -89,10 +90,12 @@ implements IFrameworkListener,
 	public ModelTestPage
 	( 	FormToolkit toolkit, 
 		Composite parent, 
-		ModelCreationEditor model_creation_editor ) 
+		ModelCreationEditor model_creation_editor,
+		TestFrameworkModel test_framework_model ) 
 	{
 		super( parent );
 		
+		this.activate( test_framework_model );
 		this.initialize_page_properties( toolkit );
 		
 		this.control_composite
@@ -146,7 +149,7 @@ implements IFrameworkListener,
 	/// for now we call an activate function
 	// later we may simply wait to create the page until later
 	// and have everything happen in the constructor
-	public void
+	private void
 	activate
 	( IModel test_framework_model )
 	{
@@ -169,12 +172,12 @@ implements IFrameworkListener,
 		Map<String, Object> map 
 			= this.test_framework_controller.requestProperties(
 				new String[] {
-					Constants.SIMULATION_FRAMEWORK,
+					TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
 				}
 			);
 		SimulationFramework simulation_framework
 			= (SimulationFramework) map.get(
-				Constants.SIMULATION_FRAMEWORK
+				TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
 			);
 		simulation_framework.addFrameworkListener(
 			(IFrameworkListener) this
@@ -585,23 +588,23 @@ implements IFrameworkListener,
     	Map<String, Object> args 
     		= this.test_framework_controller.requestProperties(
     			new String[]{
-    				Constants.SIMULATION_FRAMEWORK,
-    				Constants.MODULE_MODEL,
-    				Constants.HOST_MODEL,
+					TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
+					TestFrameworkModel.TEST_MODULE_MODEL,
+					TestFrameworkModel.TEST_HOST_MODEL,
     			}
     		);
     	
     	SimulationFramework simulation_framework
     		= (SimulationFramework) args.get(
-    			Constants.SIMULATION_FRAMEWORK
+    			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
     		);
     	ModuleModel module_model
     		= (ModuleModel) args.get(
-    			Constants.MODULE_MODEL
+    			TestFrameworkModel.TEST_MODULE_MODEL
     		);
     	HostModel host_model
     		= (HostModel) args.get(
-    			Constants.HOST_MODEL
+    			TestFrameworkModel.TEST_HOST_MODEL
     		);
     	
     	this.mSimUnitCustomization
@@ -639,13 +642,13 @@ implements IFrameworkListener,
         Map<String, Object> map 
         	= this.test_framework_controller.requestProperties(
         		new String[]{
-        			Constants.SIMULATION_FRAMEWORK,
+        			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
         		}
         	);
         this.mSimUnitCustomization 
         	= new SimulationUnitCustomizationNew(
         		(SimulationFramework) map.get(
-        			Constants.SIMULATION_FRAMEWORK
+        			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
         		), 
         		unit
             );

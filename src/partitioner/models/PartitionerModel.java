@@ -54,32 +54,71 @@ import plugin.mvc.ADynamicProperty;
 // this object is for sure accessed from the swt and swing threads
 // it must be made thread safe!!!!!!!!!
 public class 
-PartitionerGUIStateModel 
+PartitionerModel 
 implements IModel
 // TODO: write an adapter around the Model so were more cleanly separate
 //		the mvc interface from the program logic
 {
+	public static final String	SIMULATION_FRAMEWORK
+		= "SimulationFramework";
+	public static final String	MODULE_MODEL
+		= "ModuleModel";
+	public static final String	HOST_MODEL
+		= "HostModel";
+	
+	public static final String GUI_MODULE_COARSENER 		
+		= "ModuleCoarsener";
+	public static final String GUI_PROFILER_TRACE   		
+		= "ProfilerTracePath";
+	public static final String GUI_MODULE_EXPOSER 			
+		= "ModuleExposer";
+	public static final String GUI_HOST_CONFIGURATION 		
+		= "HostConfiguration";
+	public static final String GUI_SET_MODULE_EXPOSURE 		
+		= "ModuleExposure";
+	public static final String GUI_SET_SYNTHETIC_NODE 		
+		= "SyntheticNode";
+	public static final String GUI_SET_PRESET_MODULE_GRAPH 	
+		= "PresetModuleGraph";
+	public static final String GUI_PERFORM_PARTITIONING 
+		= "PerformPartitioning";
+	public static final String GUI_PARTITIONER_TYPE 
+		= "PartitionerType";
+	public static final String GUI_INTERACTION_COST 
+		= "InteractionCost";
+	public static final String GUI_EXECUTION_COST
+		= "ExecutionCost";
+	
+	public static final String DISABLE_CONFIGURATION_PANEL 
+		= "ActiveConfigurationPanel";
+	
+	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
+		= "ActivateHostFilter";
+	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
+		= "ActivateInteractionCostFilter";
+	
+	public static final String EDITOR_CLOSED 
+		= "EditorClosed";
+	
 	private class
 	TestFrameworkDynamicProperty
 	extends ADynamicProperty
 	{
-		PartitionerGUIStateModel partitioner_gui_state_model;
-		
-		private 
-		TestFrameworkDynamicProperty
-		( PartitionerGUIStateModel gui_model )
-		{
-			this.partitioner_gui_state_model 
-				= gui_model;
-		}
-		
 		@Override
-		public Object instantiate() {
-			return this.partitioner_gui_state_model
-				.createTestFramework();
+		public Object 
+		instantiate() 
+		{
+			return new TestFrameworkModel(
+				PartitionerModel.this.partitioner_type,
+				PartitionerModel.this.mModuleModel,
+				PartitionerModel.this.mSimFramework,
+				PartitionerModel.this.mHostModel,
+				PartitionerModel.this.profiler_trace,
+				PartitionerModel.this.mModuleType,
+				PartitionerModel.this.mConstraintModel
+			);
 		}
 	}
-	
 	
 	private PropertyChangeDelegate 	property_change_delegate;
 	
@@ -112,35 +151,30 @@ implements IModel
 	
 	private Map<String, IFilter> mFilterMap; 
 	 	
-	private String active_host_filter;
-	private String interaction_model;
-	private String execution_model;
 	private String partitioner_solution;
 	
 	private ISimulator mSim 
 		= SimulatorFactory.getSimulator(
-			SimulatorType.fromString("Static Time Simulator (No Trace Replay)")
+			SimulatorType.fromString(
+				"Static Time Simulator (No Trace Replay)"
+			)
 	  	);
     private javax.swing.JFileChooser fileChooser;
 
 	private JipRun jipRun;
 
-	private IModuleCoarsener module_coarsener;
-	
-	private SimulationUnit mBestSimUnit;
-
 	private Boolean activate_host_cost_filter = false;
 	private Boolean activate_interaction_cost_filter = false;
 	
 	public
-	PartitionerGUIStateModel()
+	PartitionerModel()
 	{
 		this.profiler_trace = "";
 		this.constraint_xml_path = "";
 		this.host_configuration = "";
        	
 		this.mSimFramework
-       		= new SimulationFramework(Boolean.FALSE);
+       		= new SimulationFramework( Boolean.FALSE );
 		
 		this.mModuleType	
 			= ModuleCoarsenerType.BUNDLE;
@@ -157,79 +191,9 @@ implements IModel
 		this.mFilterMap
 	 		= new HashMap<String, IFilter>();
 		
-	//	this.unitMap
-	//		= new HashMap<String, DefaultKeyValue>();
-		
-		this.initializeForActivation();
-		
 		this.registerProperties();
 	}
 
-	public Object 
-	createTestFramework() 
-	{
-		System.err.println(
-			"Profiler trace at time of test framework generation: " 
-			+ this.profiler_trace
-		);
-		
-		return new TestFrameworkModel(
-			this.partitioner_type,
-			this.mModuleModel,
-			this.mSimFramework,
-			this.mHostModel,
-			this.profiler_trace,
-			this.mModuleType,
-			this.mConstraintModel
-		);
-	}
-
-	public void 
-	initializeForActivation() 
-	{
-	   	initFilters();
-	   	initCostModels();
-	}
-	
-	private void 
-    initFilters() 
-    { 
-    	this.mFilterMap 
-    		= new HashMap<String, IFilter>();
-    	this.active_host_filter
-    		= null;
-    }
-	
-	 private void 
-    initCostModels()
-    {
-    	// TODO: ask Nima if there are defaults for these
-    	// also, keep an eye out for any clues that the following should
-    	// reference non-String objects
-    	this.interaction_model 
-    		= null;
-    	this.execution_model 
-    		= null;
-    }
-	
-	public String
-	getHostConfigurationPath()
-	{
-		return this.host_configuration;
-	}
-	
-	public String
-	getModuleExposerPath()
-	{
-		return this.constraint_xml_path;
-	}
-	
-	public String
-	getProfilerTracePath()
-	{
-		return this.profiler_trace;
-	}
-	
 	public void
 	setModuleCoarsener
 	( ModuleCoarsenerType model_coarsener )
@@ -241,7 +205,7 @@ implements IModel
 			= model_coarsener;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_MODULE_COARSENER,
+			PartitionerModel.GUI_MODULE_COARSENER,
 			old_coarsener, 
 			this.mModuleType
 		);
@@ -262,7 +226,7 @@ implements IModel
 		System.out.println( this.profiler_trace + " " );
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_PROFILER_TRACE, 
+				PartitionerModel.GUI_PROFILER_TRACE, 
 			old_trace, 
 			this.profiler_trace
 		);
@@ -276,7 +240,7 @@ implements IModel
 		this.constraint_xml_path = module_exposer;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_MODULE_EXPOSER, 
+				PartitionerModel.GUI_MODULE_EXPOSER, 
 			old_exposer, 
 			module_exposer
 		);
@@ -290,7 +254,7 @@ implements IModel
 		this.host_configuration = host_configuration;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_HOST_CONFIGURATION, 
+				PartitionerModel.GUI_HOST_CONFIGURATION, 
 			old_configuration, 
 			host_configuration
 		);
@@ -306,7 +270,7 @@ implements IModel
 			= expose;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_SET_MODULE_EXPOSURE, 
+				PartitionerModel.GUI_SET_MODULE_EXPOSURE, 
 			old_expose, 
 			expose
 		);
@@ -322,7 +286,7 @@ implements IModel
 			= synthetic;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_SET_SYNTHETIC_NODE,
+				PartitionerModel.GUI_SET_SYNTHETIC_NODE,
 			old_synthetic,
 			synthetic
 		);
@@ -338,7 +302,7 @@ implements IModel
 			= preset_module_graph;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_SET_PRESET_MODULE_GRAPH,
+				PartitionerModel.GUI_SET_PRESET_MODULE_GRAPH,
 			old_preset,
 			preset_module_graph
 		);
@@ -354,7 +318,7 @@ implements IModel
 			= perform_partitioning;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_PERFORM_PARTITIONING,
+			PartitionerModel.GUI_PERFORM_PARTITIONING,
 			old_perform,
 			perform_partitioning
 		);
@@ -370,7 +334,7 @@ implements IModel
 			= module_model;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.MODULE_MODEL, 
+			PartitionerModel.MODULE_MODEL, 
 			old_module_model, 
 			this.mModuleModel
 		);
@@ -386,7 +350,7 @@ implements IModel
 			= host_model;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.HOST_MODEL,
+			PartitionerModel.HOST_MODEL,
 			old_host_model,
 			this.mHostModel
 		);
@@ -402,7 +366,7 @@ implements IModel
 			= partitioner_type;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_PARTITIONER_TYPE,
+			PartitionerModel.GUI_PARTITIONER_TYPE,
 			old_partitioner,
 			partitioner_type
 		);
@@ -418,7 +382,7 @@ implements IModel
 			= interaction_cost;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_INTERACTION_COST,
+			PartitionerModel.GUI_INTERACTION_COST,
 			old_interaction,
 			interaction_cost
 		);
@@ -434,7 +398,7 @@ implements IModel
 			= execution_cost;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_EXECUTION_COST,
+			PartitionerModel.GUI_EXECUTION_COST,
 			old_execution,
 			execution_cost
 		);
@@ -450,7 +414,7 @@ implements IModel
 			= activate;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_ACTIVATE_HOST_COST_FILTER,
+			PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
 			old_activate,
 			this.activate_host_cost_filter
 		);
@@ -466,7 +430,7 @@ implements IModel
 			= activate;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_ACTIVATE_INTERACTION_COST_FILTER,
+			PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
 			old_activate,
 			this.activate_interaction_cost_filter
 		);
@@ -499,7 +463,7 @@ implements IModel
 		try {
 			HostModel host_model 
 				= hostParser.parse(
-					this.getHostConfigurationPath()
+					this.host_configuration
 				);
 			this.setHostModel(host_model);
 			
@@ -530,42 +494,6 @@ implements IModel
 	///	is that they are a single operation that we want to be able to backtrack or
 	/// recover from when it fails. This is an interesting problem.
 	////////////////////////////////////////////////////////////////////////////////////
-	
-	public void
-	setSimulationType
-	( String simulation_type )
-	{
-		 SimulatorType type 
-		 	= SimulatorType.fromString( simulation_type );
-		 this.mSim = SimulatorFactory.getSimulator(type);
-	        switch (type){
-	            case TIME_SIMULATOR:
-	                try{
-	                    if( this.profiler_trace == null || this.profiler_trace.equals("")){
-	                        throw new RuntimeException("No profiler dump data is provided.");
-	                    }
-	                    InputStream in 
-	                    	= new BufferedInputStream(
-	                            new ProgressMonitorInputStream(
-	                            	this.fileChooser,
-	                                "Reading " +  this.profiler_trace,
-	                                new FileInputStream( this.profiler_trace )
-	                            )
-	                        );   
-
-	                    this.jipRun = JipParser.parse(in);       
-	                    ((TimeSimulator) this.mSim).init(this.jipRun, this.module_coarsener);
-	                }catch(Exception ex){
-	                    ex.printStackTrace();
-	                }
-	                break;
-	            case STATIC_TIME_SIMULATOR:
-	                ((StaticTimeSimulator) this.mSim).init( this.mModuleModel );
-	                break;
-	            default:
-	                throw new RuntimeException("A simulator needs to be selected.");
-	        }
-	}
 	
 	public void 
 	createModuleModel
@@ -614,10 +542,6 @@ implements IModel
 		        IModuleCoarsener moduleCoarsener 
 		        	= ModuleCoarsenerFactory.getModuleCoarsener(
 		        		this.mModuleType, 
-		            	// david - the constraint model could be null here
-		            	// in which case the program will crash
-		        		// TODO: ask nima to fix this: it basically means 
-		        		// enable module exposure must be set
 		            	new_constraint_model
 		            );     
 	            
@@ -643,7 +567,7 @@ implements IModel
 	        
 	        this.mConstraintModel 
 	        	= new_constraint_model;
-	        PartitionerGUIStateModel.this.setModuleModel( 
+	        PartitionerModel.this.setModuleModel( 
 	        	module_model
 	        );
 	        this.mModuleModel
@@ -685,8 +609,7 @@ implements IModel
 				new DistributionModel(module_model, mHostModel))
 			);
 		
-		this.prepare_test_framework();
-		
+		// this.prepare_test_framework();
 		System.out.println( this.perform_partitioning.toString() );
 		if(this.perform_partitioning){
 			System.out.println("Performing partition");
@@ -711,22 +634,6 @@ implements IModel
 		);
 	}
 	
-	private void 
-	prepare_test_framework() 
-	{
-		// also create the actual module coarsener object
-		// used by the test framework
-		this.module_coarsener
-			= ModuleCoarsenerFactory.getModuleCoarsener(
-				mModuleType, mConstraintModel
-		);
-		
-		// also make a call to the combo box function to properly
-		// initialize now that the right fields are set
-		// ( profiler trace, mSim, mModuleModel )
-		this.setSimulationType( SimulatorType.TIME_SIMULATOR.getText() );
-	}
-
 	// called from swing worker-> obtains the reference itself
 	// big problem
 	public ModuleModel
@@ -787,15 +694,14 @@ implements IModel
 		try{ 
 			// for concurrency, we cache the references we will work with
 			final String profiler_trace_path
-				 = this.getProfilerTracePath();
+				 = this.profiler_trace;
 			
 			if(  	profiler_trace_path == null 
 					|| profiler_trace_path.equals("") ) {
 				throw new Exception("No profiler dump data is provided.");   
 			}
 			
-           	if( this.getHostConfigurationPath()
-           			.equals("") ) {
+           	if( this.host_configuration.equals("") ) {
            		throw new Exception ( "No host layout is provided." );
            	}
            	
@@ -803,8 +709,8 @@ implements IModel
            
            	// reading the input stream for the profiling XML document 
            	// provided to the tool.
-           	PartitionerGUIStateModel.GenerateModelJob job 
-           		= new PartitionerGUIStateModel.GenerateModelJob(
+           	PartitionerModel.GenerateModelJob job 
+           		= new PartitionerModel.GenerateModelJob(
            			profiler_trace_path,
            			this
            		);
@@ -826,10 +732,10 @@ implements IModel
 	extends org.eclipse.core.runtime.jobs.Job
 	{
 		private String profiler_trace_path;
-		private PartitionerGUIStateModel gui_state_model;
+		private PartitionerModel gui_state_model;
 		
 		GenerateModelJob
-		( String profiler_trace_path, PartitionerGUIStateModel gui_state_model )
+		( String profiler_trace_path, PartitionerModel gui_state_model )
 		{
 			super("Create Model");
 			
@@ -858,19 +764,20 @@ implements IModel
 				in.close();
 				this.gui_state_model.finished();
 				
-				PartitionerGUIStateModel.this
+				PartitionerModel.this
 					.property_change_delegate.firePropertyChange(
-						Constants.DISABLE_CONFIGURATION_PANEL, true, false
-					);
-				PartitionerGUIStateModel.this
+						PartitionerModel.DISABLE_CONFIGURATION_PANEL, 
+							true, false
+						);
+				PartitionerModel.this
 					.property_change_delegate.firePropertyChange(
 						Constants.MODEL_CREATION, null, null
 					);
 				
 				// load the test framework if partitioning was set
 				// I wonder what this was originally for
-				if(PartitionerGUIStateModel.this.perform_partitioning){
-					PartitionerGUIStateModel.this
+				if(PartitionerModel.this.perform_partitioning){
+					PartitionerModel.this
 						.property_change_delegate.firePropertyChange(
 							Constants.PARTITIONING_COMPLETE, null, null
 						);
@@ -903,24 +810,24 @@ implements IModel
 		// ending is the string behind the constant
 		String[] property_names 
 			= {
-			Constants.GUI_MODULE_COARSENER,
-			Constants.GUI_PROFILER_TRACE,
-			Constants.GUI_MODULE_EXPOSER,
-			Constants.GUI_HOST_CONFIGURATION,
-			Constants.GUI_SET_MODULE_EXPOSURE,
-			Constants.GUI_SET_SYNTHETIC_NODE,
-			Constants.GUI_SET_PRESET_MODULE_GRAPH,
-			Constants.GUI_PERFORM_PARTITIONING,
-			Constants.GUI_PARTITIONER_TYPE,
-			Constants.GUI_INTERACTION_COST,
-			Constants.GUI_EXECUTION_COST,
-			Constants.DISABLE_CONFIGURATION_PANEL,
-			Constants.SIMULATION_FRAMEWORK,
-			Constants.MODULE_MODEL,
-			Constants.HOST_MODEL,
-			Constants.GUI_ACTIVATE_HOST_COST_FILTER,
-			Constants.GUI_ACTIVATE_INTERACTION_COST_FILTER
-		};
+				PartitionerModel.GUI_MODULE_COARSENER,
+				PartitionerModel.GUI_PROFILER_TRACE,
+				PartitionerModel.GUI_MODULE_EXPOSER,
+				PartitionerModel.GUI_HOST_CONFIGURATION,
+				PartitionerModel.GUI_SET_MODULE_EXPOSURE,
+				PartitionerModel.GUI_SET_SYNTHETIC_NODE,
+				PartitionerModel.GUI_SET_PRESET_MODULE_GRAPH,
+				PartitionerModel.GUI_PERFORM_PARTITIONING,
+				PartitionerModel.GUI_PARTITIONER_TYPE,
+				PartitionerModel.GUI_INTERACTION_COST,
+				PartitionerModel.GUI_EXECUTION_COST,
+				PartitionerModel.DISABLE_CONFIGURATION_PANEL,
+				PartitionerModel.SIMULATION_FRAMEWORK,
+				PartitionerModel.MODULE_MODEL,
+				PartitionerModel.HOST_MODEL,
+				PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
+				PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER
+			};
 		
 		Object[] properties
 			= {
@@ -947,15 +854,10 @@ implements IModel
 			this.activate_interaction_cost_filter
 		};
 		
-		assert property_names.length == properties.length 
-			: "The property names list must match the properties list in length";
-		
-		for( int i = 0; i < property_names.length; ++i ){
-			this.property_change_delegate.registerProperties(
-				property_names,
-				properties
-			);
-		}
+		this.property_change_delegate.registerProperties(
+			property_names,
+			properties
+		);
 		
 		String[] dynamic_property_names
 			= {
@@ -963,14 +865,12 @@ implements IModel
 			};
 		ADynamicProperty[] dynamic_properties
 			= {
-				new TestFrameworkDynamicProperty(this)
+				new PartitionerModel.TestFrameworkDynamicProperty()
 			};
 		
-		for( int i = 0; i < dynamic_property_names.length; ++i ){
-			this.property_change_delegate.registerDynamicProperty(
-				dynamic_property_names[i], 
-				dynamic_properties[i]
-			);
-		}
+		this.property_change_delegate.registerDynamicProperties(
+			dynamic_property_names, 
+			dynamic_properties
+		);
 	}
 }

@@ -39,6 +39,13 @@ public class
 TestFrameworkModel 
 implements IModel
 {
+	public static final String				TEST_SIMULATION_FRAMEWORK
+		= "SimulationFramework";
+	public static final String				TEST_MODULE_MODEL
+		= "ModuleModel";
+	public static final String				TEST_HOST_MODEL
+		= "HostModel";
+	
 	private PropertyChangeDelegate 			property_change_delegate;
 	private Map<String, DefaultKeyValue> 	unitMap;
 	private int id;
@@ -48,14 +55,11 @@ implements IModel
 	private SimulationFramework	 			mSimFramework; 
 	private volatile HostModel   			mHostModel; 
 	
-	private ISimulator mSim 
-		= SimulatorFactory.getSimulator(
-			SimulatorType.fromString("Static Time Simulator (No Trace Replay)")
-	  	);
-	private SimulationUnit mBestSimUnit;
-	private volatile String			profiler_trace; 
-	private JipRun jipRun;
-	private IModuleCoarsener module_coarsener;
+	private ISimulator 						mSim; 
+	private SimulationUnit 					mBestSimUnit;
+	private volatile String					profiler_trace; 
+	private JipRun 							jipRun;
+	private IModuleCoarsener 				module_coarsener;
 
 	public 
 	TestFrameworkModel
@@ -111,6 +115,11 @@ implements IModel
 			);
 		
 		this.registerProperties();
+		
+		// also make a call to the combo box function to properly
+		// initialize now that the right fields are set
+		// ( profiler trace, mSim, mModuleModel )
+		this.setSimulationType( SimulatorType.TIME_SIMULATOR.getText() );
 	}
 	
 	private void 
@@ -118,9 +127,9 @@ implements IModel
 	{
 		String[] property_names
 			= {
-				Constants.SIMULATION_FRAMEWORK,
-				Constants.MODULE_MODEL,
-				Constants.HOST_MODEL,
+				this.TEST_SIMULATION_FRAMEWORK,
+				this.TEST_MODULE_MODEL,
+				this.TEST_HOST_MODEL,
 			};
 		Object[] properties
 			= {

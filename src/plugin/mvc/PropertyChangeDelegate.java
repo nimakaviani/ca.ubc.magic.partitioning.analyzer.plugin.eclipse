@@ -2,9 +2,7 @@ package plugin.mvc;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class 
@@ -18,7 +16,6 @@ PropertyChangeDelegate
 	Map<String, Object> property_map
 		= new HashMap<String, Object>();
 	
-	// david experiment
 	Map<String, ADynamicProperty> dynamic_property_map
 		= new HashMap<String, ADynamicProperty>();
 
@@ -26,26 +23,54 @@ PropertyChangeDelegate
 	registerProperties
 	( String[] property_names, Object[] properties )
 	{
-		assert property_names.length == properties.length 
-				: "The property names list must match the properties list in length";
+		if( property_names.length != properties.length){
+			throw new IllegalArgumentException(
+				"The property names list must match the "
+				+ "properties list in length"	
+			);
+		}
 		
 		for( int i = 0; i < property_names.length; ++i ){
 			if(!this.property_map.containsKey(property_names[i])){
 				this.property_map.put(property_names[i], properties[i]);
 			}
+			else {
+				StringBuilder sb
+					= new StringBuilder();
+				for( String s : this.property_map.keySet() ) {
+					sb.append(s + " ");
+				}
+				throw new IllegalArgumentException(
+					"You have tried to register the same static property ("
+					+ property_names[i] + ", " + i + ") twice. This is probably a "
+					+ "bug in your code.\n"
+					+ sb.toString()
+				);
+			}
 		}
 	}
 	
-	// david experiment
+	// the following is used to register properties that must be
+	// created upon the first call;
 	public void
-	registerDynamicProperty
-	( String property_name, ADynamicProperty dynamic_property )
+	registerDynamicProperties
+	( 	String[] dynamic_property_names, 
+		ADynamicProperty[] dynamic_property )
 	{
-		if(!this.dynamic_property_map.containsKey(property_name)){
-			this.dynamic_property_map.put(
-				property_name,
-				dynamic_property
-			);
+		for( int i = 0; i < dynamic_property_names.length; ++i ){
+			if( !this.dynamic_property_map.containsKey(dynamic_property_names) ){
+				this.dynamic_property_map.put(
+					dynamic_property_names[i],
+					dynamic_property[i]
+				);
+			}
+			else {
+				throw new IllegalArgumentException(
+					"You have tried to register the same dynamic property ("
+					+ dynamic_property_names + ") twice. This is probably a "
+					+ "bug in your code."
+				);
+			}
 		}
 	}
 	
@@ -64,6 +89,9 @@ PropertyChangeDelegate
     removePropertyChangeListener
     (PropertyChangeListener l)
     {
+    	if( l == null){
+    		throw new IllegalArgumentException();
+    	}
         this.listeners.removePropertyChangeListener(l);
     }
   
@@ -75,8 +103,6 @@ PropertyChangeDelegate
     	this.property_map.put(property_name, new_value);
     	
         if (this.listeners.hasListeners(property_name)) {
-        	// we have a problem: the following should fire but
-        	// nothing happens
             this.listeners.firePropertyChange(
             	property_name, 
             	old_value, 
@@ -99,6 +125,15 @@ PropertyChangeDelegate
     				new_value
     			);
     		}
+    		else {
+    			throw new IllegalArgumentException(
+    				"You assumed that the property "
+    				+ property_name 
+    				+ " has been registered with the "
+    				+ "property change delegate, but it has not."
+    				+ " Please correct your code."
+    			);
+    		}
         }
     }
 
@@ -117,10 +152,17 @@ PropertyChangeDelegate
 					= dynamic_property.getProperty();
 				return_values.put(property_name, property);
 			}
-			else {
+			else if( this.property_map.containsKey( property_name ) ){
 				return_values.put(
 					property_name,
 					this.property_map.get( property_name ) 
+				);
+			}
+			else {
+				throw new IllegalArgumentException(
+					"The " + property_names + " property has not been "
+					+ "registered with the property change delegate. "
+					+ "Please go and fix your code."
 				);
 			}
 		}
