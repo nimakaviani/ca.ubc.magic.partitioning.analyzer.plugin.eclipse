@@ -12,24 +12,36 @@ package ca.ubc.magic.profiler.partitioning.control.alg.simplex;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
-
 import java.util.Set;
+
 import org.apache.commons.math.optimization.linear.LinearConstraint;
 import org.apache.commons.math.optimization.linear.LinearObjectiveFunction;
 import org.apache.commons.math.optimization.linear.Relationship;
 
-import cern.colt.Arrays;
-
 public class SimplexModel {
 	
+	//Map names to index ids
 	List<String> nodeIndexMap;
+	
+	//Cost exec for nodes (cloud and premise)
 	double[][] nodeWeight;
+	
+	//Edges
 	double[][] adjacencyMatrix;
+	
+	//Number of nodes
 	int size = 0;
-        Set<String> sourceSet;
-        Set<String> targetSet;
-        Set<String[]> pairSet;
+    
+	//Pin on the source (premise)
+	Set<String> sourceSet;
+    
+	//Pin on the target (cloud)
+	Set<String> targetSet;
+    
+	//Pinned together
+	Set<String[]> pairSet;
                 	
 	public SimplexModel(int size){
             this.size = size;
@@ -142,5 +154,49 @@ public class SimplexModel {
     protected void pinTogether(String nodeId1, String nodeId2){
         pairSet.add(new String[]{nodeId1, nodeId2});
     }
+
+	public List<String> matchModuleNames(String pattern) {
+		List<String> matches = new LinkedList<String>();
+		for(String name : nodeIndexMap) {
+			if(name.matches(pattern)) {
+				matches.add(name);
+			}
+		}
+		return matches;
+	}
+	
+	 private void pinAdjacentPairs(List<String> list) {
+	    	if(list.size() < 2) {
+	    		return;
+	    	}
+	    	String fst = list.get(0);
+	    	for(int i=1;i < list.size(); i++) {
+	    		String snd = list.get(i);
+	    		pinTogether(fst, snd);
+	    		fst = snd;
+	    	}
+	 }
+	 
+	 public void pinPatternToSource(String pattern) {
+		 for(String name : nodeIndexMap) {
+			 if(name.matches(pattern)) {
+				 pinToSource(name);
+			 }
+		 }
+	 }
+
+	 public void pinPatternToTarget(String pattern){
+		 for(String name : nodeIndexMap) {
+			 if(name.matches(pattern)) {
+				 pinToTarget(name);
+			 }
+		 }
+	 }
+
+	 public void pinPatternTogether(String pattern){
+		 List<String> list = matchModuleNames(pattern);
+		 pinAdjacentPairs(list);
+	 }
+    
 }
 
