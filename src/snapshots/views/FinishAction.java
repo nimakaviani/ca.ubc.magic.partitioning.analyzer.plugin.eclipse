@@ -1,4 +1,4 @@
-package plugin.mvc;
+package snapshots.views;
 
 import java.beans.PropertyChangeEvent;
 import java.io.IOException;
@@ -7,11 +7,12 @@ import org.eclipse.jface.action.Action;
 
 import plugin.Activator;
 import plugin.Constants;
+import plugin.mvc.IController;
+import plugin.mvc.IView;
 
 import snapshots.com.mentorgen.tools.util.profile.Finish;
 import snapshots.events.logging.EventLogger;
 import snapshots.model.Snapshot;
-import snapshots.views.IView;
 
 public class 
 FinishAction 
@@ -88,7 +89,7 @@ implements IView
 			);
 			this.active_snapshot_controller.notifyPeers(
 				//new SnapshotEvent(
-					Constants.SNAPSHOT_CAPTURED_PROPERTY,
+					Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY,
 					this,
 					null
 				//)
@@ -96,7 +97,7 @@ implements IView
 	    }
 	    else {
 	    	this.active_snapshot_controller.notifyPeers(
-	    		Constants.SNAPSHOT_CAPTURE_FAILED,
+	    		Constants.EVENT_SNAPSHOT_CAPTURE_FAILED,
 	    		this,
 	    		null
 	    	);
@@ -105,7 +106,7 @@ implements IView
 			Constants.NAME_PROPERTY, ""
 		);
 		this.active_snapshot_controller.notifyPeers(
-			Constants.SNAPSHOT_CAPTURED_PROPERTY, 
+			Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY, 
 			this, null
 		);
 	    this.setEnabled(false);
@@ -115,16 +116,22 @@ implements IView
 	public void 
 	modelPropertyChange
 	( PropertyChangeEvent evt ) 
+	{}
+	
+	@Override
+	public void 
+	modelEvent
+	( PropertyChangeEvent evt ) 
 	{
 		switch(evt.getPropertyName()){
-		case Constants.SNAPSHOT_STARTED:
-			this.setEnabled(true);
-		      this.current_snapshot 
-		      	= (Snapshot) evt.getNewValue();
-			break;
-		default:
-			System.out.println("FinishAction swallowing event: " + evt.getPropertyName());
-			break;
+			case Constants.EVENT_SNAPSHOT_STARTED:
+				this.setEnabled(true);
+			      this.current_snapshot 
+			      	= (Snapshot) evt.getNewValue();
+				break;
+			default:
+				System.out.println("FinishAction swallowing event: " + evt.getPropertyName());
+				break;
 		}
 	}
 }

@@ -1,10 +1,12 @@
-package snapshots.views;
+package recycle_bin;
 
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+
+import snapshots.views.BasicListTable;
 
 public class 
 EventLogTable 

@@ -40,11 +40,11 @@ Constants
 	public static final String ERROR_LOG_VIEW_ID 
 		= "org.eclipse.pde.runtime.LogView";
 	
-	public static final String SNAPSHOT_CAPTURED_PROPERTY	
+	public static final String EVENT_SNAPSHOT_CAPTURED_PROPERTY	
 		= "snapshot_captured_message";
-	public static final String SNAPSHOT_CAPTURE_FAILED 
+	public static final String EVENT_SNAPSHOT_CAPTURE_FAILED 
 		= "snapshot_failed_message";
-	public static final String SNAPSHOT_STARTED 
+	public static final String EVENT_SNAPSHOT_STARTED 
 		= "snapshot_started_message";
 	
 	public static final String GENERATE_MODEL_EVENT 
@@ -58,16 +58,6 @@ Constants
 	public static final String PERSPECTIVE_CONFIGURATION_VIEW_ID 
 		= "plugin.views.partitioner_configuration_view";
 	
-	public static final String INCREMENT_ID 
-		= "IncrementID";
-	public static final String SIMULATION_TABLE_RUN_UPDATE 
-		= "RunSimulationTableUpdate";
-	public static final String BEST_RUN_NAME 
-		= "BestRunName";
-	public static final String BEST_RUN_ALGORITHM 
-		= "BestAlgorithmName";
-	public static final String BEST_RUN_COST 
-		= "BestRunCost";
 	public static final String SIMULATION_UNITS 
 		= "InSimulationUnits";
 	
@@ -76,15 +66,13 @@ Constants
 		= "SimulationType";
 	public static final String EVENT_RUN_SIMULATION 
 		= "RunSimulation";
-	public static final String GUI_SIMULATION_ADDED 
-		= "SimulationAdded";
 	public static final String GUI_SIMULATION_REMOVED 
 		= "SimulationRemoved";
 	public static final String GUI_UPDATE_SIMULATION_REPORT 
 		= "UpdateSimulationReport";
 	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
 		= "UpdateBestSimulationReport";
-	public static final String AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK 
-		= "AfterPartitioningCreateTestFramework";
-
+	
+	public static final String EVENT_EDITOR_CLOSED 
+			= "EditorClosed";
 }

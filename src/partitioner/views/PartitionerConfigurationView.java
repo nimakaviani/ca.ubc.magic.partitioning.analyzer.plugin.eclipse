@@ -1,12 +1,9 @@
-package partitioner_configuration.views;
+package partitioner.views;
 
 import java.beans.PropertyChangeEvent;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map;
 
 import org.eclipse.swt.SWT;
@@ -29,13 +26,6 @@ import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapData;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.ViewPart;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventAdmin;
-import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
@@ -46,11 +36,13 @@ import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 
 import partitioner.models.PartitionerModel;
-import partitioner.views.ModelCreationEditor;
 import plugin.Constants;
 import plugin.mvc.IController;
+import plugin.mvc.IPublisher;
+import plugin.mvc.IView;
+import plugin.mvc.PublicationHandler;
+import plugin.mvc.PublisherDelegate;
 
-import snapshots.views.IView;
 import snapshots.views.VirtualModelFileInput;
 
 import org.eclipse.swt.widgets.Control;
@@ -81,12 +73,32 @@ implements IView
 
 	private PartitionerWidgets partitioner_widgets;
 	
+	private IPublisher publisher_delegate;
+	
 	@Override
 	public void 
 	createPartControl
 	( Composite parent ) 
 	{
-		this.initialize_active_editor_configuration();
+		this.publisher_delegate
+			= new PublisherDelegate();
+		
+		this.publisher_delegate.registerPublicationListener(
+			this.getClass(),
+			"ACTIVE_EDITOR",
+			new PublicationHandler(){
+				@Override
+				public void
+				handle
+				( Object obj )
+				{
+					System.out.println("Handling");
+					IController controller 
+						= (IController) obj;
+					PartitionerConfigurationView.this.setDisplayValues(controller);
+				}
+			}
+		);
 				
 		this.toolkit 
 			= new FormToolkit( parent.getDisplay() );
@@ -203,59 +215,12 @@ implements IView
 			.set_partitioning_widgets_enabled( false ); 
 	}
 	
-	private void 
-	initialize_active_editor_configuration() 
-	{
-		// the following code is a view-communication solution
-		// found in:
-		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
-		BundleContext context 
-			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
-		EventHandler handler 
-			= new EventHandler() {
-				public void handleEvent
-				( final Event event )
-				{
-					// acceptable alternative, given that we run only
-					// one display
-					Display display 
-						= Display.getDefault();
-					if( display.getThread() == Thread.currentThread() ){
-						IController controller 
-							= (IController) event.getProperty("ACTIVE_EDITOR");
-						PartitionerConfigurationView.this.setDisplayValues( controller );
-					}
-					else {
-						display.syncExec( 
-							new Runnable() {
-								public void 
-								run()
-								{
-									IController controller 
-										= (IController) event.getProperty("ACTIVE_EDITOR");
-									PartitionerConfigurationView.this.setDisplayValues(controller);
-								}
-							}
-						);
-					}
-				}
-			};
-			
-		Dictionary<String,String> properties 
-			= new Hashtable<String, String>();
-		properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
-		context.registerService(EventHandler.class, handler, properties);
-	}
-
 	protected void 
 	setDisplayValues
 	( IController controller ) 
 	// this function should only be called from swt thread,
 	// again though, we want to be concerned about threading
 	// issues
-	//
-	// problem: whenever we change anything we have to send a message
-	// to update the model; this basically means we need the controller
 	{
 		synchronized(this.controller_switch_lock){
 			assert controller != null : "The controller argument should not be null";
@@ -281,7 +246,7 @@ implements IView
 					PartitionerModel.GUI_EXECUTION_COST,
 					PartitionerModel.GUI_INTERACTION_COST,
 					PartitionerModel.GUI_PARTITIONER_TYPE,
-					PartitionerModel.DISABLE_CONFIGURATION_PANEL,
+					PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL,
 				
 					PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
 					PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
@@ -333,7 +298,7 @@ implements IView
 					
 					PartitionerConfigurationView.this
 						.set_configuration_widgets_enabled(
-							(Boolean) properties.get(PartitionerModel.DISABLE_CONFIGURATION_PANEL)
+							(Boolean) properties.get(PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL)
 						);
 				}
 			});
@@ -734,7 +699,7 @@ implements IView
 							.setSelection(enabled);
 						break;
 					}
-					case PartitionerModel.DISABLE_CONFIGURATION_PANEL:
+					case PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL:
 					{
 						boolean enabled
 							= (boolean) evt.getNewValue();
@@ -747,15 +712,6 @@ implements IView
 							.updateModelName();
 						break;
 					}
-					case PartitionerModel.EDITOR_CLOSED:
-						PartitionerConfigurationView.this
-							.clear_all_entries();
-						PartitionerConfigurationView.this
-							.set_configuration_widgets_enabled( false );
-						PartitionerConfigurationView.this
-							.partitioner_widgets
-							.set_partitioning_widgets_enabled( false );
-						break;
 					default:
 						System.out.println("Swallowing message.");
 					};
@@ -763,6 +719,44 @@ implements IView
 			}
 		);
 	
+	}
+	
+	@Override
+	public void 
+	modelEvent
+	( final PropertyChangeEvent evt ) 
+	{
+		Display display = Display.getCurrent();
+		
+		if(display == null){
+			System.err.println("Uh oh null display");
+			display = Display.getDefault();
+		}
+		
+		display.syncExec( 
+			new Runnable()
+			{
+				@Override
+				public void
+				run()
+				{
+					switch(evt.getPropertyName())
+					{
+						case Constants.EVENT_EDITOR_CLOSED:
+							PartitionerConfigurationView.this
+								.clear_all_entries();
+							PartitionerConfigurationView.this
+								.set_configuration_widgets_enabled( false );
+							PartitionerConfigurationView.this
+								.partitioner_widgets
+								.set_partitioning_widgets_enabled( false );
+							break;
+						default:
+							break;
+					}
+				}
+			});
+				
 	}
 
 	private void 
@@ -838,22 +832,9 @@ implements IView
 					
 					input.setSecondaryName(new_name);
 					
-					BundleContext context 
-						= FrameworkUtil.getBundle(
-							PartitionerConfigurationView.class
-						).getBundleContext();
-			        ServiceReference<EventAdmin> ref 
-			        	= context.getServiceReference(EventAdmin.class);
-			        EventAdmin eventAdmin 
-			        	= context.getService(ref);
-			        Map<String,Object> properties 
-			        	= new HashMap<String, Object>();
-			        properties.put("REFRESH", new Boolean(true));
-			        Event event 
-			        	= new Event("viewcommunication/syncEvent", properties);
-			        eventAdmin.sendEvent(event);
-			        event = new Event("viewcommunication/asyncEvent", properties);
-			        eventAdmin.postEvent(event);
+					PartitionerConfigurationView.this.publisher_delegate.publish(
+						this.getClass(), "REFRESH", new Boolean(true)
+					);
 			        
 			        page.updateTitle();
 				}

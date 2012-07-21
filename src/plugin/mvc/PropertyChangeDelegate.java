@@ -16,9 +16,6 @@ PropertyChangeDelegate
 	Map<String, Object> property_map
 		= new HashMap<String, Object>();
 	
-	Map<String, ADynamicProperty> dynamic_property_map
-		= new HashMap<String, ADynamicProperty>();
-
 	public void
 	registerProperties
 	( String[] property_names, Object[] properties )
@@ -45,30 +42,6 @@ PropertyChangeDelegate
 					+ property_names[i] + ", " + i + ") twice. This is probably a "
 					+ "bug in your code.\n"
 					+ sb.toString()
-				);
-			}
-		}
-	}
-	
-	// the following is used to register properties that must be
-	// created upon the first call;
-	public void
-	registerDynamicProperties
-	( 	String[] dynamic_property_names, 
-		ADynamicProperty[] dynamic_property )
-	{
-		for( int i = 0; i < dynamic_property_names.length; ++i ){
-			if( !this.dynamic_property_map.containsKey(dynamic_property_names) ){
-				this.dynamic_property_map.put(
-					dynamic_property_names[i],
-					dynamic_property[i]
-				);
-			}
-			else {
-				throw new IllegalArgumentException(
-					"You have tried to register the same dynamic property ("
-					+ dynamic_property_names + ") twice. This is probably a "
-					+ "bug in your code."
 				);
 			}
 		}
@@ -145,14 +118,7 @@ PropertyChangeDelegate
 			= new HashMap<String, Object>( property_names.length );
 	
 		for( String property_name : property_names ){
-			if( this.dynamic_property_map.containsKey( property_name )){
-				ADynamicProperty dynamic_property
-					= this.dynamic_property_map.get( property_name );
-				Object property
-					= dynamic_property.getProperty();
-				return_values.put(property_name, property);
-			}
-			else if( this.property_map.containsKey( property_name ) ){
+			if( this.property_map.containsKey( property_name ) ){
 				return_values.put(
 					property_name,
 					this.property_map.get( property_name ) 
@@ -179,6 +145,6 @@ PropertyChangeDelegate
 	// and the delegate, or between the view and the controller
 	// or side by side as a partner object
 	{
-		this.firePropertyChange( event_name, null, data_package);
+		this.firePropertyChange( event_name, ControllerDelegate.EVENT_SENTINEL, data_package);
 	}
 }

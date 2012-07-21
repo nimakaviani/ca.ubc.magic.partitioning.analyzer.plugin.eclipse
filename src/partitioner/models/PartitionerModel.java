@@ -45,8 +45,6 @@ import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
-import plugin.mvc.ADynamicProperty;
-
 // this object is for sure accessed from the swt and swing threads
 // it must be made thread safe!!!!!!!!!
 public class 
@@ -85,43 +83,23 @@ implements IModel
 	public static final String GUI_EXECUTION_COST
 		= "ExecutionCost";
 	
-	public static final String DISABLE_CONFIGURATION_PANEL 
-		= "ActiveConfigurationPanel";
-	
 	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
 		= "ActivateHostFilter";
 	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
 		= "ActivateInteractionCostFilter";
 	
-	public static final String EDITOR_CLOSED 
-		= "EditorClosed";
 	public static final String GUI_GENERATE_TEST_FRAMEWORK 
 		= "GenerateTestFramework";
 	
-	public static final String MODEL_CREATION 
+	public static final String EVENT_MODEL_CREATION 
 		= "ModelCreation";
 	public static final String EVENT_PARTITIONING_COMPLETE 
 		= "PartitioningComplete";
+	public static final String AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK 
+		= "AfterPartitioningCreateTestFramework";
 	
-	private class
-	TestFrameworkDynamicProperty
-	extends ADynamicProperty
-	{
-		@Override
-		public Object 
-		instantiate() 
-		{
-			return new TestFrameworkModel(
-				PartitionerModel.this.partitioner_type,
-				PartitionerModel.this.mModuleModel,
-				PartitionerModel.this.mSimFramework,
-				PartitionerModel.this.mHostModel,
-				PartitionerModel.this.profiler_trace,
-				PartitionerModel.this.mModuleType,
-				PartitionerModel.this.mConstraintModel
-			);
-		}
-	}
+	 public static final String GUI_DISABLE_CONFIGURATION_PANEL 
+		 = "ActiveConfigurationPanel";
 	
 	private PropertyChangeDelegate 	property_change_delegate;
 	
@@ -162,7 +140,7 @@ implements IModel
 				"Static Time Simulator (No Trace Replay)"
 			)
 	  	);
-   // private javax.swing.JFileChooser fileChooser;
+	// private javax.swing.JFileChooser fileChooser;
 
 	//private JipRun jipRun;
 
@@ -456,6 +434,23 @@ implements IModel
 		);
 	}
 	
+	public void 
+	setActiveConfigurationPanel
+	( Boolean active ) 
+	{
+		Boolean old_active
+			= this.configuration_panel_enabled;
+		this.configuration_panel_enabled
+			= active;
+		
+		this.property_change_delegate.firePropertyChange(
+			PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL,
+			old_active,
+			this.configuration_panel_enabled
+		);
+	}
+
+	
     @Override
 	public void 
 	addPropertyChangeListener
@@ -624,12 +619,12 @@ implements IModel
 				new DistributionModel(module_model, mHostModel))
 			);
 		
-		// this.prepare_test_framework();
-		System.out.println( this.perform_partitioning.toString() );
-		if(this.perform_partitioning){
-			System.out.println("Performing partition");
-			this.runPartitioningAlgorithm();
-		}
+//		// this.prepare_test_framework();
+//		System.out.println( this.perform_partitioning.toString() );
+//		if(this.perform_partitioning){
+//			System.out.println("Performing partition");
+//			this.runPartitioningAlgorithm();
+//		}
 		
 		this.property_change_delegate.firePropertyChange(
 			Constants.MODULE_EXCHANGE_MAP, 
@@ -779,26 +774,39 @@ implements IModel
 				in.close();
 				this.gui_state_model.finished();
 				
+				PartitionerModel.this.setActiveConfigurationPanel( false );
 				PartitionerModel.this
-					.property_change_delegate.firePropertyChange(
-						PartitionerModel.DISABLE_CONFIGURATION_PANEL, 
-							true, false
-						);
-				PartitionerModel.this
-					.property_change_delegate.firePropertyChange(
-						PartitionerModel.MODEL_CREATION, null, null
+					.property_change_delegate.notifyViews(
+						PartitionerModel.EVENT_MODEL_CREATION, null
 					);
 				
-				// load the test framework if partitioning was set
-				// I wonder what this was originally for
-				if( PartitionerModel.this.generate_test_framework ){
-					PartitionerModel.this
-						.property_change_delegate.notifyViews(
-							PartitionerModel.EVENT_PARTITIONING_COMPLETE, 
-							null
-						);
-				}
-				else { System.err.println("Not performing partitioning."); }
+//				// load the test framework if partitioning was set
+//				// I wonder what this was originally for
+//				if( PartitionerModel.this.generate_test_framework ){
+//					PartitionerModel.this.property_change_delegate
+//						.registerProperties(
+//							new String[]{ 
+//								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
+//							},
+//							new Object[]{
+//								new TestFrameworkModel(
+//									PartitionerModel.this.partitioner_type,
+//									PartitionerModel.this.mModuleModel,
+//									PartitionerModel.this.mSimFramework,
+//									PartitionerModel.this.mHostModel,
+//									PartitionerModel.this.profiler_trace,
+//									PartitionerModel.this.mModuleType,
+//									PartitionerModel.this.mConstraintModel
+//								)
+//							}
+//						);
+//				}
+
+//				PartitionerModel.this
+//					.property_change_delegate.notifyViews(
+//						PartitionerModel.EVENT_PARTITIONING_COMPLETE, 
+//						null
+//					);
 				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -837,7 +845,7 @@ implements IModel
 				PartitionerModel.GUI_PARTITIONER_TYPE,
 				PartitionerModel.GUI_INTERACTION_COST,
 				PartitionerModel.GUI_EXECUTION_COST,
-				PartitionerModel.DISABLE_CONFIGURATION_PANEL,
+				PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL,
 				PartitionerModel.SIMULATION_FRAMEWORK,
 				PartitionerModel.MODULE_MODEL,
 				PartitionerModel.HOST_MODEL,
@@ -875,20 +883,6 @@ implements IModel
 		this.property_change_delegate.registerProperties(
 			property_names,
 			properties
-		);
-		
-		String[] dynamic_property_names
-			= {
-				Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK,
-			};
-		ADynamicProperty[] dynamic_properties
-			= {
-				new PartitionerModel.TestFrameworkDynamicProperty()
-			};
-		
-		this.property_change_delegate.registerDynamicProperties(
-			dynamic_property_names, 
-			dynamic_properties
 		);
 	}
 }

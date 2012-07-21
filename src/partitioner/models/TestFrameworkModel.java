@@ -31,7 +31,6 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFrameworkHelper;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
-import plugin.Constants;
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
 
@@ -45,6 +44,21 @@ implements IModel
 		= "ModuleModel";
 	public static final String				TEST_HOST_MODEL
 		= "HostModel";
+	
+	public static final String EVENT_SIMULATION_TABLE_RUN_UPDATE 
+		= "RunSimulationTableUpdate";
+	
+	public static final String ID 
+		= "IncrementID";
+	public static final String EVENT_UPDATE_BEST_RUN_NAME 
+		= "BestRunName";
+	public static final String EVENT_UPDATE_BEST_RUN_ALGORITHM 
+		= "BestAlgorithmName";
+	public static final String EVENT_UPDATE_BEST_RUN_COST 
+		= "BestRunCost";
+	
+	public static final String GUI_SIMULATION_ADDED 
+		= "SimulationAdded";
 	
 	private PropertyChangeDelegate 			property_change_delegate;
 	private Map<String, DefaultKeyValue> 	unitMap;
@@ -185,11 +199,11 @@ implements IModel
 		System.out.println("Extracting " + unit.getKey());
 	
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_SIMULATION_ADDED, null, unit
+			TestFrameworkModel.GUI_SIMULATION_ADDED, null, unit
 		);
 	
 		this.property_change_delegate.firePropertyChange(
-			Constants.INCREMENT_ID, this.id, ++this.id
+			TestFrameworkModel.ID, this.id, ++this.id
 		);
 	}
 
@@ -203,7 +217,7 @@ implements IModel
 			= id;
 	
 		this.property_change_delegate.firePropertyChange(
-			Constants.INCREMENT_ID, old_id, this.id
+			TestFrameworkModel.ID, old_id, this.id
 		);
 	}
 	
@@ -265,9 +279,8 @@ implements IModel
 		Integer num = (Integer) key_value.getKey();
 		int id = num;
 		
-		this.property_change_delegate.firePropertyChange(
-			Constants.SIMULATION_TABLE_RUN_UPDATE,
-			null,
+		this.property_change_delegate.notifyViews(
+			TestFrameworkModel.EVENT_SIMULATION_TABLE_RUN_UPDATE,
 			new Object[] { 
 				id,
 				report.getCostModel().getExecutionCost(),
@@ -287,21 +300,18 @@ implements IModel
 			System.err.println("Firing events in updateBestSimulationReport ");
 			this.mBestSimUnit = unit;
 			
-			this.property_change_delegate.firePropertyChange(
-				Constants.BEST_RUN_NAME,
-				null,
+			this.property_change_delegate.notifyViews(
+				TestFrameworkModel.EVENT_UPDATE_BEST_RUN_NAME,
 				((Integer) (this.unitMap.get(unit.getKey()).getKey())) + ": " + unit.getName()
 			);
 			
-			this.property_change_delegate.firePropertyChange(
-				Constants.BEST_RUN_ALGORITHM,
-				null,
+			this.property_change_delegate.notifyViews(
+				TestFrameworkModel.EVENT_UPDATE_BEST_RUN_ALGORITHM,
 				unit.getAlgorithmName()
 			);
 			
-			this.property_change_delegate.firePropertyChange(
-				Constants.BEST_RUN_COST, 
-				null,
+			this.property_change_delegate.notifyViews(
+				TestFrameworkModel.EVENT_UPDATE_BEST_RUN_COST, 
 				Double.toString( unit.getUnitCost() )
 			);
 		}

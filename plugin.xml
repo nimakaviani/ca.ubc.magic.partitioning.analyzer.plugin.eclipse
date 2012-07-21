@@ -12,7 +12,7 @@
             name="Snapshot View">
       </view>
       <view
-            class="partitioner_configuration.views.PartitionerConfigurationView"
+            class="partitioner.views.PartitionerConfigurationView"
             icon="icons/sample.gif"
             id="plugin.views.partitioner_configuration_view"
             name="Configuration View"

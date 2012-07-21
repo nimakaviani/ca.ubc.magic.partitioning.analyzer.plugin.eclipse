@@ -7,9 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,19 +40,13 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 
-import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
-import plugin.mvc.FinishAction;
 import plugin.mvc.IController;
-import plugin.mvc.JIPViewerAction;
+import plugin.mvc.IView;
+import plugin.mvc.PublicationHandler;
 
 import snapshots.com.mentorgen.tools.util.profile.Start;
 import snapshots.events.logging.ErrorDisplayAction;
@@ -80,12 +72,12 @@ implements IView
 	
 	private IController 			active_snapshot_controller 
 		= new ControllerDelegate();
-	EventLogTable					log_console_table;
+	//EventLogTable					log_console_table;
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 	
-	private IController 			event_log_controller
-		= new ControllerDelegate();
+	//private IController 			event_log_controller
+	//	= new ControllerDelegate();
 
 	public 
 	SnapshotView() 
@@ -239,59 +231,32 @@ implements IView
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
 		
-		this.log_console_table
-			= new EventLogTable(parent, "Event Log", null);
-		this.log_console_table.setContents(
-			Activator.getDefault().getEventLogListModel().getEventLogList()
-		);
+//		this.log_console_table
+//			= new EventLogTable(parent, "Event Log", null);
+//		this.log_console_table.setContents(
+//			Activator.getDefault().getEventLogListModel().getEventLogList()
+//		);
 		
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
 		
-		// the following code is a view-communication solution
-		// found in:
-		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
-		BundleContext context 
-			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
-		EventHandler handler 
-			= new EventHandler() {
-				public void handleEvent
-				( final Event event )
+		this.active_snapshot_controller.registerPublicationListener(
+			this.getClass(), 
+			"REFRESH", 
+			new PublicationHandler(){
+				@Override
+				public void 
+				handle
+				( Object obj ) 
 				{
-					// acceptable alternative, given that we run only
-					// one display
-					Display display 
-						= Display.getDefault();
-					assert( display != null) : "Display is null";
-					if( display.getThread() == Thread.currentThread() ){
-						Boolean refresh 
-							= (Boolean) event.getProperty("REFRESH");
-						if(refresh != null && refresh == true){
-							SnapshotView.this.refresh();
-						}
-					}
-					else {
-						display.syncExec( 
-							new Runnable() {
-								public void 
-								run()
-								{
-									Boolean refresh 
-										= (Boolean) event.getProperty("REFRESH");
-									if(refresh != null && refresh == true){
-										SnapshotView.this.refresh();
-									}
-								}
-							}
-						);
+					Boolean refresh
+						= (Boolean) obj;
+					if(refresh != null && refresh == true){
+						SnapshotView.this.refresh();
 					}
 				}
-			};
-			
-		Dictionary<String,String> properties 
-			= new Hashtable<String, String>();
-		properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
-		context.registerService(EventHandler.class, handler, properties);
+			}
+		);
 	}
 	
 	@Override
@@ -340,8 +305,8 @@ implements IView
 	initializeToolbar
 	(IToolBarManager toolBar) 
 	{		
-		this.event_log_controller.addView(this);	
-		this.event_log_controller.addModel(Activator.getDefault().getEventLogListModel());
+	//	this.event_log_controller.addView(this);	
+	//	this.event_log_controller.addModel(Activator.getDefault().getEventLogListModel());
 		
 		IAction finish	
 			= new FinishAction(
@@ -451,12 +416,7 @@ implements IView
 	private void 
 	initializeDropDownMenu
 	(IMenuManager dropDownMenu) 
-	{
-		IAction jip_viewer
-			= new JIPViewerAction();
-		
-		dropDownMenu.add(jip_viewer);
-	}
+	{}
 	
 	private void 
 	setWidgetText()
@@ -506,15 +466,37 @@ implements IView
 					case Constants.PORT_PROPERTY:
 						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
 						break;
-					case Constants.SNAPSHOT_CAPTURED_PROPERTY:
-						SnapshotView.this.snapshot_tree_viewer.setInput("hello");
-						SnapshotView.this.snapshot_tree_viewer.refresh();
-						break;
-					case Constants.EVENT_LIST_PROPERTY:
-						SnapshotView.this.log_console_table.refresh();
-						break;
+//					case Constants.EVENT_LIST_PROPERTY:
+//						SnapshotView.this.log_console_table.refresh();
+//						break;
 					}
 					SnapshotView.this.refresh();
+				}
+			});
+	}
+	
+	@Override
+	public void 
+	modelEvent
+	( final PropertyChangeEvent evt ) 
+	{
+		// event may be triggered by a process in a non-SWT thread
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					System.out.println("modelPropertyChange(): Property changed");
+					switch(evt.getPropertyName())
+					{
+						case Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY:
+							SnapshotView.this.snapshot_tree_viewer.setInput("hello");
+							SnapshotView.this.snapshot_tree_viewer.refresh();
+							break;
+						default:
+							System.out.println("SnapshotView swallowed event");
+							break;
+					}
 				}
 			});
 	}
@@ -773,7 +755,7 @@ implements IView
 		    	  		"start"
 		    	  	);
 					this.controller.notifyPeers(
-						Constants.SNAPSHOT_STARTED,
+						Constants.EVENT_SNAPSHOT_STARTED,
 						this,
 					    snapshot
 					);
@@ -920,17 +902,23 @@ implements IView
 		public void 
 		modelPropertyChange
 		( PropertyChangeEvent evt ) 
+		{}
+
+		@Override
+		public void 
+		modelEvent
+		( PropertyChangeEvent evt ) 
 		{
 			switch (evt.getPropertyName()) 
 			{
-			case Constants.SNAPSHOT_CAPTURED_PROPERTY:
-			case Constants.SNAPSHOT_CAPTURE_FAILED:
-				this.setEnabled(true);
-				break;
-			default:
-				System.out.println("StartAction swallowed message.");
-			    break;
-			}
+				case Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY:
+				case Constants.EVENT_SNAPSHOT_CAPTURE_FAILED:
+					this.setEnabled(true);
+					break;
+				default:
+					System.out.println("StartAction swallowed message.");
+				    break;
+				}
 		}
 	}
 }

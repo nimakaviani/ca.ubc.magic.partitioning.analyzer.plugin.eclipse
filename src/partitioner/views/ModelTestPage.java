@@ -7,6 +7,7 @@ package partitioner.views;
 //		hopefully work on bugs tomorrow, documentation the next week
 //		start writing final report and testing
 
+import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,7 @@ import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IModel;
-import snapshots.views.IView;
+import plugin.mvc.IView;
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
@@ -441,7 +442,7 @@ implements IFrameworkListener,
 				public void run(){
 					System.err.println("Received event: " + evt.getPropertyName());
 					switch( evt.getPropertyName()){
-					case Constants.GUI_SIMULATION_ADDED:
+					case TestFrameworkModel.GUI_SIMULATION_ADDED:
 						SimulationUnit unit = (SimulationUnit) evt.getNewValue();
 						
 						ModelTestPage.this.table_input.add(
@@ -465,58 +466,80 @@ implements IFrameworkListener,
 					case Constants.GUI_SIMULATION_REMOVED:
 						// take removed value out of the table
 						break;
-					case Constants.INCREMENT_ID:
+					case TestFrameworkModel.ID:
 						Integer id 
 							= (Integer) evt.getNewValue();
 						ModelTestPage.this.current_id
 							= id;
 						break;
-					case Constants.BEST_RUN_NAME:
-						String best_run_name
-							= (String) evt.getNewValue();
-						System.out.println("Best run name: " + best_run_name);
-						ModelTestPage.this.best_run_name_label.setText(best_run_name);
-						break;
-					case Constants.BEST_RUN_ALGORITHM:
-						String best_run_algorithm
-							= (String) evt.getNewValue();
-						System.out.println("Best run algorithm: " + best_run_algorithm);
-						ModelTestPage.this.best_run_algorithm_label.setText(
-							best_run_algorithm
-						);
-						break;
-					case Constants.BEST_RUN_COST:
-						String best_run_cost
-							= (String) evt.getNewValue();
-						System.out.println("Best run cost: " + best_run_cost);
-						ModelTestPage.this.best_run_cost_label.setText(
-							best_run_cost
-						);
-						break;
-					case Constants.SIMULATION_TABLE_RUN_UPDATE:
-						// use the index to find the right table entry
-						Object[] obj
-							= (Object[]) evt.getNewValue();
-						for( int i = 0; i < ModelTestPage.this.table_input.size(); ++i){
-							Object[] array
-								= (Object[]) ModelTestPage.this.table_input.get(i);
-							if(array[0].equals((Integer) obj[0])){
-								Object[] modifiable_array
-									= (Object[]) ModelTestPage.this.table_input.get(i);
-								modifiable_array[3] = (Double) obj[1];
-								modifiable_array[4] = (Double) obj[2];
-								modifiable_array[5] = (Double) obj[3];
-							}
-							ModelTestPage.this.simulations_table_viewer.refresh();
-						}
-						break;
 					default:
-						System.out.println("Model Test Page swallowed event: " + evt.getPropertyName());
+						System.out.println("Model Test Page swallowed PropertyChange: " + evt.getPropertyName());
 						break;
 					}
 				}
 			}
 		);
+	}
+	
+	@Override
+	public void 
+	modelEvent
+	( final PropertyChangeEvent evt ) 
+	{
+		// event may be triggered by a process in a non-SWT thread
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void 
+				run()
+				{
+					System.err.println("Received event: " + evt.getPropertyName());
+					switch( evt.getPropertyName()){
+						case TestFrameworkModel.EVENT_UPDATE_BEST_RUN_NAME:
+							String best_run_name
+								= (String) evt.getNewValue();
+							System.out.println("Best run name: " + best_run_name);
+							ModelTestPage.this.best_run_name_label.setText(best_run_name);
+							break;
+						case TestFrameworkModel.EVENT_UPDATE_BEST_RUN_ALGORITHM:
+							String best_run_algorithm
+								= (String) evt.getNewValue();
+							System.out.println("Best run algorithm: " + best_run_algorithm);
+							ModelTestPage.this.best_run_algorithm_label.setText(
+								best_run_algorithm
+							);
+							break;
+						case TestFrameworkModel.EVENT_UPDATE_BEST_RUN_COST:
+							String best_run_cost
+								= (String) evt.getNewValue();
+							System.out.println("Best run cost: " + best_run_cost);
+							ModelTestPage.this.best_run_cost_label.setText(
+								best_run_cost
+							);
+							break;
+							case TestFrameworkModel.EVENT_SIMULATION_TABLE_RUN_UPDATE:
+								// use the index to find the right table entry
+								Object[] obj
+									= (Object[]) evt.getNewValue();
+								for( int i = 0; i < ModelTestPage.this.table_input.size(); ++i){
+									Object[] array
+										= (Object[]) ModelTestPage.this.table_input.get(i);
+									if(array[0].equals((Integer) obj[0])){
+										Object[] modifiable_array
+											= (Object[]) ModelTestPage.this.table_input.get(i);
+										modifiable_array[3] = (Double) obj[1];
+										modifiable_array[4] = (Double) obj[2];
+										modifiable_array[5] = (Double) obj[3];
+									}
+									ModelTestPage.this.simulations_table_viewer.refresh();
+								}
+								break;
+							default:
+								System.out.println("Model Test Page swallowed event: " + evt.getPropertyName());
+								break;
+					}
+				}
+			});
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////
@@ -535,7 +558,7 @@ implements IFrameworkListener,
 		
 		// update state of gui on the callback
 		this.test_framework_controller.setModelProperty(
-			Constants.GUI_SIMULATION_ADDED,
+			TestFrameworkModel.GUI_SIMULATION_ADDED,
 			unit
 		);
    }

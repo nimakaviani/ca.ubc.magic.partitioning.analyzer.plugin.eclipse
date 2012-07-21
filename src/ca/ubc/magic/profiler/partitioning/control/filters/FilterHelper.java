@@ -41,7 +41,7 @@ public class FilterHelper {
     		FilterConstraintModel filterModel,
     		FilterType type){
     	
-    	Map<String, IFilter> filterMap= new HashMap<String, IFilter>();
+    	Map<String, IFilter> filterMap = new HashMap<String, IFilter>();
     	
     	for (FilterConstraint constraint : filterModel.getFilterSet(type)){
     		IFilter filter = FilterFactory.getFilter(type, moduleModel,	hostModel, constraint);

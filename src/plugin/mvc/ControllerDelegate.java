@@ -6,37 +6,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import snapshots.views.IView;
-
-
-// TODO: I have my solution to the following problem:
-//		1) We transmit two kinds of objects through our controller:
-//			a property changed event, and an event event
-//			-> in order to reduce the possibility of error I want the
-//			system to be able to tell the two apart, and for the two
-//			to receive different callbacks
-//			-> I need to do this without compromising any thread
-//			safety guarantees made by the Java APIs that I am using
-//			-> my solution is to extend the PropertyChangedEvent class
-//			to implement an EventOccurredEvent class and use an 
-//			instanceof in the dispatcher to select whether to
-//			call a propertychanged callback in the views, or a
-//			eventoccurred callback in the views
-//			-> going in the other direction, we already distinguish
-//			by having the controller call different functions
-//			but this might change
 public class 
 ControllerDelegate 
-implements IController
+implements IController,
+	IPublisher
 {
 	private IModel 		model;
 	private List<IView> registered_views;
+	private IPublisher	publisher_delegate;
+	
+	public final static String EVENT_SENTINEL
+		= "Event";
 		
 	public 
 	ControllerDelegate()
 	{
 		this.registered_views
 			= new CopyOnWriteArrayList<IView>();
+		this.publisher_delegate
+			= new PublisherDelegate();
 	}
 	
 	@Override
@@ -55,7 +43,9 @@ implements IController
 			this.model.addPropertyChangeListener(this);
 		}
 		else {
-			throw new RuntimeException("You can only assign one model to a controller.");
+			throw new RuntimeException(
+				"You can only assign one model to a controller."
+			);
 		}
 	}
 
@@ -124,7 +114,7 @@ implements IController
 			= new PropertyChangeEvent(
 				source, 
 				property_name, 
-				null, 
+				ControllerDelegate.EVENT_SENTINEL, 
 				new_value
 			);
 		this.propertyChange(evt);
@@ -204,8 +194,43 @@ implements IController
 	propertyChange
 	( PropertyChangeEvent evt ) 
 	{
-		for(IView view : this.registered_views){
-			view.modelPropertyChange(evt);
+		if( evt.getOldValue() == ControllerDelegate.EVENT_SENTINEL ){
+			for(IView view : this.registered_views){
+				view.modelEvent(evt);
+			}
 		}
+		else {
+			for(IView view : this.registered_views){
+				view.modelPropertyChange(evt);
+			}
+		}
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	///	Publisher interface
+	///////////////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void 
+	publish 
+	( Class<?> sender_class, String property_name, Object packet) 
+	{
+		this.publisher_delegate.publish(
+			sender_class, 
+			property_name, 
+			packet
+		);
+	}
+
+	@Override
+	public void 
+	registerPublicationListener
+	( Class<?> listener_class, String property_name, PublicationHandler publication_handler ) 
+	{
+		this.publisher_delegate.registerPublicationListener(
+			listener_class,
+			property_name,
+			publication_handler
+		);
 	}
 }
