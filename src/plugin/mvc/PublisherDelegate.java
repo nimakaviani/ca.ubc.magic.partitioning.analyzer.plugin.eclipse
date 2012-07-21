@@ -23,12 +23,16 @@ implements IPublisher
 	// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
 	public void
 	publish
-	( Class<?> sender_class, String property_name, Object packet)
+	( Class<?> sender_class, Publications publication, Object packet)
 	{
 		System.err.println("Publishing: ");
-		if( packet == null){
-			System.out.println("Null packet");
+
+		if( !publication.getPacketClass().isAssignableFrom(packet.getClass())){
+			throw new IllegalArgumentException(
+				"The packet is not of the appropriate type. Please correct your code."
+			);
 		}
+		
 		BundleContext context 
 			= FrameworkUtil.getBundle(
 				sender_class
@@ -40,17 +44,19 @@ implements IPublisher
 	    Map<String,Object> properties 
 	    	= new HashMap<String, Object>();
 	    
-	    properties.put( property_name, packet );
+	    properties.put( publication.getEventName(), packet );
 	    Event event = new Event("viewcommunication/asyncEvent", properties);
 	    eventAdmin.postEvent(event);
 	}
 	
 	public void
 	registerPublicationListener
-	( Class<?> listener_class, final String property_name, final PublicationHandler publication_handler	)
+	( Class<?> listener_class, Publications publication, final PublicationHandler publication_handler	)
 	{
 		BundleContext context 
 			= FrameworkUtil.getBundle(listener_class).getBundleContext();
+		final String event_name
+			= publication.getEventName();
 		EventHandler handler 
 			= new EventHandler() {
 				public void handleEvent
@@ -59,11 +65,11 @@ implements IPublisher
 					System.err.println("Event received");
 					// acceptable alternative, given that we run only
 					// one display
-					if( event.containsProperty(property_name)){
+					if( event.containsProperty( event_name )){
 						Display display 
 							= Display.getDefault();
 						if( display.getThread() == Thread.currentThread() ){
-							publication_handler.handle( event.getProperty(property_name));
+							publication_handler.handle( event.getProperty(event_name));
 						}
 						else {
 							display.syncExec( 
@@ -71,7 +77,7 @@ implements IPublisher
 									public void 
 									run()
 									{
-										publication_handler.handle( event.getProperty(property_name));
+										publication_handler.handle( event.getProperty(event_name));
 									}
 								}
 							);

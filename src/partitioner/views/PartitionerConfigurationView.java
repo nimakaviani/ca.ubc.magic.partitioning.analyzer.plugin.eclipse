@@ -41,6 +41,7 @@ import plugin.mvc.IController;
 import plugin.mvc.IPublisher;
 import plugin.mvc.IView;
 import plugin.mvc.PublicationHandler;
+import plugin.mvc.Publications;
 import plugin.mvc.PublisherDelegate;
 
 import snapshots.views.VirtualModelFileInput;
@@ -71,9 +72,16 @@ implements IView
 	private Combo 		set_coarsener_combo;
 	private Object 		controller_switch_lock = new Object();
 
-	private PartitionerWidgets partitioner_widgets;
+	private PartitionerWidgets 	partitioner_widgets;
 	
-	private IPublisher publisher_delegate;
+	private IPublisher 			publisher_delegate;
+	private ScrolledForm 		sf;
+
+	private Section partitioning_composite;
+
+	private Button partition_model;
+
+	private Button generate_model;
 	
 	@Override
 	public void 
@@ -85,7 +93,7 @@ implements IView
 		
 		this.publisher_delegate.registerPublicationListener(
 			this.getClass(),
-			"ACTIVE_EDITOR",
+			Publications.ACTIVE_EDITOR_CHANGED,
 			new PublicationHandler(){
 				@Override
 				public void
@@ -103,7 +111,7 @@ implements IView
 		this.toolkit 
 			= new FormToolkit( parent.getDisplay() );
 				
-		ScrolledForm sf 
+		this.sf 
 			= this.toolkit.createScrolledForm(parent);
 		
 		TableWrapLayout layout 
@@ -161,29 +169,7 @@ implements IView
 		configure_composite.setLayoutData(td);
 		configure_composite.setClient(configure_client);
 		
-		Section partitioning_composite
-			= this.toolkit.createSection(
-				sf.getBody(),
-				Section.TITLE_BAR 
-					|Section.EXPANDED 
-					| Section.DESCRIPTION 
-					| Section.TWISTIE
-			);
-		partitioning_composite.setText("Partition");
-		partitioning_composite.setDescription(
-			"Configure the cost model and the partitioning algorithm."
-		);
-		
-		Composite partitioning_client
-			= this.toolkit.createComposite(
-				partitioning_composite
-			);
-		this.initialize_partitioning_grid(partitioning_client);
-		this.initialize_partitioning_widgets( partitioning_client, this.toolkit );
-		td 
-			= new TableWrapData(TableWrapData.FILL);
-		partitioning_composite.setLayoutData(td);
-		partitioning_composite.setClient(partitioning_client);
+		this.create_partitioning_composite(this.toolkit, sf);
 		
 		this.actions_composite
 			= this.toolkit.createSection(
@@ -211,10 +197,42 @@ implements IView
 		this.initialize_actions_widgets(actions_client, this.toolkit);
 		
 		this.set_configuration_widgets_enabled( false );
+		this.partitioner_widgets.enablePartitioning( true );
 		this.partitioner_widgets
 			.set_partitioning_widgets_enabled( false ); 
 	}
 	
+	private void 
+	create_partitioning_composite
+	( FormToolkit toolkit, ScrolledForm sf ) 
+	{
+		this.partitioning_composite
+			= toolkit.createSection(
+				sf.getBody(),
+				Section.TITLE_BAR 
+					|Section.EXPANDED 
+					| Section.DESCRIPTION 
+					| Section.TWISTIE
+			);
+		partitioning_composite.setText("Partition");
+		partitioning_composite.setDescription(
+			"Configure the cost model and the partitioning algorithm."
+		);
+		
+		Composite partitioning_client
+			= toolkit.createComposite(
+				partitioning_composite
+			);
+		this.initialize_partitioning_grid(partitioning_client);
+		this.initialize_partitioning_widgets( partitioning_client, toolkit );
+		TableWrapData td 
+			= new TableWrapData(TableWrapData.FILL);
+		partitioning_composite.setLayoutData(td);
+		partitioning_composite.setClient(partitioning_client);
+		
+		partitioning_composite.setVisible(false);
+	}
+
 	protected void 
 	setDisplayValues
 	( IController controller ) 
@@ -250,7 +268,8 @@ implements IView
 				
 					PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
 					PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
-					PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK
+					PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK,
+					PartitionerModel.GUI_DISABLE_PARTITIONING_PANEL
 				};
 			
 			final Map<String, Object> properties 
@@ -296,9 +315,19 @@ implements IView
 					PartitionerConfigurationView.this
 						.partitioner_widgets.setDisplayValues( properties );
 					
+					Boolean configuration_enabled
+						= (Boolean) properties.get(PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL);
 					PartitionerConfigurationView.this
 						.set_configuration_widgets_enabled(
-							(Boolean) properties.get(PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL)
+							configuration_enabled
+						);
+					PartitionerConfigurationView.this
+						.partitioning_composite.setVisible( 
+							!configuration_enabled
+						);
+					PartitionerConfigurationView.this
+						.partitioner_widgets.enablePartitioning(
+							(Boolean) properties.get(PartitionerModel.GUI_DISABLE_PARTITIONING_PANEL)
 						);
 				}
 			});
@@ -595,7 +624,7 @@ implements IView
 	initialize_actions_widgets
 	( Composite parent, FormToolkit toolkit ) 
 	{
-		final Button generate_model
+		this.generate_model
 			= toolkit.createButton(
 				parent, 
 				"Generate Model", 
@@ -626,11 +655,42 @@ implements IView
 					// generate a model, and if partitioning is set, also 
 					// initialize the test framework
 					PartitionerConfigurationView.this.controller.notifyModel(
-						Constants.GENERATE_MODEL_EVENT
+						PartitionerModel.EVENT_GENERATE_MODEL
 					);
 				}
 			}
 		);
+		
+		this.partition_model
+			= toolkit.createButton(
+				parent, 
+				"Partition Model", 
+				SWT.PUSH
+			);
+		grid_data 
+			= new GridData( SWT.BEGINNING, SWT.FILL, false, false);
+		grid_data.horizontalSpan = 1;
+		partition_model.setLayoutData( grid_data );
+		
+		partition_model.addSelectionListener(
+			new SelectionAdapter()
+			{
+				@Override
+				public void
+				widgetSelected
+				( SelectionEvent e )
+				{
+					// perform the partition
+					System.err.println("performing the partition");
+					
+					
+					PartitionerConfigurationView.this.controller.notifyModel(
+						PartitionerModel.EVENT_GENERATE_PARTITION
+					);
+				}
+			}
+		);
+		this.partition_model.setVisible(false);
 	}
 	
 	@Override
@@ -706,10 +766,16 @@ implements IView
 						PartitionerConfigurationView.this
 							.set_configuration_widgets_enabled( enabled );
 						PartitionerConfigurationView.this
-							.partitioner_widgets
-							.set_partitioning_widgets_enabled( enabled );
-						PartitionerConfigurationView.this
 							.updateModelName();
+						break;
+					}
+					case PartitionerModel.GUI_DISABLE_PARTITIONING_PANEL:
+					{
+						boolean enabled
+							= (boolean) evt.getNewValue();
+						PartitionerConfigurationView.this
+							.partitioner_widgets
+							.enablePartitioning( enabled );
 						break;
 					}
 					default:
@@ -740,6 +806,7 @@ implements IView
 				public void
 				run()
 				{
+					System.err.println("Event received by PartitionerConfigurationView: " + evt.getPropertyName());
 					switch(evt.getPropertyName())
 					{
 						case Constants.EVENT_EDITOR_CLOSED:
@@ -748,8 +815,15 @@ implements IView
 							PartitionerConfigurationView.this
 								.set_configuration_widgets_enabled( false );
 							PartitionerConfigurationView.this
-								.partitioner_widgets
-								.set_partitioning_widgets_enabled( false );
+								.partitioner_widgets.enablePartitioning( false );
+							if( PartitionerConfigurationView.this.partitioner_widgets != null ){
+								PartitionerConfigurationView.this
+									.partitioner_widgets
+									.set_partitioning_widgets_enabled( false );
+							}
+						case PartitionerModel.EVENT_MODEL_CREATED:
+							PartitionerConfigurationView.this.partitioning_composite.setVisible( true );
+							PartitionerConfigurationView.this.partition_model.setVisible( true );
 							break;
 						default:
 							break;
@@ -778,8 +852,9 @@ implements IView
 		
 		this.exposure_button.setSelection(false);
 		this.synthetic_node_button.setSelection(false);
-		
-		this.partitioner_widgets.clear_selections();
+		if( this.partitioner_widgets != null ){
+			this.partitioner_widgets.clear_selections();
+		}
 		
 		Display.getDefault().update();
 		this.getViewSite().getShell().layout();
@@ -792,7 +867,7 @@ implements IView
 	{
 		this.host_config_text.setEditable(enabled);
 		this.module_exposer_text.setEditable(enabled);
-		this.actions_composite.setVisible(enabled);
+		this.generate_model.setVisible(enabled);
 		
 		this.synthetic_node_button.setEnabled(enabled);
 		this.exposure_button.setEnabled(enabled);
@@ -800,8 +875,6 @@ implements IView
 		this.mod_exposer_browse_button.setVisible(enabled);
 		this.host_config_browse.setVisible(enabled);
 		this.set_coarsener_combo.setEnabled(enabled);
-		
-		this.partitioner_widgets.enablePartitioning( enabled );
 	}
 	
 	private void 
@@ -833,7 +906,7 @@ implements IView
 					input.setSecondaryName(new_name);
 					
 					PartitionerConfigurationView.this.publisher_delegate.publish(
-						this.getClass(), "REFRESH", new Boolean(true)
+						this.getClass(), Publications.REFRESH_SNAPSHOT_TREE, new Boolean(true)
 					);
 			        
 			        page.updateTitle();

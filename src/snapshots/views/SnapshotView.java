@@ -47,6 +47,7 @@ import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IView;
 import plugin.mvc.PublicationHandler;
+import plugin.mvc.Publications;
 
 import snapshots.com.mentorgen.tools.util.profile.Start;
 import snapshots.events.logging.ErrorDisplayAction;
@@ -242,7 +243,7 @@ implements IView
 		
 		this.active_snapshot_controller.registerPublicationListener(
 			this.getClass(), 
-			"REFRESH", 
+			Publications.REFRESH_SNAPSHOT_TREE, 
 			new PublicationHandler(){
 				@Override
 				public void 
@@ -254,6 +255,26 @@ implements IView
 					if(refresh != null && refresh == true){
 						SnapshotView.this.refresh();
 					}
+				}
+			}
+		);
+		
+		this.active_snapshot_controller.registerPublicationListener(
+			this.getClass(),
+			Publications.MODEL_EDITOR_CLOSED,
+			new PublicationHandler(){
+				@Override
+				public void 
+				handle
+				( Object obj ) 
+				{
+					VirtualModelFileInput editor_input
+						= (VirtualModelFileInput) obj;
+					
+					// worry about a memory leak
+					SnapshotView.this.file_tree_content_provider
+						.remove_model(editor_input);
+					SnapshotView.this.refresh();
 				}
 			}
 		);

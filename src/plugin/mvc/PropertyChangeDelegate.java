@@ -73,7 +73,9 @@ PropertyChangeDelegate
     ( String property_name, Object old_value, Object new_value )
     {
     	// to deal with reference switches
-    	this.property_map.put(property_name, new_value);
+    	if( this.property_map.containsKey(property_name)){
+        	this.property_map.put(property_name, new_value);
+    	}
     	
         if (this.listeners.hasListeners(property_name)) {
             this.listeners.firePropertyChange(
@@ -126,7 +128,7 @@ PropertyChangeDelegate
 			}
 			else {
 				throw new IllegalArgumentException(
-					"The " + property_names + " property has not been "
+					"The " + property_name + " property has not been "
 					+ "registered with the property change delegate. "
 					+ "Please go and fix your code."
 				);

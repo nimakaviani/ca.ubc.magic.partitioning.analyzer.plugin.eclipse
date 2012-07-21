@@ -213,11 +213,11 @@ implements IController,
 	@Override
 	public void 
 	publish 
-	( Class<?> sender_class, String property_name, Object packet) 
+	( Class<?> sender_class, Publications publication, Object packet) 
 	{
 		this.publisher_delegate.publish(
 			sender_class, 
-			property_name, 
+			publication, 
 			packet
 		);
 	}
@@ -225,11 +225,11 @@ implements IController,
 	@Override
 	public void 
 	registerPublicationListener
-	( Class<?> listener_class, String property_name, PublicationHandler publication_handler ) 
+	( Class<?> listener_class, Publications publication, PublicationHandler publication_handler ) 
 	{
 		this.publisher_delegate.registerPublicationListener(
 			listener_class,
-			property_name,
+			publication,
 			publication_handler
 		);
 	}

@@ -19,10 +19,10 @@ extends PropertyChangeListener
 	public void 				notifyPeers(String event_name, Object source, Object new_value);
 	public void 				notifyModel(String event_name);
 	public Object 				index(String simulationUnits, Object key);
-	public void 				publish( Class<?> sender_class, String property_name, Object packet);
+	public void 				publish( Class<?> sender_class, Publications modelEditorClosed, Object packet);
 	public void 				registerPublicationListener( 
 		Class<?> listener_class, 
-		final String property_name, 
+		Publications publication, 
 		final PublicationHandler publication_handler 
 	);
 }

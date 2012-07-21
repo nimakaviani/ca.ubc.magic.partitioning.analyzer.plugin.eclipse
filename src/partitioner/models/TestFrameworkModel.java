@@ -34,6 +34,8 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
 
+// TODO: split the model parts which track the state of the view from
+//		the model parts which are application logic
 public class 
 TestFrameworkModel 
 implements IModel

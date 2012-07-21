@@ -47,10 +47,6 @@ Constants
 	public static final String EVENT_SNAPSHOT_STARTED 
 		= "snapshot_started_message";
 	
-	public static final String GENERATE_MODEL_EVENT 
-		= "ModelGeneration";
-	public static final String MODULE_EXCHANGE_MAP 
-		= "ModuleExchageMap";
 	public static final String SOLUTION 
 		= "Solution";
 	public static final String ALGORITHM 

@@ -39,6 +39,8 @@ import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IView;
+import plugin.mvc.Publications;
+import snapshots.views.VirtualModelFileInput;
 
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
@@ -342,7 +344,7 @@ implements IView
 						ModelCreationEditor.this
 							.activateTestPage( test_framework_model );
 						break;
-					case PartitionerModel.EVENT_MODEL_CREATION:
+					case PartitionerModel.EVENT_MODEL_CREATED:
 						ModelCreationEditor.this.visualizeModuleModel();
 						break;
 					default:
@@ -403,14 +405,14 @@ implements IView
 					Map<String, Object> map
 						= ModelCreationEditor.this.controller.requestProperties(
 							new String[]{
-								Constants.MODULE_EXCHANGE_MAP
+								PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
 							}
 						);
 					// problem: currentVP is both a view type component and
 					// a model type component: where does it go? 
 					ModelCreationEditor.this.currentVP.drawModules(
 						(Map<ModulePair, InteractionData>) map.get(
-							Constants.MODULE_EXCHANGE_MAP
+							PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
 						)
 					);  
 					
@@ -471,30 +473,22 @@ implements IView
 			}
 		}
 		
+		// notify peers on the controller
 		this.controller.notifyPeers(
 			Constants.EVENT_EDITOR_CLOSED, 
 			this, 
 			null
 		);
 		
-		/*
-		BundleContext context 
-			= FrameworkUtil.getBundle(
-				ModelCreationEditor.this.getClass()
-			).getBundleContext();
-	    ServiceReference<EventAdmin> ref 
-	    	= context.getServiceReference(EventAdmin.class);
-	    EventAdmin eventAdmin 
-	    	= context.getService( ref );
-	    Map<String,Object> properties 
-	    	= new HashMap<String, Object>();
-	    properties.put( "ACTIVE_EDITOR", editor.getController() );
-	    Event event 
-	    	= new Event("viewcommunication/syncEvent", properties);
-	    eventAdmin.sendEvent(event);
-	    event = new Event("viewcommunication/asyncEvent", properties);
-	    eventAdmin.postEvent(event); 
-		*/
+		// make system wide publication
+		VirtualModelFileInput input
+			= (VirtualModelFileInput) this.getEditorInput();
+		
+		this.controller.publish(
+			this.getClass(), 
+			Publications.MODEL_EDITOR_CLOSED, 
+			input
+		);
 	}
 
 	public IController 
@@ -549,7 +543,7 @@ implements IView
 				
 				ModelCreationEditor.this.controller.publish( 
 					this.getClass(), 
-					"ACTIVE_EDITOR", 
+					Publications.ACTIVE_EDITOR_CHANGED, 
 					editor.getController()
 				);
 			}

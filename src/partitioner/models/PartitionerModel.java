@@ -83,6 +83,9 @@ implements IModel
 	public static final String GUI_EXECUTION_COST
 		= "ExecutionCost";
 	
+	public static final String AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP 
+		= "ModuleExchangeMap";
+	
 	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
 		= "ActivateHostFilter";
 	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
@@ -91,8 +94,13 @@ implements IModel
 	public static final String GUI_GENERATE_TEST_FRAMEWORK 
 		= "GenerateTestFramework";
 	
-	public static final String EVENT_MODEL_CREATION 
+	public static final String EVENT_MODEL_CREATED 
 		= "ModelCreation";
+	public static final String EVENT_GENERATE_MODEL 
+		= "ModelGeneration";
+	public static final String EVENT_GENERATE_PARTITION 
+		= "PartitionGeneration";
+	
 	public static final String EVENT_PARTITIONING_COMPLETE 
 		= "PartitioningComplete";
 	public static final String AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK 
@@ -100,6 +108,8 @@ implements IModel
 	
 	 public static final String GUI_DISABLE_CONFIGURATION_PANEL 
 		 = "ActiveConfigurationPanel";
+	public static final String GUI_DISABLE_PARTITIONING_PANEL 
+		= "ActivePartitioningPanel";
 	
 	private PropertyChangeDelegate 	property_change_delegate;
 	
@@ -146,7 +156,8 @@ implements IModel
 
 	private Boolean activate_host_cost_filter = false;
 	private Boolean activate_interaction_cost_filter = false;
-	private Boolean generate_test_framework = false;;
+	private Boolean generate_test_framework = false;
+	private Boolean partitioning_panel_enabled = true;
 	
 	public
 	PartitionerModel()
@@ -449,6 +460,22 @@ implements IModel
 			this.configuration_panel_enabled
 		);
 	}
+	
+	public void
+	setActivePartitioningPanel
+	( Boolean active )
+	{
+		Boolean old_active
+			= this.partitioning_panel_enabled;
+		this.partitioning_panel_enabled
+			= active;
+		
+		this.property_change_delegate.firePropertyChange(
+			PartitionerModel.GUI_DISABLE_PARTITIONING_PANEL,
+			old_active,
+			this.partitioning_panel_enabled
+		);
+	}
 
 	
     @Override
@@ -619,18 +646,15 @@ implements IModel
 				new DistributionModel(module_model, mHostModel))
 			);
 		
-//		// this.prepare_test_framework();
-//		System.out.println( this.perform_partitioning.toString() );
-//		if(this.perform_partitioning){
-//			System.out.println("Performing partition");
-//			this.runPartitioningAlgorithm();
-//		}
-		
-		this.property_change_delegate.firePropertyChange(
-			Constants.MODULE_EXCHANGE_MAP, 
-			null, 
-			this.mModuleModel.getModuleExchangeMap()
+		this.property_change_delegate.registerProperties(
+			new String[]{
+				PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
+			},
+			new Object[]{
+				this.mModuleModel.getModuleExchangeMap()
+			}
 		);
+	
 		this.property_change_delegate.firePropertyChange(
 			Constants.ALGORITHM,
 			null,
@@ -733,6 +757,16 @@ implements IModel
         }
 	}
 	
+	public void
+	doPartitionGeneration()
+	{
+		PartitionerModel.GeneratePartitionJob job 
+   			= new PartitionerModel.GeneratePartitionJob();
+	   	job.setUser(true);
+	   	job.setPriority(GenerateModelJob.SHORT);
+	   	job.schedule();
+	}
+	
 	///////////////////////////////////////////////////////////////////
 	///
 	///////////////////////////////////////////////////////////////////
@@ -777,36 +811,8 @@ implements IModel
 				PartitionerModel.this.setActiveConfigurationPanel( false );
 				PartitionerModel.this
 					.property_change_delegate.notifyViews(
-						PartitionerModel.EVENT_MODEL_CREATION, null
+						PartitionerModel.EVENT_MODEL_CREATED, null
 					);
-				
-//				// load the test framework if partitioning was set
-//				// I wonder what this was originally for
-//				if( PartitionerModel.this.generate_test_framework ){
-//					PartitionerModel.this.property_change_delegate
-//						.registerProperties(
-//							new String[]{ 
-//								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
-//							},
-//							new Object[]{
-//								new TestFrameworkModel(
-//									PartitionerModel.this.partitioner_type,
-//									PartitionerModel.this.mModuleModel,
-//									PartitionerModel.this.mSimFramework,
-//									PartitionerModel.this.mHostModel,
-//									PartitionerModel.this.profiler_trace,
-//									PartitionerModel.this.mModuleType,
-//									PartitionerModel.this.mConstraintModel
-//								)
-//							}
-//						);
-//				}
-
-//				PartitionerModel.this
-//					.property_change_delegate.notifyViews(
-//						PartitionerModel.EVENT_PARTITIONING_COMPLETE, 
-//						null
-//					);
 				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -816,6 +822,67 @@ implements IModel
 			
 			return Status.OK_STATUS;
 		}
+	}
+	
+	class 
+	GeneratePartitionJob
+	extends org.eclipse.core.runtime.jobs.Job
+	{
+		public 
+		GeneratePartitionJob() 
+		{
+			super("Perform Model Partition");
+		}
+
+		@Override
+		protected IStatus 
+		run
+		( IProgressMonitor monitor ) 
+		{
+			System.out.println("Partitioning the model");
+			
+			/// during finished
+			System.out.println( 
+				PartitionerModel.this
+					.perform_partitioning.toString() 
+				);
+			if( PartitionerModel.this.perform_partitioning ){
+				System.out.println("Performing partition");
+				PartitionerModel.this.runPartitioningAlgorithm();
+			}
+			
+			/// after finished
+			// load the test framework if partitioning was set
+			// I wonder what this was originally for
+			if( PartitionerModel.this.generate_test_framework ){
+				PartitionerModel.this.property_change_delegate
+					.registerProperties(
+						new String[]{ 
+							PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
+						},
+						new Object[]{
+							new TestFrameworkModel(
+								PartitionerModel.this.partitioner_type,
+								PartitionerModel.this.mModuleModel,
+								PartitionerModel.this.mSimFramework,
+								PartitionerModel.this.mHostModel,
+								PartitionerModel.this.profiler_trace,
+								PartitionerModel.this.mModuleType,
+								PartitionerModel.this.mConstraintModel
+							)
+						}
+					);
+			}
+
+			PartitionerModel.this
+				.property_change_delegate.notifyViews(
+					PartitionerModel.EVENT_PARTITIONING_COMPLETE, 
+					null
+				);
+			
+			return Status.OK_STATUS;
+		}
+		
 	}
 	
 	@Override
@@ -846,12 +913,13 @@ implements IModel
 				PartitionerModel.GUI_INTERACTION_COST,
 				PartitionerModel.GUI_EXECUTION_COST,
 				PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL,
+				PartitionerModel.GUI_DISABLE_PARTITIONING_PANEL,
 				PartitionerModel.SIMULATION_FRAMEWORK,
 				PartitionerModel.MODULE_MODEL,
 				PartitionerModel.HOST_MODEL,
 				PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
 				PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
-				PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK
+				PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK,
 			};
 		
 		Object[] properties
@@ -871,13 +939,14 @@ implements IModel
 			// does not need to be a member field, since now
 			// it is in the map
 			this.configuration_panel_enabled,
+			this.partitioning_panel_enabled,
 			this.mSimFramework,
 			this.mModuleModel,
 			this.mHostModel,
 			
 			this.activate_host_cost_filter,
 			this.activate_interaction_cost_filter,
-			this.generate_test_framework
+			this.generate_test_framework,
 		};
 		
 		this.property_change_delegate.registerProperties(
