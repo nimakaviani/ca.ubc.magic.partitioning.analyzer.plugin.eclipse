@@ -25,6 +25,8 @@ import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel;
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
@@ -40,6 +42,7 @@ import ca.ubc.magic.profiler.parser.ModuleModelParser;
 import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
+import ca.ubc.magic.profiler.partitioning.control.filters.FilterHelper;
 import ca.ubc.magic.profiler.simulator.control.ISimulator;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
@@ -136,7 +139,7 @@ implements IModel
 
 	// volatile due to visibility concerns
 	private volatile Boolean active_exposing_menu = false;
-	private volatile Boolean enable_synthetic_node = false;
+	
 	private volatile Boolean module_model_checkbox = false;
 	 
 	private volatile Boolean perform_partitioning = false;
@@ -155,8 +158,13 @@ implements IModel
 
 	//private JipRun jipRun;
 
-	private Boolean activate_host_cost_filter = false;
-	private Boolean activate_interaction_cost_filter = false;
+	private volatile Boolean 	enable_synthetic_node_filter 
+		= false;
+	private Boolean 			activate_host_cost_filter 
+		= false;
+	private Boolean 			activate_interaction_cost_filter 
+		= false;
+	
 	private Boolean generate_test_framework = false;
 	private Boolean partitioning_panel_enabled = true;
 	
@@ -277,8 +285,8 @@ implements IModel
 	( Boolean synthetic )
 	{
 		boolean old_synthetic
-			= this.enable_synthetic_node;
-		this.enable_synthetic_node
+			= this.enable_synthetic_node_filter;
+		this.enable_synthetic_node_filter
 			= synthetic;
 		
 		this.property_change_delegate.firePropertyChange(
@@ -578,7 +586,7 @@ implements IModel
 	            if (  new_constraint_model != null ){
 	            	new_constraint_model
 	            	 	.getConstraintSwitches().setSyntheticNodeActivated(
-	            	 		this.enable_synthetic_node   
+	            	 		this.enable_synthetic_node_filter   
 	            	 	);
 	            }
 	            	 
@@ -760,6 +768,56 @@ implements IModel
         }
 	}
 	
+	private void 
+	initializeFilters() 
+	{
+		// I'm not so sure about simply passing in a raw FilterConstraintModel
+		// I looked for a factory that finds preinitialized subclasses,
+		// but it appears that is not Nima's way of doing things
+		
+		if( this.enable_synthetic_node_filter ){
+			Map<String, IFilter> map
+				= FilterHelper.setFilter(
+					this.mModuleModel, 
+					this.mHostModel, 
+					this.mConstraintModel.getFilterConstraintModel(), 
+					FilterType.COLOCATION_CUT
+				);
+			System.err.println("Number of synthetic filters: " + map.size());
+			for( String s : map.keySet()){
+				this.mFilterMap.put(s, map.get(s));
+			}
+		}
+		
+		if( this.activate_host_cost_filter ){
+			Map<String, IFilter> map
+				= FilterHelper.setFilter(
+					this.mModuleModel, 
+					this.mHostModel, 
+					this.mConstraintModel.getFilterConstraintModel(), 
+					FilterType.HOST_CUT
+				);
+			System.err.println("Number of host filters: " + map.size());
+			for( String s : map.keySet()){
+				this.mFilterMap.put(s, map.get(s));
+			}
+		}
+		
+		if( this.activate_interaction_cost_filter ){
+			Map<String, IFilter> map
+				= FilterHelper.setFilter(
+					this.mModuleModel, 
+					this.mHostModel, 
+					this.mConstraintModel.getFilterConstraintModel(),
+					FilterType.INTERACTION_CUT
+				);
+			System.err.println("Number of interaction filters: " + map.size());
+			for( String s : map.keySet()){
+				this.mFilterMap.put(s, map.get(s));
+			}
+		}
+	}
+
 	public void
 	doPartitionGeneration()
 	{
@@ -791,6 +849,7 @@ implements IModel
 			this.gui_state_model
 				= gui_state_model;
 		}
+		
 		@Override
 		protected IStatus 
 		run
@@ -844,6 +903,9 @@ implements IModel
 		( IProgressMonitor monitor ) 
 		{
 			System.out.println("Partitioning the model");
+			
+			// I am doing this as late as possible
+			PartitionerModel.this.initializeFilters();
 			
 			/// during finished
 			System.out.println( 
@@ -934,7 +996,7 @@ implements IModel
 			this.constraint_xml_path,
 			this.host_configuration,
 			this.active_exposing_menu,
-			this.enable_synthetic_node,
+			this.enable_synthetic_node_filter,
 			this.module_model_checkbox,
 			this.perform_partitioning,
 			this.partitioner_type,

@@ -65,7 +65,7 @@ public class EntityConstraintParser extends DefaultHandler {
     	text.reset();
 
         try{
-          //  System.err.println("startElt " + name);
+            System.err.println("startElt " + name);
             if (name.equals("constraints")){
             }else if (name.equals("root")){
                 mHandler.setConstraintType(name);
@@ -99,23 +99,23 @@ public class EntityConstraintParser extends DefaultHandler {
 
     @Override
     public void endElement (String uri, String name, String qName) {
-    	//System.err.println("endElement " + name);
+    	System.err.println("endElement " + name);
         if (name.equals("constraints")){
-            }else if (name.equals("entity")){
-                mHandler.endEntity();
-            }else if (name.equals("entry")){
-                mHandler.endEntry();
-            }else if (name.equals("component")){
-                mHandler.endUnit(getText(), CodeUnitType.COMPONENT);
-            }else if (name.equals("class")){
-                mHandler.endUnit(getText(), CodeUnitType.CLASS);
-            }else if (name.equals("method")){
-                mHandler.endUnit(getText(), CodeUnitType.METHOD);
-            } else if (name.equals("target")){
-                mHandler.endTarget(getText());
-            }else {
-                mHandler.removeConstraintType();
-            }
+        }else if (name.equals("entity")){
+            mHandler.endEntity();
+        }else if (name.equals("entry")){
+            mHandler.endEntry();
+        }else if (name.equals("component")){
+            mHandler.endUnit(getText(), CodeUnitType.COMPONENT);
+        }else if (name.equals("class")){
+            mHandler.endUnit(getText(), CodeUnitType.CLASS);
+        }else if (name.equals("method")){
+            mHandler.endUnit(getText(), CodeUnitType.METHOD);
+        } else if (name.equals("target")){
+            mHandler.endTarget(getText());
+        }else {
+            mHandler.removeConstraintType();
+        }
     }
 
     private String getText()

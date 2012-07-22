@@ -9,7 +9,8 @@ public class FilterConstraintModel {
 	
 	private Map<String, Set<FilterConstraint>> mFilterConstraintMap;
 	
-	public FilterConstraintModel(){
+	public
+	FilterConstraintModel(){
 		mFilterConstraintMap = new HashMap<String, Set<FilterConstraint>>();
 		for (FilterType type : FilterType.values()){
 			mFilterConstraintMap.put(type.getText(), new HashSet<FilterConstraint>());

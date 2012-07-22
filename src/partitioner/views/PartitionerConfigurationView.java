@@ -326,6 +326,8 @@ implements IView
 						.partitioning_composite.setVisible( 
 							!configuration_enabled
 						);
+					PartitionerConfigurationView.this	
+						.partition_model.setVisible(!configuration_enabled);
 					PartitionerConfigurationView.this
 						.partitioner_widgets.enablePartitioning(
 							(Boolean) properties.get(PartitionerModelMessages.DISABLE_PARTITIONING_PANEL.NAME)
