@@ -1,12 +1,6 @@
 package partitioner.views;
 
-// TODO: get the table up and running and modifiable
-// TODO: add the context menu
-// TODO: add the functionality bit by bit
-//		hopefully finish the test framework by the end of the day
-//		hopefully work on bugs tomorrow, documentation the next week
-//		start writing final report and testing
-
+import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,12 +34,12 @@ import org.eclipse.ui.forms.widgets.ScrolledForm;
 import org.eclipse.ui.forms.widgets.Section;
 import org.eclipse.ui.forms.widgets.TableWrapLayout;
 
+import partitioner.models.TestFrameworkMessages;
 import partitioner.models.TestFrameworkModel;
-import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IModel;
-import snapshots.views.IView;
+import plugin.mvc.IView;
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
@@ -56,8 +50,7 @@ import ca.ubc.magic.profiler.simulator.framework.IFrameworkListener;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
-// an interesting thing about the modeltestpage is that it should only
-// be active when the partitioning has completed
+// should only be active when the partitioning has completed
 // that means it will only have a proper model to communicate with
 // after the partitioning has been completed
 public class 
@@ -241,12 +234,12 @@ implements IFrameworkListener,
 				( SelectionEvent e )
 				{
 					///
-					ModelTestPage.this.test_framework_controller.setModelProperty(
-						Constants.GUI_SIMULATION_TYPE,
+					ModelTestPage.this.test_framework_controller.updateModel(
+						TestFrameworkMessages.SIMULATION_TYPE,
 						simulation_type_combo.getText()
 					);
 					ModelTestPage.this.test_framework_controller.notifyModel(
-						Constants.EVENT_RUN_SIMULATION
+						TestFrameworkMessages.RUN_SIMULATION
 					);
 				}
 			}
@@ -389,9 +382,9 @@ implements IFrameworkListener,
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					ModelTestPage.this.test_framework_controller.setModelProperty(
-						Constants.GUI_SIMULATION_TYPE,
-							simulation_type_combo.getText()
+					ModelTestPage.this.test_framework_controller.updateModel(
+						TestFrameworkMessages.SIMULATION_TYPE,
+						simulation_type_combo.getText()
 					);
 				}
 			}
@@ -440,8 +433,11 @@ implements IFrameworkListener,
 				@Override
 				public void run(){
 					System.err.println("Received event: " + evt.getPropertyName());
-					switch( evt.getPropertyName()){
-					case Constants.GUI_SIMULATION_ADDED:
+					
+					String property
+						= evt.getPropertyName();
+					
+					if( property.equals(TestFrameworkMessages.SIMULATION_ADDED.NAME)){
 						SimulationUnit unit = (SimulationUnit) evt.getNewValue();
 						
 						ModelTestPage.this.table_input.add(
@@ -461,39 +457,58 @@ implements IFrameworkListener,
 							= Integer.parseInt(ModelTestPage.this.total_simulation_units.getText());
 						ModelTestPage.this.total_simulation_units.setText(  Integer.toString(total_run + 1) );
 						System.err.println("New total run: " + ModelTestPage.this.total_simulation_units.getText());
-						break;
-					case Constants.GUI_SIMULATION_REMOVED:
-						// take removed value out of the table
-						break;
-					case Constants.INCREMENT_ID:
-						Integer id 
-							= (Integer) evt.getNewValue();
-						ModelTestPage.this.current_id
-							= id;
-						break;
-					case Constants.BEST_RUN_NAME:
+					}
+					else if( property.equals(TestFrameworkMessages.SIMULATION_REMOVED)){
+						
+					}
+					else {
+						System.out.println("Model Test Page swallowed PropertyChange: " + evt.getPropertyName());
+					}
+				}
+			}
+		);
+	}
+	
+	@Override
+	public void 
+	modelEvent
+	( final PropertyChangeEvent evt ) 
+	{
+		// event may be triggered by a process in a non-SWT thread
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void 
+				run()
+				{
+					System.err.println("Received event: " + evt.getPropertyName());
+					
+					String property
+						= evt.getPropertyName();
+					
+					if(property.equals(TestFrameworkMessages.UPDATE_BEST_RUN_NAME.NAME) ){
 						String best_run_name
 							= (String) evt.getNewValue();
 						System.out.println("Best run name: " + best_run_name);
 						ModelTestPage.this.best_run_name_label.setText(best_run_name);
-						break;
-					case Constants.BEST_RUN_ALGORITHM:
+					}
+					else if( property.equals(TestFrameworkMessages.UPDATE_BEST_RUN_ALGORITHM.NAME)){
 						String best_run_algorithm
 							= (String) evt.getNewValue();
 						System.out.println("Best run algorithm: " + best_run_algorithm);
 						ModelTestPage.this.best_run_algorithm_label.setText(
 							best_run_algorithm
 						);
-						break;
-					case Constants.BEST_RUN_COST:
+					}
+					else if( property.equals(TestFrameworkMessages.UPDATE_BEST_RUN_COST.NAME)){
 						String best_run_cost
 							= (String) evt.getNewValue();
 						System.out.println("Best run cost: " + best_run_cost);
 						ModelTestPage.this.best_run_cost_label.setText(
 							best_run_cost
 						);
-						break;
-					case Constants.SIMULATION_TABLE_RUN_UPDATE:
+					}
+					else if( property.equals(TestFrameworkMessages.SIMULATION_TABLE_RUN_UPDATE.NAME)){
 						// use the index to find the right table entry
 						Object[] obj
 							= (Object[]) evt.getNewValue();
@@ -505,18 +520,22 @@ implements IFrameworkListener,
 									= (Object[]) ModelTestPage.this.table_input.get(i);
 								modifiable_array[3] = (Double) obj[1];
 								modifiable_array[4] = (Double) obj[2];
-								modifiable_array[5] = (Double) obj[3];
 							}
 							ModelTestPage.this.simulations_table_viewer.refresh();
 						}
-						break;
-					default:
+
+					}
+					else if( property.equals( TestFrameworkMessages.UPDATE_ID.NAME)){
+						Integer id 
+							= (Integer) evt.getNewValue();
+						ModelTestPage.this.current_id
+							= id;
+					}
+					else {
 						System.out.println("Model Test Page swallowed event: " + evt.getPropertyName());
-						break;
 					}
 				}
-			}
-		);
+			});
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////
@@ -534,8 +553,8 @@ implements IFrameworkListener,
 		System.err.println("performing callback");
 		
 		// update state of gui on the callback
-		this.test_framework_controller.setModelProperty(
-			Constants.GUI_SIMULATION_ADDED,
+		this.test_framework_controller.updateModel(
+			TestFrameworkMessages.SIMULATION_ADDED,
 			unit
 		);
    }
@@ -545,8 +564,8 @@ implements IFrameworkListener,
 	simulationRemoved
 	( SimulationUnit unit ) 
 	{
-		this.test_framework_controller.setModelProperty(
-			Constants.GUI_SIMULATION_REMOVED, 
+		this.test_framework_controller.updateModel(
+				TestFrameworkMessages.SIMULATION_REMOVED, 
 			unit
 		);
 	}
@@ -556,8 +575,8 @@ implements IFrameworkListener,
 	updateSimulationReport
 	( SimulationUnit unit, ReportModel report ) 
 	{    
-		this.test_framework_controller.setModelProperty(
-			Constants.GUI_UPDATE_SIMULATION_REPORT, 
+		this.test_framework_controller.updateModel(
+			TestFrameworkMessages.UPDATE_SIMULATION_REPORT, 
 			new Object[]{ unit, report }
 		);
     }
@@ -566,8 +585,8 @@ implements IFrameworkListener,
     updateBestSimReport
     ( SimulationUnit unit )
     {
-    	this.test_framework_controller.setModelProperty(
-    		Constants.GUI_UPDATE_BEST_SIMULATION_REPORT, 
+    	this.test_framework_controller.updateModel(
+    		TestFrameworkMessages.UPDATE_BEST_SIMULATION_REPORT, 
     		unit
     	);
     }
@@ -633,7 +652,8 @@ implements IFrameworkListener,
     {	
         SimulationUnit unit
         	= (SimulationUnit) this.test_framework_controller.index(
-        		Constants.SIMULATION_UNITS,
+        		TestFrameworkMessages.SIMULATION_UNITS,
+        		//TestFrameworkModel.SIMULATION_UNITS,
         		new Integer(id)
         	);
         

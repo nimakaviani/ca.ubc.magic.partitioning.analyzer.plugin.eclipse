@@ -1,4 +1,4 @@
-package snapshots.model;
+package recycle_bin;
 
 import java.beans.PropertyChangeListener;
 import java.util.HashMap;
@@ -15,6 +15,27 @@ public class
 EventLogListModel
 implements IModel
 {
+
+	@Override
+	public void addPropertyChangeListener(
+			PropertyChangeListener controllerDelegate) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void removePropertyChangeListener(
+			PropertyChangeListener controllerDelegate) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Map<String, Object> request(String[] property_names) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	/*
 	PropertyChangeDelegate property_change_delegate
 		= new PropertyChangeDelegate();
 	
@@ -69,5 +90,5 @@ implements IModel
 	{
 		// not implementing this functionality here
 		return new HashMap<String,Object>();
-	}
+	} */
 }

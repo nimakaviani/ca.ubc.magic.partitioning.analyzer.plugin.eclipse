@@ -33,7 +33,8 @@ public class BundleModuleCoarsener implements IModuleCoarsener {
     
     public ModuleModel getModuleModelFromParser(JipRun jipRun) {
     	
-    	mIgnoreSet = mConstraintModel.getIgnoreSet();
+    	// TODO tell Nima about this problem
+    	// mIgnoreSet = mConstraintModel.getIgnoreSet();
         
         mModuleModel.setName("Profile " + jipRun.getDate());
         for(Long threadId: jipRun.threads()) {

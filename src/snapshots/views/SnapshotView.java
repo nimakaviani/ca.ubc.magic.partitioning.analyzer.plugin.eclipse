@@ -7,9 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,28 +40,24 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 
-import partitioner.views.ModelCreationEditor;
 import plugin.Activator;
 import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
-import plugin.mvc.FinishAction;
 import plugin.mvc.IController;
-import plugin.mvc.JIPViewerAction;
+import plugin.mvc.IView;
+import plugin.mvc.PublicationHandler;
+import plugin.mvc.Publications;
 
+import recycle_bin.LogAction;
 import snapshots.com.mentorgen.tools.util.profile.Start;
 import snapshots.events.logging.ErrorDisplayAction;
 import snapshots.events.logging.EventLogActionHandler;
 import snapshots.events.logging.EventLogEvent;
 import snapshots.events.logging.EventLogger;
-import snapshots.events.logging.LogAction;
 import snapshots.model.ActiveSnapshotModel;
 import snapshots.model.Snapshot;
+import snapshots.model.SnapshotModelMessages;
 
 public class 
 SnapshotView 
@@ -80,12 +74,12 @@ implements IView
 	
 	private IController 			active_snapshot_controller 
 		= new ControllerDelegate();
-	EventLogTable					log_console_table;
+	//EventLogTable					log_console_table;
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 	
-	private IController 			event_log_controller
-		= new ControllerDelegate();
+	//private IController 			event_log_controller
+	//	= new ControllerDelegate();
 
 	public 
 	SnapshotView() 
@@ -239,59 +233,52 @@ implements IView
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
 		
-		this.log_console_table
-			= new EventLogTable(parent, "Event Log", null);
-		this.log_console_table.setContents(
-			Activator.getDefault().getEventLogListModel().getEventLogList()
-		);
+//		this.log_console_table
+//			= new EventLogTable(parent, "Event Log", null);
+//		this.log_console_table.setContents(
+//			Activator.getDefault().getEventLogListModel().getEventLogList()
+//		);
 		
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
 		
-		// the following code is a view-communication solution
-		// found in:
-		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
-		BundleContext context 
-			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
-		EventHandler handler 
-			= new EventHandler() {
-				public void handleEvent
-				( final Event event )
+		this.active_snapshot_controller.registerPublicationListener(
+			this.getClass(), 
+			Publications.REFRESH_SNAPSHOT_TREE, 
+			new PublicationHandler(){
+				@Override
+				public void 
+				handle
+				( Object obj ) 
 				{
-					// acceptable alternative, given that we run only
-					// one display
-					Display display 
-						= Display.getDefault();
-					assert( display != null) : "Display is null";
-					if( display.getThread() == Thread.currentThread() ){
-						Boolean refresh 
-							= (Boolean) event.getProperty("REFRESH");
-						if(refresh != null && refresh == true){
-							SnapshotView.this.refresh();
-						}
-					}
-					else {
-						display.syncExec( 
-							new Runnable() {
-								public void 
-								run()
-								{
-									Boolean refresh 
-										= (Boolean) event.getProperty("REFRESH");
-									if(refresh != null && refresh == true){
-										SnapshotView.this.refresh();
-									}
-								}
-							}
-						);
+					Boolean refresh
+						= (Boolean) obj;
+					if(refresh != null && refresh == true){
+						SnapshotView.this.refresh();
 					}
 				}
-			};
-			
-		Dictionary<String,String> properties 
-			= new Hashtable<String, String>();
-		properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
-		context.registerService(EventHandler.class, handler, properties);
+			}
+		);
+		
+		this.active_snapshot_controller.registerPublicationListener(
+			this.getClass(),
+			Publications.MODEL_EDITOR_CLOSED,
+			new PublicationHandler(){
+				@Override
+				public void 
+				handle
+				( Object obj ) 
+				{
+					VirtualModelFileInput editor_input
+						= (VirtualModelFileInput) obj;
+					
+					// worry about a memory leak
+					SnapshotView.this.file_tree_content_provider
+						.remove_model(editor_input);
+					SnapshotView.this.refresh();
+				}
+			}
+		);
 	}
 	
 	@Override
@@ -307,8 +294,8 @@ implements IView
 	// may become public if we have a handler call this
 	// or not: I wonder if I can make a handler a private class...
 	{
-		this.active_snapshot_controller.setModelProperty(
-			Constants.PATH_PROPERTY, 
+		this.active_snapshot_controller.updateModel(
+			SnapshotModelMessages.PATH, 
 			potential_directory.getAbsolutePath()
 		);
 	}
@@ -340,8 +327,8 @@ implements IView
 	initializeToolbar
 	(IToolBarManager toolBar) 
 	{		
-		this.event_log_controller.addView(this);	
-		this.event_log_controller.addModel(Activator.getDefault().getEventLogListModel());
+	//	this.event_log_controller.addView(this);	
+	//	this.event_log_controller.addModel(Activator.getDefault().getEventLogListModel());
 		
 		IAction finish	
 			= new FinishAction(
@@ -451,32 +438,27 @@ implements IView
 	private void 
 	initializeDropDownMenu
 	(IMenuManager dropDownMenu) 
-	{
-		IAction jip_viewer
-			= new JIPViewerAction();
-		
-		dropDownMenu.add(jip_viewer);
-	}
+	{}
 	
 	private void 
 	setWidgetText()
 	{
 		String[] property_names
 			= {
-				Constants.PATH_PROPERTY,
-				Constants.NAME_PROPERTY,
-				Constants.HOST_PROPERTY,
-				Constants.PORT_PROPERTY
+				SnapshotModelMessages.PATH.NAME,
+				SnapshotModelMessages.NAME.NAME,
+				SnapshotModelMessages.HOST.NAME,
+				SnapshotModelMessages.PORT.NAME
 			};
 		Map<String, Object> map
 			= this.active_snapshot_controller.requestProperties(
 				property_names
 			);
 		
-		this.path_text.setText( (String) map.get(Constants.PATH_PROPERTY) );
-		this.name_text.setText( (String) map.get(Constants.NAME_PROPERTY) );
-		this.host_text.setText( (String) map.get(Constants.HOST_PROPERTY) );
-		this.port_text.setText( (String) map.get(Constants.PORT_PROPERTY) );
+		this.path_text.setText( (String) map.get(SnapshotModelMessages.PATH.NAME) );
+		this.name_text.setText( (String) map.get(SnapshotModelMessages.NAME.NAME) );
+		this.host_text.setText( (String) map.get(SnapshotModelMessages.HOST.NAME) );
+		this.port_text.setText( (String) map.get(SnapshotModelMessages.PORT.NAME) );
 	}
 	
 	@Override
@@ -491,30 +473,56 @@ implements IView
 				@Override
 				public void
 				run(){
-					System.out.println("modelPropertyChange(): Property changed");
-					switch(evt.getPropertyName())
-					{
-					case Constants.PATH_PROPERTY:
+					String property
+						= evt.getPropertyName();
+					
+					System.out.println("modelPropertyChange(): " + property);
+					System.out.println("New value: " + evt.getNewValue().toString());
+					
+					if( property.equals( SnapshotModelMessages.PATH.NAME)){
 						SnapshotView.this.path_text.setText((String) evt.getNewValue());
-						break;
-					case Constants.HOST_PROPERTY:
+					}
+					else if( property.equals( SnapshotModelMessages.HOST.NAME)){
 						SnapshotView.this.host_text.setText((String) evt.getNewValue());
-						break;
-					case Constants.NAME_PROPERTY:
-						SnapshotView.this.name_text.setText( (String) evt.getNewValue());
-						break;
-					case Constants.PORT_PROPERTY:
+					}				
+					else if( property.equals( SnapshotModelMessages.NAME.NAME)){
+						SnapshotView.this.name_text.setText( (String) evt.getNewValue());				
+					}
+					else if( property.equals( SnapshotModelMessages.PORT.NAME)){
 						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
-						break;
-					case Constants.SNAPSHOT_CAPTURED_PROPERTY:
+					}
+					else {
+						System.out.println("SnapshotView swallowed a message.");
+					}
+					
+					SnapshotView.this.refresh();
+				}
+			});
+	}
+	
+	@Override
+	public void 
+	modelEvent
+	( final PropertyChangeEvent evt ) 
+	{
+		// event may be triggered by a process in a non-SWT thread
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					String property
+						= evt.getPropertyName();
+					
+					System.out.println("modelEvent():" + property);
+					
+					if( property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME)){
 						SnapshotView.this.snapshot_tree_viewer.setInput("hello");
 						SnapshotView.this.snapshot_tree_viewer.refresh();
-						break;
-					case Constants.EVENT_LIST_PROPERTY:
-						SnapshotView.this.log_console_table.refresh();
-						break;
 					}
-					SnapshotView.this.refresh();
+					else {
+						System.out.println("SnapshotView swallowed event");
+					}
 				}
 			});
 	}
@@ -661,17 +669,17 @@ implements IView
 				return;
 
 			// returned array should be ordered as in gui layout
-			this.controller.setModelProperty(
-				Constants.PATH_PROPERTY, SnapshotView.this.path_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.PATH, SnapshotView.this.path_text.getText()
 			);
-			this.controller.setModelProperty(
-				Constants.NAME_PROPERTY, SnapshotView.this.name_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.NAME, SnapshotView.this.name_text.getText()
 			);
-			this.controller.setModelProperty(
-				Constants.HOST_PROPERTY, SnapshotView.this.host_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.HOST, SnapshotView.this.host_text.getText()
 			);
-			this.controller.setModelProperty(
-				Constants.PORT_PROPERTY, SnapshotView.this.port_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.PORT, SnapshotView.this.port_text.getText()
 			);
 			
 		    Snapshot snapshot 
@@ -773,12 +781,13 @@ implements IView
 		    	  		"start"
 		    	  	);
 					this.controller.notifyPeers(
-						Constants.SNAPSHOT_STARTED,
+						SnapshotModelMessages.SNAPSHOT_STARTED,
+						//Constants.EVENT_SNAPSHOT_STARTED,
 						this,
 					    snapshot
 					);
-					this.controller.setModelProperty(
-						Constants.NAME_PROPERTY, 
+					this.controller.updateModel(
+						SnapshotModelMessages.NAME, 
 						snapshot.getName()
 					);
 					this.setEnabled(false);
@@ -920,21 +929,29 @@ implements IView
 		public void 
 		modelPropertyChange
 		( PropertyChangeEvent evt ) 
+		{}
+
+		@Override
+		public void 
+		modelEvent
+		( PropertyChangeEvent evt ) 
 		{
-			switch (evt.getPropertyName()) 
-			{
-			case Constants.SNAPSHOT_CAPTURED_PROPERTY:
-			case Constants.SNAPSHOT_CAPTURE_FAILED:
+			// TODO may need to add a thread here
+			String property
+				= evt.getPropertyName();
+			
+			if( property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURE_FAILED.NAME)){
 				this.setEnabled(true);
-				break;
-			default:
+			}
+			else if(property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME)){
+				this.setEnabled(true);
+			}
+			else {
 				System.out.println("StartAction swallowed message.");
-			    break;
 			}
 		}
 	}
 }
-
 // note : the following class and the next modeled themselves
 // after the examples provided in 
 // http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/DemonstratesTreeViewer.htm

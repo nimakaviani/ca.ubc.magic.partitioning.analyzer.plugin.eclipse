@@ -28,12 +28,14 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 // $Id: LogAction.java,v 1.1 2008/09/23 04:48:15 jchapman0 Exp $
-package snapshots.events.logging;
+package recycle_bin;
 
 import java.awt.event.ActionEvent;
 
 import plugin.Activator;
 import plugin.Constants;
+import snapshots.events.logging.EventLogEvent;
+import snapshots.events.logging.IEventLogAction;
 
 
 /**
@@ -45,6 +47,13 @@ public class
 LogAction 
 implements IEventLogAction
 {
+
+	@Override
+	public void performAction(ActionEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
+	/*
 	@Override
 	public void 
 	performAction
@@ -58,5 +67,5 @@ implements IEventLogAction
 			(String) event_log_event.getProperty( Constants.KEY_LOGS_DATA)
 		);
 		
-	}
+	} */
 }

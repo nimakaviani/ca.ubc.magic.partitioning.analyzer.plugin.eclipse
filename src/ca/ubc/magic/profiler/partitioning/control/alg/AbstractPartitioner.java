@@ -55,7 +55,10 @@ public abstract class AbstractPartitioner implements IPartitioner {
             throw new RuntimeException("The partitioner is not properly initialized.");                        
         
         if (!mModuleModel.isSimulation())                       
-            initCostMap();        
+            initCostMap(); 
+        
+        // david - added this to the constructor, not sure what the benefits of lazyness are
+        mFilterList = new ArrayList<IFilter>();
     }               
     
     public void init(ModuleModel mModel, final HostModel hModel, final List predefinedModuleHostPlacement){
@@ -160,6 +163,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
      */
     public void applyFilters(){
     	
+    	// TODO tell Nima about this problem
     	// apply singleton filters which do not need internal elements. 
     	for (IFilter f : mFilterList){
             applyFilter(f, null);
@@ -188,8 +192,8 @@ public abstract class AbstractPartitioner implements IPartitioner {
     
     public void addFilter(IFilter filter){
     	
-        if (mFilterList == null) 
-            mFilterList = new ArrayList<IFilter>();
+//        if (mFilterList == null) 
+//            mFilterList = new ArrayList<IFilter>();
         if (!mFilterList.contains(filter))
             mFilterList.add(filter);
     }

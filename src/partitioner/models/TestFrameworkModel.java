@@ -31,21 +31,63 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFrameworkHelper;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
-import plugin.Constants;
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
 
+// TODO: split the model parts which track the state of the view from
+//		the model parts which are application logic
 public class 
 TestFrameworkModel 
 implements IModel
 {
+	// properties: features that a view can update
+//	public static final String PROPERTY_SIMULATION_ADDED 
+//		= "SimulationAdded";
+//	public static final String GUI_SIMULATION_REMOVED 
+//		= "SimulationRemoved";
+//	public static final String GUI_UPDATE_SIMULATION_REPORT 
+//		= "UpdateSimulationReport";
+//	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
+//		= "UpdateBestSimulationReport";
+//	public static final String GUI_SIMULATION_TYPE 
+//		= "SimulationType";
+	
+	
+	// the following should all be properties that can be queried for...
+	// they are only events due to the nature of the program (which was a path 
+	// of least resistance in some cases);
+	// the problem is that I don't want the user to be able to set these...
+	// but I do want the user to be able to query for them...
+//	public static final String EVENT_UPDATE_BEST_RUN_NAME 
+//		= "BestRunName";
+//	public static final String EVENT_UPDATE_BEST_RUN_ALGORITHM 
+//		= "BestAlgorithmName";
+//	public static final String EVENT_UPDATE_BEST_RUN_COST 
+//		= "BestRunCost";
+//	public static final String EVENT_UPDATE_ID 
+//		= "IncrementID";
+	
+		
+	
+	// events to the model or originating from
+//	public static final String EVENT_RUN_SIMULATION 
+//		= "RunSimulation";
+	
+//	public static final String EVENT_SIMULATION_TABLE_RUN_UPDATE 
+//		= "RunSimulationTableUpdate";
+	
+	// Queryable
 	public static final String				TEST_SIMULATION_FRAMEWORK
 		= "SimulationFramework";
 	public static final String				TEST_MODULE_MODEL
 		= "ModuleModel";
 	public static final String				TEST_HOST_MODEL
 		= "HostModel";
-	
+	// collection queries: how to handle collections
+	//	that come into being at runtime?
+//	public static final String SIMULATION_UNITS 
+//		= "InSimulationUnits";
+		
 	private PropertyChangeDelegate 			property_change_delegate;
 	private Map<String, DefaultKeyValue> 	unitMap;
 	private int id;
@@ -124,52 +166,10 @@ implements IModel
 		this.setSimulationType( SimulatorType.TIME_SIMULATOR.getText() );
 	}
 	
-	private void 
-	registerProperties() 
-	{
-		String[] property_names
-			= {
-				this.TEST_SIMULATION_FRAMEWORK,
-				this.TEST_MODULE_MODEL,
-				this.TEST_HOST_MODEL,
-			};
-		Object[] properties
-			= {
-				this.mSimFramework,
-				this.mModuleModel,
-				this.mHostModel
-			};
-		
-		this.property_change_delegate.registerProperties(
-			property_names, 
-			properties
-		);
-	}
-
-	@Override
-	public void 
-	addPropertyChangeListener
-	( PropertyChangeListener l) 
-	{
-		this.property_change_delegate.addPropertyChangeListener(l);
-	}
-
-	@Override
-	public void 
-	removePropertyChangeListener
-	( PropertyChangeListener l) 
-	{
-		this.property_change_delegate.removePropertyChangeListener(l);
-	}
-
-	@Override
-	public Map<String, Object> 
-	request
-	( String[] property_names ) 
-	{
-		return this.property_change_delegate.getAll(property_names);
-	}
-
+	////////////////////////////////////////////////////////////////////////
+	///	Property Change Event Handlers
+	////////////////////////////////////////////////////////////////////////
+	
 	public void
 	setSimulationAdded
 	( SimulationUnit unit )
@@ -185,58 +185,29 @@ implements IModel
 		System.out.println("Extracting " + unit.getKey());
 	
 		this.property_change_delegate.firePropertyChange(
-			Constants.GUI_SIMULATION_ADDED, null, unit
+			TestFrameworkMessages.SIMULATION_ADDED, null, unit
 		);
 	
-		this.property_change_delegate.firePropertyChange(
-			Constants.INCREMENT_ID, this.id, ++this.id
-		);
-	}
-
-	private void 
-	setIncrementID
-	( int id ) 
-	{
-		int old_id 
-			= this.id;
-		this.id
-			= id;
-	
-		this.property_change_delegate.firePropertyChange(
-			Constants.INCREMENT_ID, old_id, this.id
-		);
+		this.incrementID();
 	}
 	
-	public void
-	doRunSimulation()
-	{
-		try{
-			System.err.println("Running simulation");
-			
-			Display.getDefault().syncExec(
-			new Runnable(){
-				@Override
-				public void 
-				run() 
-				{
-					TestFrameworkModel.this
-						.mSimFramework.run(
-							TestFrameworkModel.this.mSim
-						);
-				}
-			});
-		}catch( Exception ex ){
-			ex.printStackTrace();
-		}
-	}
-
 	public void
 	setSimulationRemoved
 	( SimulationUnit unit )
 	{
 		unitMap.remove(unit.getKey());
 	}
-	
+
+	private void 
+	incrementID() 
+	{
+		this.id++;
+		System.err.println("Updating the id");
+		this.property_change_delegate.notifyViews(
+			TestFrameworkMessages.UPDATE_ID, 
+			new Integer(this.id)
+		);
+	}
 	
 	public void
 	setUpdateSimulationReport
@@ -265,9 +236,8 @@ implements IModel
 		Integer num = (Integer) key_value.getKey();
 		int id = num;
 		
-		this.property_change_delegate.firePropertyChange(
-			Constants.SIMULATION_TABLE_RUN_UPDATE,
-			null,
+		this.property_change_delegate.notifyViews(
+			TestFrameworkMessages.SIMULATION_TABLE_RUN_UPDATE,
 			new Object[] { 
 				id,
 				report.getCostModel().getExecutionCost(),
@@ -287,46 +257,24 @@ implements IModel
 			System.err.println("Firing events in updateBestSimulationReport ");
 			this.mBestSimUnit = unit;
 			
-			this.property_change_delegate.firePropertyChange(
-				Constants.BEST_RUN_NAME,
-				null,
+			this.property_change_delegate.notifyViews(
+				TestFrameworkMessages.UPDATE_BEST_RUN_NAME,
+				//TestFrameworkModel.EVENT_UPDATE_BEST_RUN_NAME,
 				((Integer) (this.unitMap.get(unit.getKey()).getKey())) + ": " + unit.getName()
 			);
 			
-			this.property_change_delegate.firePropertyChange(
-				Constants.BEST_RUN_ALGORITHM,
-				null,
+			this.property_change_delegate.notifyViews(
+				TestFrameworkMessages.UPDATE_BEST_RUN_ALGORITHM,
+				//TestFrameworkModel.EVENT_UPDATE_BEST_RUN_ALGORITHM,
 				unit.getAlgorithmName()
 			);
 			
-			this.property_change_delegate.firePropertyChange(
-				Constants.BEST_RUN_COST, 
-				null,
+			this.property_change_delegate.notifyViews(
+				TestFrameworkMessages.UPDATE_BEST_RUN_COST,
+				//TestFrameworkModel.EVENT_UPDATE_BEST_RUN_COST, 
 				Double.toString( unit.getUnitCost() )
 			);
 		}
-	}
-
-	public SimulationUnit
-	findInSimulationUnits
-	( Integer id )
-	{
-		SimulationUnit unit
-			= null;
-		
-		for( DefaultKeyValue keyVal : unitMap.values() ){
-			System.err.println("Key: "+ (Integer) keyVal.getKey());
-			if (((Integer) keyVal.getKey()).equals(id)){
-				unit 
-					= SimulationFrameworkHelper.getUnitFromSig(
-						( String ) keyVal.getValue(), 
-						mSimFramework.getTemplate(), 
-						Boolean.TRUE
-					);
-			}
-		}
-
-		return unit;
 	}
 	
 	public void
@@ -364,5 +312,100 @@ implements IModel
 	            default:
 	                throw new RuntimeException("A simulator needs to be selected.");
 	        }
+	}
+
+	public SimulationUnit
+	findInSimulationUnits
+	( Integer id )
+	{
+		SimulationUnit unit
+			= null;
+		
+		for( DefaultKeyValue keyVal : unitMap.values() ){
+			System.err.println("Key: "+ (Integer) keyVal.getKey());
+			if (((Integer) keyVal.getKey()).equals(id)){
+				unit 
+					= SimulationFrameworkHelper.getUnitFromSig(
+						( String ) keyVal.getValue(), 
+						mSimFramework.getTemplate(), 
+						Boolean.TRUE
+					);
+			}
+		}
+
+		return unit;
+	}
+	
+	public void
+	doRunSimulation()
+	{
+		try{
+			System.err.println("Running simulation");
+			
+			Display.getDefault().syncExec(
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					TestFrameworkModel.this
+						.mSimFramework.run(
+							TestFrameworkModel.this.mSim
+						);
+				}
+			});
+		}catch( Exception ex ){
+			ex.printStackTrace();
+		}
+	}
+	
+	//////////////////////////////////////////////////////////////////////////
+	///	IModel Functions
+	//////////////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void 
+	addPropertyChangeListener
+	( PropertyChangeListener l) 
+	{
+		this.property_change_delegate.addPropertyChangeListener(l);
+	}
+	
+	@Override
+	public void 
+	removePropertyChangeListener
+	( PropertyChangeListener l) 
+	{
+		this.property_change_delegate.removePropertyChangeListener(l);
+	}
+	
+	@Override
+	public Map<String, Object> 
+	request
+	( String[] property_names ) 
+	{
+		return this.property_change_delegate.getAll(property_names);
+	}
+	
+	private void 
+	registerProperties() 
+	{
+		String[] property_names
+			= {
+				this.TEST_SIMULATION_FRAMEWORK,
+				this.TEST_MODULE_MODEL,
+				this.TEST_HOST_MODEL,
+			};
+		Object[] properties
+			= {
+				this.mSimFramework,
+				this.mModuleModel,
+				this.mHostModel
+			};
+		
+		this.property_change_delegate.registerProperties(
+			property_names, 
+			properties
+		);
 	}
 }

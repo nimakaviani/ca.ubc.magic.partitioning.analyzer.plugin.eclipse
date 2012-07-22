@@ -1,4 +1,4 @@
-package plugin.mvc;
+package snapshots.views;
 
 import java.beans.PropertyChangeEvent;
 import java.io.IOException;
@@ -7,11 +7,13 @@ import org.eclipse.jface.action.Action;
 
 import plugin.Activator;
 import plugin.Constants;
+import plugin.mvc.IController;
+import plugin.mvc.IView;
 
 import snapshots.com.mentorgen.tools.util.profile.Finish;
 import snapshots.events.logging.EventLogger;
 import snapshots.model.Snapshot;
-import snapshots.views.IView;
+import snapshots.model.SnapshotModelMessages;
 
 public class 
 FinishAction 
@@ -87,25 +89,26 @@ implements IView
 				"finish"
 			);
 			this.active_snapshot_controller.notifyPeers(
-				//new SnapshotEvent(
-					Constants.SNAPSHOT_CAPTURED_PROPERTY,
+					SnapshotModelMessages.SNAPSHOT_CAPTURED,
+					//Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY,
 					this,
 					null
-				//)
 			);
 	    }
 	    else {
 	    	this.active_snapshot_controller.notifyPeers(
-	    		Constants.SNAPSHOT_CAPTURE_FAILED,
+	    		SnapshotModelMessages.SNAPSHOT_CAPTURE_FAILED,
+	    		//Constants.EVENT_SNAPSHOT_CAPTURE_FAILED,
 	    		this,
 	    		null
 	    	);
 	    }
-		this.active_snapshot_controller.setModelProperty(
-			Constants.NAME_PROPERTY, ""
+		this.active_snapshot_controller.updateModel(
+			SnapshotModelMessages.NAME, ""
 		);
 		this.active_snapshot_controller.notifyPeers(
-			Constants.SNAPSHOT_CAPTURED_PROPERTY, 
+			SnapshotModelMessages.SNAPSHOT_CAPTURED,
+			// Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY, 
 			this, null
 		);
 	    this.setEnabled(false);
@@ -115,16 +118,26 @@ implements IView
 	public void 
 	modelPropertyChange
 	( PropertyChangeEvent evt ) 
+	{}
+	
+	@Override
+	public void 
+	modelEvent
+	( PropertyChangeEvent evt ) 
 	{
-		switch(evt.getPropertyName()){
-		case Constants.SNAPSHOT_STARTED:
+		String property
+			= evt.getPropertyName();
+		
+		if( property.equals(SnapshotModelMessages.SNAPSHOT_STARTED.NAME)){
 			this.setEnabled(true);
 		      this.current_snapshot 
 		      	= (Snapshot) evt.getNewValue();
-			break;
-		default:
-			System.out.println("FinishAction swallowing event: " + evt.getPropertyName());
-			break;
+		}
+		else {
+			System.out.println(
+				"FinishAction swallowing event: " 
+				+ evt.getPropertyName()
+			);
 		}
 	}
 }

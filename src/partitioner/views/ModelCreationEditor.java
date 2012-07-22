@@ -34,11 +34,14 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 
 import partitioner.models.PartitionerModel;
+import partitioner.models.PartitionerModelMessages;
 import partitioner.models.TestFrameworkModel;
 import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
-import snapshots.views.IView;
+import plugin.mvc.IView;
+import plugin.mvc.Publications;
+import snapshots.views.VirtualModelFileInput;
 
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
@@ -149,7 +152,6 @@ implements IView
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
 
 	  	this.initialize_model_analysis_page( model_analysis_composite );
-		//this.initialize_model_test_page();
 		this.updateTitle();
 
 		// this should happen after the controller is assigned
@@ -183,12 +185,9 @@ implements IView
 					ModelCreationEditor.this.frame.setBackground(
 						Color.white
 					);
-//					///
-//					Rectangle bounds
-//						= ModelCreationEditor.this.getContainer().getBounds();
-//					int width = bounds.width;
-//					int height = bounds.height;
-//					ModelCreationEditor.this.frame.setSize(width, height);
+					// TODO the following fixes the resize problem but I'm not
+					//	sure why. also, there is now the problem of remaining
+					// ghost images of graphs...will need to fix
 					ModelCreationEditor.this.frame.pack();
 					ModelCreationEditor.this.frame.setVisible(true);
 					SwingUtilities.updateComponentTreeUI(frame);	
@@ -264,8 +263,8 @@ implements IView
 			return_value = "";
 		}
 		
-		ModelCreationEditor.this.controller.setModelProperty(
-			PartitionerModel.GUI_PROFILER_TRACE, 
+		ModelCreationEditor.this.controller.updateModel(
+			PartitionerModelMessages.PROFILER_TRACE, 
 			return_value
 		);
 		
@@ -283,46 +282,76 @@ implements IView
 			public void run() 
 			{
 				System.err.println(
-					"Event generated in ModelCreationEditor: " 
+					"PropertyChange generated in ModelCreationEditor: " 
 					+ evt.getPropertyName()
 				);
 				
-				switch(evt.getPropertyName())
-				{
-				case PartitionerModel.GUI_MODULE_COARSENER:
+				String property
+					= evt.getPropertyName();
+				
+				if(property.equals(PartitionerModelMessages.MODULE_COARSENER.NAME)){
 					ModuleCoarsenerType mc 
 						= (ModuleCoarsenerType) evt.getNewValue();
 					System.out.println(
 						"The module coarsener was modified to " + mc.getText()
 					);
-					break;
-				case PartitionerModel.MODEL_CREATION:
-					ModelCreationEditor.this.visualizeModuleModel();
-					break;
-				case PartitionerModel.EVENT_PARTITIONING_COMPLETE:
+				}
+				else if( property.equals( PartitionerModelMessages.PERFORM_PARTITIONING.NAME)){
+					ModelCreationEditor.this.perform_partitioning
+						= (Boolean) evt.getNewValue();
+				}
+				else {
+					System.out.println("Swallowing message.");
+				}
+			}
+		});
+	}
+	
+	@Override
+	public void 
+	modelEvent
+	( final PropertyChangeEvent evt ) 
+	{
+		// event may be triggered by a process in a non-SWT thread
+		Display.getDefault().asyncExec( new Runnable(){
+			@Override
+			public void run() 
+			{
+				System.err.println(
+					"Event generated in ModelCreationEditor: " 
+					+ evt.getPropertyName()
+				);
+				
+				String property
+					= evt.getPropertyName();
+				if( property.equals(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
 					// this is when the initialization must occur
+					//
+					// the most important thing is to know that the requested
+					// object will not be created until after the partitioning is
+					// performed; we can assume by the property name that the object
+					// will only be non-null after this event fires
 					Map<String, Object> map 
 						= ModelCreationEditor.this.controller.requestProperties(
 							new String[]{
-								Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK
+								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
 							}
 						);
 					TestFrameworkModel test_framework_model
 						= (TestFrameworkModel) map.get(
-							Constants.AFTER_PARTITIONING_CREATE_TEST_FRAMEWORK
+							PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
 						);
 					// all the view is allowed to do is take the model and use
 					// it to generate a new view: anything more is too much logic
 					ModelCreationEditor.this
 						.activateTestPage( test_framework_model );
-					break;
-				case PartitionerModel.GUI_PERFORM_PARTITIONING:
-					ModelCreationEditor.this.perform_partitioning
-						= (Boolean) evt.getNewValue();
-					break;
-				default:
-					System.out.println("Swallowing message.");
-				};
+				}
+				else if( property.equals( PartitionerModelMessages.MODEL_CREATED.NAME)){
+					ModelCreationEditor.this.visualizeModuleModel();
+				}
+				else {
+					System.out.println("Swallowing Message");
+				}
 			}
 		});
 	}
@@ -377,14 +406,14 @@ implements IView
 					Map<String, Object> map
 						= ModelCreationEditor.this.controller.requestProperties(
 							new String[]{
-								Constants.MODULE_EXCHANGE_MAP
+								PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
 							}
 						);
 					// problem: currentVP is both a view type component and
 					// a model type component: where does it go? 
 					ModelCreationEditor.this.currentVP.drawModules(
 						(Map<ModulePair, InteractionData>) map.get(
-							Constants.MODULE_EXCHANGE_MAP
+							PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
 						)
 					);  
 					
@@ -445,10 +474,22 @@ implements IView
 			}
 		}
 		
+		// notify peers on the controller
 		this.controller.notifyPeers(
-			PartitionerModel.EDITOR_CLOSED, 
+			PartitionerModelMessages.EDITOR_CLOSED,
+			//Constants.EVENT_EDITOR_CLOSED, 
 			this, 
 			null
+		);
+		
+		// make system wide publication
+		VirtualModelFileInput input
+			= (VirtualModelFileInput) this.getEditorInput();
+		
+		this.controller.publish(
+			this.getClass(), 
+			Publications.MODEL_EDITOR_CLOSED, 
+			input
 		);
 	}
 
@@ -502,22 +543,11 @@ implements IView
 				
 				System.out.println( "Active: " + part_ref.getTitle() );
 				
-				BundleContext context 
-					= FrameworkUtil.getBundle(
-						ModelCreationEditor.class
-					).getBundleContext();
-		        ServiceReference<EventAdmin> ref 
-		        	= context.getServiceReference(EventAdmin.class);
-		        EventAdmin eventAdmin 
-		        	= context.getService( ref );
-		        Map<String,Object> properties 
-		        	= new HashMap<String, Object>();
-		        properties.put( "ACTIVE_EDITOR", editor.getController() );
-		        Event event 
-		        	= new Event("viewcommunication/syncEvent", properties);
-		        eventAdmin.sendEvent(event);
-		        event = new Event("viewcommunication/asyncEvent", properties);
-		        eventAdmin.postEvent(event);
+				ModelCreationEditor.this.controller.publish( 
+					this.getClass(), 
+					Publications.ACTIVE_EDITOR_CHANGED, 
+					editor.getController()
+				);
 			}
 		}
 

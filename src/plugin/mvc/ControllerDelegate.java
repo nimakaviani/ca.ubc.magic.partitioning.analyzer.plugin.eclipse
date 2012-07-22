@@ -6,37 +6,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import snapshots.views.IView;
+import plugin.mvc.messages.IndexEvent;
+import plugin.mvc.messages.PropertyEvent;
+import plugin.mvc.messages.ToModelEvent;
+import plugin.mvc.messages.ViewsEvent;
 
-
-// TODO: I have my solution to the following problem:
-//		1) We transmit two kinds of objects through our controller:
-//			a property changed event, and an event event
-//			-> in order to reduce the possibility of error I want the
-//			system to be able to tell the two apart, and for the two
-//			to receive different callbacks
-//			-> I need to do this without compromising any thread
-//			safety guarantees made by the Java APIs that I am using
-//			-> my solution is to extend the PropertyChangedEvent class
-//			to implement an EventOccurredEvent class and use an 
-//			instanceof in the dispatcher to select whether to
-//			call a propertychanged callback in the views, or a
-//			eventoccurred callback in the views
-//			-> going in the other direction, we already distinguish
-//			by having the controller call different functions
-//			but this might change
 public class 
 ControllerDelegate 
-implements IController
+implements IController,
+	IPublisher
 {
 	private IModel 		model;
 	private List<IView> registered_views;
+	private IPublisher	publisher_delegate;
+	
+	public final static String EVENT_SENTINEL
+		= "Event";
 		
 	public 
 	ControllerDelegate()
 	{
 		this.registered_views
 			= new CopyOnWriteArrayList<IView>();
+		this.publisher_delegate
+			= new PublisherDelegate();
 	}
 	
 	@Override
@@ -55,7 +48,9 @@ implements IController
 			this.model.addPropertyChangeListener(this);
 		}
 		else {
-			throw new RuntimeException("You can only assign one model to a controller.");
+			throw new RuntimeException(
+				"You can only assign one model to a controller."
+			);
 		}
 	}
 
@@ -89,12 +84,17 @@ implements IController
 	
 	@Override
 	public void 
-	setModelProperty
-	(String property_name, Object new_value) 
+	updateModel
+	( PropertyEvent event, Object new_value) 
 	// I should really mention that the following technique is
 	// taken from the tutorial at:
 	// http://www.oracle.com/technetwork/articles/javase/index-142890.html
 	{
+		String property_name
+			= event.NAME;
+		
+		event.validatePackage( new_value );
+		
         try {
             Method method 
             	= this.model.getClass().getMethod( 
@@ -118,13 +118,18 @@ implements IController
 	@Override
 	public void
 	notifyPeers
-	( String property_name, Object source, Object new_value )
+	( ViewsEvent event, Object source, Object new_value )
 	{
+		String property_name
+			= event.NAME;
+		
+		event.validatePackage(new_value);
+		
 		PropertyChangeEvent evt 
 			= new PropertyChangeEvent(
 				source, 
 				property_name, 
-				null, 
+				ControllerDelegate.EVENT_SENTINEL, 
 				new_value
 			);
 		this.propertyChange(evt);
@@ -133,8 +138,11 @@ implements IController
 	@Override
 	public void 
 	notifyModel
-	( String event_name ) 
+	( ToModelEvent event ) 
 	{
+		String event_name
+			= event.NAME;
+		
         try {
             Method method 
             	= this.model.getClass().getMethod( 
@@ -167,18 +175,21 @@ implements IController
 	@Override
 	public Object 
 	index
-	( String event_name, Object key ) 
+	( IndexEvent event, Object key ) 
 	{
         Object obj
         	= null;
+        String event_name
+        	= event.NAME;
+        event.validatePackage(key);
         
-		 try {
-	            Method method 
-	            	= this.model.getClass().getMethod( 
-	            		"find" + event_name,
-	            		new Class[]{ key.getClass() }
-	            	);
-	            	obj = method.invoke(this.model, key);
+		try {
+			Method method 
+	        	= this.model.getClass().getMethod( 
+	            	"find" + event_name,
+	            	new Class[]{ key.getClass() }
+	            );
+	            obj = method.invoke(this.model, key);
 	            System.out.printf(
 	            	"Calling method find%s() in class %s\n",
 	            	event_name, 
@@ -204,8 +215,43 @@ implements IController
 	propertyChange
 	( PropertyChangeEvent evt ) 
 	{
-		for(IView view : this.registered_views){
-			view.modelPropertyChange(evt);
+		if( evt.getOldValue() == ControllerDelegate.EVENT_SENTINEL ){
+			for(IView view : this.registered_views){
+				view.modelEvent(evt);
+			}
 		}
+		else {
+			for(IView view : this.registered_views){
+				view.modelPropertyChange(evt);
+			}
+		}
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	///	Publisher interface
+	///////////////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void 
+	publish 
+	( Class<?> sender_class, Publications publication, Object packet) 
+	{
+		this.publisher_delegate.publish(
+			sender_class, 
+			publication, 
+			packet
+		);
+	}
+
+	@Override
+	public void 
+	registerPublicationListener
+	( Class<?> listener_class, Publications publication, PublicationHandler publication_handler ) 
+	{
+		this.publisher_delegate.registerPublicationListener(
+			listener_class,
+			publication,
+			publication_handler
+		);
 	}
 }

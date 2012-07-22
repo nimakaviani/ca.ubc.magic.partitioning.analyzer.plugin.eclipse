@@ -45,9 +45,9 @@
       <operations public="true" package="true" protected="true" private="true"/>    
     </display>  
   </interface>  
-  <class id="6" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.EventLogTable" 
+  <class id="6" corner="BOTTOM_RIGHT" language="java" name="recycle_bin.EventLogTable" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/EventLogTable.java" binary="false">    
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/recycle_bin/EventLogTable.java" binary="false">    
     <position height="-1" width="-1" x="639" y="1093"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="false"/>      
@@ -90,9 +90,9 @@
       <operations public="true" package="true" protected="true" private="false"/>    
     </display>  
   </class>  
-  <interface id="11" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.IView" 
+  <interface id="11" corner="BOTTOM_RIGHT" language="java" name="plugin.mvc.IView" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/IView.java" binary="false">    
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/plugin/mvc/IView.java" binary="false">    
     <position height="-1" width="-1" x="4" y="1084"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true"/>      

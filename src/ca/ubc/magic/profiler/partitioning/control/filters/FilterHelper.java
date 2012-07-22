@@ -35,13 +35,14 @@ public class FilterHelper {
     public static final String INFEASIBLE_SPLIT_THREAD = "Infeasible Split Filter Threaded";
     public static final String INFEASIBLE_SYNTHETIC = "Infeasible Synthetic Node";
     
-    public static Map<String, IFilter> setFilter(
-    		ModuleModel moduleModel, 
+    public static Map<String, IFilter> 
+    setFilter
+    ( 		ModuleModel moduleModel, 
     		HostModel hostModel,
     		FilterConstraintModel filterModel,
-    		FilterType type){
-    	
-    	Map<String, IFilter> filterMap= new HashMap<String, IFilter>();
+    		FilterType type)
+    {
+    	Map<String, IFilter> filterMap = new HashMap<String, IFilter>();
     	
     	for (FilterConstraint constraint : filterModel.getFilterSet(type)){
     		IFilter filter = FilterFactory.getFilter(type, moduleModel,	hostModel, constraint);
