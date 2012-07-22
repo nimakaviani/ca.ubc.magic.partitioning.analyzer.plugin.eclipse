@@ -57,63 +57,11 @@ implements IModel
 // TODO: write an adapter around the Model so were more cleanly separate
 //		the mvc interface from the program logic
 {
-//	public static final String	SIMULATION_FRAMEWORK
-//		= "SimulationFramework";
-//	public static final String	MODULE_MODEL
-//		= "ModuleModel";
-//	public static final String	HOST_MODEL
-//		= "HostModel";
-	
-//	public static final String GUI_MODULE_COARSENER 		
-//		= "ModuleCoarsener";
-//	public static final String GUI_PROFILER_TRACE   		
-//		= "ProfilerTracePath";
-//	public static final String GUI_MODULE_EXPOSER 			
-//		= "ModuleExposer";
-//	public static final String GUI_HOST_CONFIGURATION 		
-//		= "HostConfiguration";
-//	public static final String GUI_SET_MODULE_EXPOSURE 		
-//		= "ModuleExposure";
-//	public static final String GUI_SET_SYNTHETIC_NODE 		
-//		= "SyntheticNode";
-//	public static final String GUI_SET_PRESET_MODULE_GRAPH 	
-//		= "PresetModuleGraph";
-//	public static final String GUI_PERFORM_PARTITIONING 
-//		= "PerformPartitioning";
-//	public static final String GUI_PARTITIONER_TYPE 
-//		= "PartitionerType";
-//	public static final String GUI_INTERACTION_COST 
-//		= "InteractionCost";
-//	public static final String GUI_EXECUTION_COST
-//		= "ExecutionCost";
-	
 	public static final String AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP 
 		= "ModuleExchangeMap";
-	
-//	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
-//		= "ActivateHostFilter";
-//	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
-//		= "ActivateInteractionCostFilter";
-	
-//	public static final String GUI_GENERATE_TEST_FRAMEWORK 
-//		= "GenerateTestFramework";
-	
-//	public static final String EVENT_MODEL_CREATED 
-//		= "ModelCreation";
-//	public static final String EVENT_GENERATE_MODEL 
-//		= "ModelGeneration";
-//	public static final String EVENT_GENERATE_PARTITION 
-//		= "PartitionGeneration";
-	
-//	public static final String EVENT_PARTITIONING_COMPLETE 
-//		= "PartitioningComplete";
+
 	public static final String AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK 
 		= "AfterPartitioningCreateTestFramework";
-	
-//	 public static final String GUI_DISABLE_CONFIGURATION_PANEL 
-//		 = "ActiveConfigurationPanel";
-//	public static final String GUI_DISABLE_PARTITIONING_PANEL 
-//		= "ActivePartitioningPanel";
 	
 	private PropertyChangeDelegate 	property_change_delegate;
 	
@@ -692,43 +640,38 @@ implements IModel
 	private void 
 	runPartitioningAlgorithm() 
 	{
-		
-		try{
-            if (this.mHostModel.getInteractionCostModel() == null)
-                throw new RuntimeException("No Interaction Cost Model is set");   
-             if (this.mHostModel.getExecutionCostModel() == null)
-                throw new RuntimeException("No Execution Cost Model is set"); 
-            
-            assert( this.partitioner_type != null)
-            	: "The partitioner algorithm should not be null";
-            
-            IPartitioner partitioner 
-            	= PartitionerFactory.getPartitioner(
-            		this.partitioner_type
-            	);        
+        if (this.mHostModel.getInteractionCostModel() == null)
+            throw new RuntimeException("No Interaction Cost Model is set");   
+         if (this.mHostModel.getExecutionCostModel() == null)
+            throw new RuntimeException("No Execution Cost Model is set"); 
+        
+        assert( this.partitioner_type != null)
+        	: "The partitioner algorithm should not be null";
+        
+        IPartitioner partitioner 
+        	= PartitionerFactory.getPartitioner(
+        		this.partitioner_type
+        	);        
 
-            if (this.mModuleModel.isSimulation()){
-                partitioner.init(
-                	this.mmHandler.getModuleModel(), 
-                	this.mHostModel, 
-                	this.mmHandler.getModuleHostPlacementList()
-                );
-            } else if (!this.mModuleModel.isSimulation()){                    
-                partitioner.init(this.mModuleModel, this.mHostModel);                    
-            }
-            
-            for (IFilter f : this.mFilterMap.values()){
-                partitioner.addFilter(f);    
-            }
-            partitioner.partition();
-            
-            // david - it may be better to store the entire 
-            // IPartitioner instead
-            this.partitioner_solution
-            	= partitioner.getSolution();
-        }catch( Exception ex ){
-        	ex.printStackTrace();
+        if (this.mModuleModel.isSimulation()){
+            partitioner.init(
+            	this.mmHandler.getModuleModel(), 
+            	this.mHostModel, 
+            	this.mmHandler.getModuleHostPlacementList()
+            );
+        } else if (!this.mModuleModel.isSimulation()){                    
+            partitioner.init(this.mModuleModel, this.mHostModel);                    
         }
+        
+        for (IFilter f : this.mFilterMap.values()){
+            partitioner.addFilter(f);    
+        }
+        partitioner.partition();
+        
+        // david - it may be better to store the entire 
+        // IPartitioner instead
+        this.partitioner_solution
+        	= partitioner.getSolution();
 	}
 	
 	public void
@@ -904,47 +847,52 @@ implements IModel
 		{
 			System.out.println("Partitioning the model");
 			
-			// I am doing this as late as possible
-			PartitionerModel.this.initializeFilters();
-			
-			/// during finished
-			System.out.println( 
+			try { 
+				// I am doing this as late as possible
+				PartitionerModel.this.initializeFilters();
+				
+				/// during finished
+				System.out.println( 
+					PartitionerModel.this
+						.perform_partitioning.toString() 
+					);
+				if( PartitionerModel.this.perform_partitioning ){
+					System.out.println("Performing partition");
+					PartitionerModel.this.runPartitioningAlgorithm();
+				}
+				
+				/// after finished
+				// load the test framework if partitioning was set
+				// I wonder what this was originally for
+				if( PartitionerModel.this.generate_test_framework ){
+					PartitionerModel.this.property_change_delegate
+						.registerProperties(
+							new String[]{ 
+								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
+							},
+							new Object[]{
+								new TestFrameworkModel(
+									PartitionerModel.this.partitioner_type,
+									PartitionerModel.this.mModuleModel,
+									PartitionerModel.this.mSimFramework,
+									PartitionerModel.this.mHostModel,
+									PartitionerModel.this.profiler_trace,
+									PartitionerModel.this.mModuleType,
+									PartitionerModel.this.mConstraintModel
+								)
+							}
+						);
+				}
+	
 				PartitionerModel.this
-					.perform_partitioning.toString() 
-				);
-			if( PartitionerModel.this.perform_partitioning ){
-				System.out.println("Performing partition");
-				PartitionerModel.this.runPartitioningAlgorithm();
-			}
-			
-			/// after finished
-			// load the test framework if partitioning was set
-			// I wonder what this was originally for
-			if( PartitionerModel.this.generate_test_framework ){
-				PartitionerModel.this.property_change_delegate
-					.registerProperties(
-						new String[]{ 
-							PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
-						},
-						new Object[]{
-							new TestFrameworkModel(
-								PartitionerModel.this.partitioner_type,
-								PartitionerModel.this.mModuleModel,
-								PartitionerModel.this.mSimFramework,
-								PartitionerModel.this.mHostModel,
-								PartitionerModel.this.profiler_trace,
-								PartitionerModel.this.mModuleType,
-								PartitionerModel.this.mConstraintModel
-							)
-						}
+					.property_change_delegate.notifyViews(
+						PartitionerModelMessages.PARTITIONING_COMPLETE, 
+						null
 					);
 			}
-
-			PartitionerModel.this
-				.property_change_delegate.notifyViews(
-					PartitionerModelMessages.PARTITIONING_COMPLETE, 
-					null
-				);
+			catch(Exception ex){
+				ex.printStackTrace();
+			}
 			
 			return Status.OK_STATUS;
 		}
