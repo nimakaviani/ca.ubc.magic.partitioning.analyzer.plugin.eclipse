@@ -1,11 +1,10 @@
-package ca.ubc.magic.profiler.headless;
-
+//package ca.ubc.magic.profiler.headless;
+//
 //import java.io.FileNotFoundException;
 //import java.io.FileOutputStream;
 //import java.io.PrintWriter;
 //import java.util.ArrayList;
 //import java.util.Arrays;
-//import java.util.HashMap;
 //import java.util.HashSet;
 //import java.util.Iterator;
 //import java.util.LinkedList;
@@ -15,6 +14,8 @@ package ca.ubc.magic.profiler.headless;
 //import java.util.Set;
 //import java.util.SortedSet;
 //import java.util.TreeSet;
+//import java.util.concurrent.ConcurrentHashMap;
+//import java.util.concurrent.ConcurrentLinkedQueue;
 //
 //import ca.ubc.magic.profiler.dist.model.HostModel;
 //import ca.ubc.magic.profiler.dist.model.Module;
@@ -23,20 +24,27 @@ package ca.ubc.magic.profiler.headless;
 //import ca.ubc.magic.profiler.dist.model.execution.CloudExecutionMonetaryCostModel;
 //import ca.ubc.magic.profiler.dist.model.interaction.CloudMonetaryCostModel;
 //import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
+//import ca.ubc.magic.profiler.dist.model.report.ReportModel;
 //import ca.ubc.magic.profiler.dist.transform.FrameBasedModuleCoarsener;
 //import ca.ubc.magic.profiler.dist.transform.IModuleCoarsener;
 //import ca.ubc.magic.profiler.parser.EntityConstraintParser;
 //import ca.ubc.magic.profiler.parser.HostParser;
 //import ca.ubc.magic.profiler.parser.JipParser;
+//import ca.ubc.magic.profiler.parser.JipRun;
 //import ca.ubc.magic.profiler.partitioning.control.alg.simplex.LpSolvePartitionerExtended4Cost;
-
-public class HeadlessDriver {
-//	private static String profilerTraceXML = "/home/nima/tmp/20120616-151812.xml";
-//			//"C:/Temp/rib/20120616-001030.xml";
-//			//"C:/Temp/rib/20120615-205833.xml";
-//			//"C:/Temp/rib/20120614-001622.xml";
-//			//"C:/Users/Eric/workspace/DistributedSimulation/resources/dist-model/20120604-160134.xml";//
-//	private static String modExposerXML = "resources/dist-model/moduleconstraints-aries5.xml";
+//
+//public class HeadlessDriver {
+//	private static int NUM_OF_CORES = 4;
+//	private static String profilerTraceXML = "resources/dist-model/20120625-225911.xml";//
+//	private static JipRun run;
+//	static {
+//		try {
+//			run = JipParser.parse(profilerTraceXML);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+//	private static String modExposerXML = "resources/dist-model/moduleconstraints-jforum.xml";
 //	private static String hostConfigXML = "resources/dist-model/host-magic2.xml";
 //	
 //	private static String[] ariesTables = {	"DBBundle:MySQL_orderejb", 
@@ -79,16 +87,44 @@ public class HeadlessDriver {
 //		"DBBundle:MySQL_jforum_user_groups",
 //		"DBBundle:MySQL_jforum_words"};
 //	
-//	private static String[] tables = ariesTables;
+//	private static String[] tables = jforumTables;
 //	private static SortedSet<ClusterSet> results = new TreeSet<ClusterSet>();
+//	private static double better;
 //
 //	public static void main(String[] args) throws Exception {
 //		Set<String> tableSet = new HashSet<String>();
 //		tableSet.addAll(Arrays.asList(tables));
-//		for(Set<String> tableSelection : powerSet(tableSet)) {
-//			List<String> tableList = new LinkedList<String>();
-//			tableList.addAll(tableSelection);
-//			doExperiment(tableList);
+//		ReportModel empty = doExperiment(new LinkedList<String>());
+//		ReportModel full = doExperiment(Arrays.asList(tables));
+//		better = Math.min(empty.getCostModel().getTotalCost(), full.getCostModel().getTotalCost());
+//		final ConcurrentLinkedQueue<Set<String>> q = new ConcurrentLinkedQueue<Set<String>>();
+//		q.addAll(powerSet(tableSet));
+//		List<Thread> threads = new LinkedList<Thread>();
+//		for(int i=0; i < NUM_OF_CORES; i++) {
+//			threads.add(new Thread(new Runnable() {
+//				public void run() {
+//					while(!q.isEmpty()) {
+//						Set<String> set = q.poll();
+//						if(set == null) {
+//							break;
+//						} else {
+//							try {
+//								List<String> tableList = new LinkedList<String>();
+//								tableList.addAll(set);
+//								doExperiment(tableList);
+//							} catch(Exception e) {
+//								e.printStackTrace();
+//							}
+//						}
+//					}
+//				}
+//			}));
+//		}
+//		for(Thread thread : threads) {
+//			thread.start();
+//		}
+//		for(Thread thread : threads) {
+//			thread.join();
 //		}
 //		for(ClusterSet clusterSet : results) {
 //			System.err.println("----------");
@@ -97,14 +133,14 @@ public class HeadlessDriver {
 //		toDot("C:/Temp/results.dot", results.last().results);
 //	}
 //	
-//	public static void doExperiment(List<String> pinTables) throws Exception {
+//	public static ReportModel doExperiment(List<String> pinTables) throws Exception {
 //		ClusterSet clusters = new ClusterSet(pinTables);
 //		LpSolvePartitionerExtended4Cost partitioner = new LpSolvePartitionerExtended4Cost();
 //		HostParser hParser = new HostParser();
 //		EntityConstraintParser eParser = new EntityConstraintParser();
 //		
 //		IModuleCoarsener fbmc = new FrameBasedModuleCoarsener(eParser.parse(modExposerXML));
-//		ModuleModel mModuleModel = fbmc.getModuleModelFromParser(JipParser.parse(profilerTraceXML));
+//		ModuleModel mModuleModel = fbmc.getModuleModelFromParser(run);
 //		HostModel hModel = hParser.parse(hostConfigXML);
 //
 //		hModel.setNumberOfHosts(2);
@@ -122,7 +158,8 @@ public class HeadlessDriver {
 //			partitioner.pinPatternToSource("(" + pinTable + ").*$");
 //		}
 //		
-//		partitioner.partition();
+//		ReportModel rm = partitioner.partition();
+//	
 //		clusters.setResults(mModuleModel);
 //		Map<ModulePair, InteractionData> map = mModuleModel.getModuleExchangeMap();
 //		for(Entry<ModulePair, InteractionData> entry : map.entrySet()) {
@@ -151,11 +188,17 @@ public class HeadlessDriver {
 //				} 
 //			}
 //		}
-//		results.add(clusters);
+//		synchronized(HeadlessDriver.class) {
+//			System.err.println("Relative cost: " + ((better - rm.getCostModel().getTotalCost())/better) );
+//			System.err.println(clusters.toString());
+//			
+//			results.add(clusters);
+//		}
+//		return rm;
 //	}
 //	
 //	private static class ClusterSet implements Comparable<ClusterSet> {
-//		Map<Module, Cluster> clusters = new HashMap<Module, Cluster>();
+//		Map<Module, Cluster> clusters = new ConcurrentHashMap<Module, Cluster>();
 //		Set<Cluster> liveClusters = new HashSet<Cluster>();
 //		List<String> pinned;
 //		ModuleModel results;
@@ -195,7 +238,7 @@ public class HeadlessDriver {
 //		}
 //		
 //		public String toString() {
-//			return pinned.toString() + "\n\tDiversity: " + getDiversity();
+//			return pinned.toString() + "\n\tDiversity: " + String.format("%.4g%n", getDiversity());
 //		}
 //	}
 //	
@@ -289,4 +332,4 @@ public class HeadlessDriver {
 //			pw.println("\"" + pair.getModules()[0].getName() + "\" -- \"" + pair.getModules()[1].getName() + "\";");
 //		}
 //	}
-}
+//}

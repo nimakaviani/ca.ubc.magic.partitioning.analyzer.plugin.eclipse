@@ -4,25 +4,28 @@
  */
 package ca.ubc.magic.profiler.partitioning.control.alg;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import ca.ubc.magic.profiler.dist.model.Host;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.HostPair;
-import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.model.Module;
 import ca.ubc.magic.profiler.dist.model.ModuleHost;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.ModulePairHostPair;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionCost;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
+import ca.ubc.magic.profiler.dist.model.report.ReportModel;
+import ca.ubc.magic.profiler.dist.transform.IColocationFilter;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
 import ca.ubc.magic.profiler.simulator.control.CostAnalyzerHelper;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  *
@@ -36,8 +39,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
     protected Map<ModuleHost, Double> mExecutionCostMap = null;
     protected Map<ModulePairHostPair, InteractionCost> mInteractionCostMap = null;
     
-    protected List<IModuleFilter> mFilterList = null;
-    protected List<IInteractionFilter> iFilterList = null;
+    protected List<IFilter> mFilterList = null;
     
     protected int mSize;
     
@@ -157,47 +159,44 @@ public abstract class AbstractPartitioner implements IPartitioner {
      * in the execution map are updated.
      */
     public void applyFilters(){
+    	
+    	// apply singleton filters which do not need internal elements. 
+    	for (IFilter f : mFilterList){
+            applyFilter(f, null);
+        }
+    	
+    	// apply filters that work on modules
         for (ModuleHost mh : mExecutionCostMap.keySet()){
             if (mFilterList == null)
                 break;
-            for (IModuleFilter f : mFilterList){
+            for (IFilter f : mFilterList){
                 if (f.isFilterable(mh))
-                    filterHostExecution(f, mh);
+                    applyFilter(f, mh);
             }
         }
         
+        // apply filters that work on module pairs
         for (ModulePairHostPair mhp : mInteractionCostMap.keySet()){
-            if (iFilterList == null)
+            if (mFilterList == null)
                 break;
-            for (IInteractionFilter f : iFilterList){
+            for (IFilter f : mFilterList){
                 if (f.isFilterable(mhp))
-                    filterHostInteraction(f, mhp);
+                    applyFilter(f, mhp);
             }
         }
     }
     
     public void addFilter(IFilter filter){
-        if (filter instanceof IModuleFilter){
-            if (mFilterList == null) 
-                mFilterList = new ArrayList<IModuleFilter>();
-            if (!mFilterList.contains((IModuleFilter) filter))
-                mFilterList.add((IModuleFilter) filter);
-        }else if (filter instanceof IInteractionFilter){
-            if (iFilterList == null)
-                iFilterList = new ArrayList<IInteractionFilter>();
-            if (!iFilterList.contains((IInteractionFilter) filter))
-                iFilterList.add((IInteractionFilter) filter);
-        }
+    	
+        if (mFilterList == null) 
+            mFilterList = new ArrayList<IFilter>();
+        if (!mFilterList.contains(filter))
+            mFilterList.add(filter);
     }
     
     public void removeFilter(IFilter filter){
-        if (filter instanceof IModuleFilter){
-            if (mFilterList.contains((IModuleFilter) filter))
-                mFilterList.remove((IModuleFilter) filter);
-        }else if (filter instanceof IInteractionFilter){
-            if (iFilterList.contains((IInteractionFilter) filter))
-                iFilterList.remove((IInteractionFilter) filter);
-        }
+        if (mFilterList.contains(filter))
+            mFilterList.remove(filter);
     }
     
     public abstract String getSolution();
@@ -212,11 +211,11 @@ public abstract class AbstractPartitioner implements IPartitioner {
         mSetup = Boolean.TRUE;
     }
     
-    protected void postPartition(){
+    protected ReportModel postPartition(){
 //      printCutEdges();
-        mModuleModel.setParitioned(true);
+        mModuleModel.setPartitioned(true);
 
-        CostAnalyzerHelper.analyzeCosts(this.getClass().getCanonicalName(), mModuleModel, mHostModel);
+        return CostAnalyzerHelper.analyzeCosts(this.getClass().getCanonicalName(), mModuleModel, mHostModel);
     }
     
     void setInteractionCostMap(Map<ModulePairHostPair, InteractionCost> interactionCostMap){
@@ -263,13 +262,27 @@ public abstract class AbstractPartitioner implements IPartitioner {
         }
     }
     
+    protected void applyFilter(IFilter filter, Object moduleObject){
+    	// filters that don't work on any module objects
+    	if (moduleObject == null){
+    		if (filter instanceof IColocationFilter)
+    			filterHostColocation((IColocationFilter) filter, (ModuleHost) moduleObject);
+    	}
+    	// filters that do work on elements from the module model
+    	else{
+	    	if (filter instanceof IModuleFilter && moduleObject instanceof ModuleHost)
+	    		filterHostExecution((IModuleFilter) filter, (ModuleHost) moduleObject);
+	    	else if (filter instanceof IInteractionFilter && moduleObject instanceof ModulePairHostPair)
+	    		filterHostInteraction((IInteractionFilter) filter, (ModulePairHostPair) moduleObject);
+    	}
+    }
+    
       
-    
-    
     
     protected abstract void initNodes();
     protected abstract void initEdges();   
     protected abstract void filterHostExecution(IModuleFilter filter, ModuleHost mh);
+    protected abstract void filterHostColocation(IColocationFilter filter, ModuleHost mh);
     protected abstract void filterHostInteraction(IInteractionFilter filter, ModulePairHostPair mhp);
     protected abstract void doPartition();    
 }

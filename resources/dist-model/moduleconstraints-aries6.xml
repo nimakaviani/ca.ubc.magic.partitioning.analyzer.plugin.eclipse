@@ -4,7 +4,7 @@
     <root>
     	<entry id="1">
 	        <entity>
-	            <component>^.+(TradeServletAction:do).*$</component>
+	            <component>^.+(TradeServletAction:doAccountUpdate).*$</component>
 	            <class/><method/>
 	            <target>component</target>
 	        </entity>
@@ -130,7 +130,7 @@
     		  arbitrarily -->
     	<filter type="HOST_CUT" name="all-db-on-premise" host="2">
     		<entity>
-	            <component>^(DBBundle:MySQL).*$</component>
+	            <component>^(DBBundle:MySQL_accountprofile).*$</component>
 	            <class/><method/>        
 	            <target>component</target>
 	        </entity>
@@ -141,7 +141,7 @@
     		  ignored when parsing the filter. The type of the interaction filter
     		  should be defined as "INTERACTION_CUT" and the name can be chosen
     		  arbitrarily.  -->
-    	<filter type="INTERACTION_CUT" name="no-buy-first-cut" host="-1">
+    	<!-- <filter type="INTERACTION_CUT" name="no-buy-first-cut" host="-1">
     		<entity>
 	            <component>^.+(TradeServletAction:doBuy).*$</component>
 	            <class/><method/>        
@@ -149,6 +149,25 @@
 	        </entity>
 	        <entity>
 	            <component>^.+(TradeJdbc:buy).*$</component>
+	            <class/><method/>        
+	            <target>component</target>
+	        </entity>
+    	</filter> -->
+    	
+    	<!-- list of colocation filters. -->
+    	<filter type="COLOCATION_CUT" name="single-user-modules" host="-1">
+    		<entity>
+	            <component>^(DBBundle:MySQL_accountprofile).*$</component>
+	            <class/><method/>        
+	            <target>component</target>
+	        </entity>
+	        <entity>
+	            <component>^(DBBundle:MySQL_account).*$</component>
+	            <class/><method/>        
+	            <target>component</target>
+	        </entity>
+	        <entity>
+	            <component>^.+(TradeJdbc:getAccountProfileData-).*$</component>
 	            <class/><method/>        
 	            <target>component</target>
 	        </entity>
