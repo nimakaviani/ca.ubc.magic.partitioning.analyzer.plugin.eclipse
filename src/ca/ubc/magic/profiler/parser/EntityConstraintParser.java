@@ -37,11 +37,7 @@ public class EntityConstraintParser extends DefaultHandler {
         FileReader r = new FileReader(filename);
         xr.parse(new InputSource(r));          
         
-        EntityConstraintModel return_value = mHandler.getConstraintModel();
-        
-        assert return_value != null : "The parsing should not return a null";
-        
-        return return_value;
+        return mHandler.getConstraintModel();
     }   
     
     @Override
@@ -65,7 +61,7 @@ public class EntityConstraintParser extends DefaultHandler {
     	text.reset();
 
         try{
-          //  System.err.println("startElt " + name);
+            //System.out.println("startElt " + name);
             if (name.equals("constraints")){
             }else if (name.equals("root")){
                 mHandler.setConstraintType(name);
@@ -90,16 +86,22 @@ public class EntityConstraintParser extends DefaultHandler {
             }
             else if (name.equals("target")){
                 mHandler.startTarget();
+            }else if (name.equals("filters")){
+            	mHandler.setConstraintType(name);
+            }else if (name.equals("filter")){
+            	mHandler.startFilter(
+            			getAttrString(atts, "type"), 
+            			getAttrString(atts, "name"),
+            			getAttrLong(atts, "host"));
             }
             
         }catch (Exception e){
-            throw new RuntimeException(e.getMessage() + ": " + name);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
     @Override
     public void endElement (String uri, String name, String qName) {
-    	//System.err.println("endElement " + name);
         if (name.equals("constraints")){
             }else if (name.equals("entity")){
                 mHandler.endEntity();
@@ -111,8 +113,10 @@ public class EntityConstraintParser extends DefaultHandler {
                 mHandler.endUnit(getText(), CodeUnitType.CLASS);
             }else if (name.equals("method")){
                 mHandler.endUnit(getText(), CodeUnitType.METHOD);
-            } else if (name.equals("target")){
+            }else if (name.equals("target")){
                 mHandler.endTarget(getText());
+            }else if (name.equals("filter")){
+            	mHandler.endFilter();
             }else {
                 mHandler.removeConstraintType();
             }
