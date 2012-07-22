@@ -4,8 +4,8 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import recycle_bin.EventLogListModel;
 import snapshots.events.logging.EventLogActionHandler;
-import snapshots.model.EventLogListModel;
 
 public class 
 Activator 

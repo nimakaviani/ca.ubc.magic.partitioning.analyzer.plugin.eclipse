@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.Status;
 import plugin.Constants;
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
+import plugin.mvc.messages.DataEvent;
 
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
@@ -53,63 +54,63 @@ implements IModel
 // TODO: write an adapter around the Model so were more cleanly separate
 //		the mvc interface from the program logic
 {
-	public static final String	SIMULATION_FRAMEWORK
-		= "SimulationFramework";
-	public static final String	MODULE_MODEL
-		= "ModuleModel";
-	public static final String	HOST_MODEL
-		= "HostModel";
+//	public static final String	SIMULATION_FRAMEWORK
+//		= "SimulationFramework";
+//	public static final String	MODULE_MODEL
+//		= "ModuleModel";
+//	public static final String	HOST_MODEL
+//		= "HostModel";
 	
-	public static final String GUI_MODULE_COARSENER 		
-		= "ModuleCoarsener";
-	public static final String GUI_PROFILER_TRACE   		
-		= "ProfilerTracePath";
-	public static final String GUI_MODULE_EXPOSER 			
-		= "ModuleExposer";
-	public static final String GUI_HOST_CONFIGURATION 		
-		= "HostConfiguration";
-	public static final String GUI_SET_MODULE_EXPOSURE 		
-		= "ModuleExposure";
-	public static final String GUI_SET_SYNTHETIC_NODE 		
-		= "SyntheticNode";
-	public static final String GUI_SET_PRESET_MODULE_GRAPH 	
-		= "PresetModuleGraph";
-	public static final String GUI_PERFORM_PARTITIONING 
-		= "PerformPartitioning";
-	public static final String GUI_PARTITIONER_TYPE 
-		= "PartitionerType";
-	public static final String GUI_INTERACTION_COST 
-		= "InteractionCost";
-	public static final String GUI_EXECUTION_COST
-		= "ExecutionCost";
+//	public static final String GUI_MODULE_COARSENER 		
+//		= "ModuleCoarsener";
+//	public static final String GUI_PROFILER_TRACE   		
+//		= "ProfilerTracePath";
+//	public static final String GUI_MODULE_EXPOSER 			
+//		= "ModuleExposer";
+//	public static final String GUI_HOST_CONFIGURATION 		
+//		= "HostConfiguration";
+//	public static final String GUI_SET_MODULE_EXPOSURE 		
+//		= "ModuleExposure";
+//	public static final String GUI_SET_SYNTHETIC_NODE 		
+//		= "SyntheticNode";
+//	public static final String GUI_SET_PRESET_MODULE_GRAPH 	
+//		= "PresetModuleGraph";
+//	public static final String GUI_PERFORM_PARTITIONING 
+//		= "PerformPartitioning";
+//	public static final String GUI_PARTITIONER_TYPE 
+//		= "PartitionerType";
+//	public static final String GUI_INTERACTION_COST 
+//		= "InteractionCost";
+//	public static final String GUI_EXECUTION_COST
+//		= "ExecutionCost";
 	
 	public static final String AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP 
 		= "ModuleExchangeMap";
 	
-	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
-		= "ActivateHostFilter";
-	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
-		= "ActivateInteractionCostFilter";
+//	public static final String GUI_ACTIVATE_HOST_COST_FILTER 
+//		= "ActivateHostFilter";
+//	public static final String GUI_ACTIVATE_INTERACTION_COST_FILTER
+//		= "ActivateInteractionCostFilter";
 	
-	public static final String GUI_GENERATE_TEST_FRAMEWORK 
-		= "GenerateTestFramework";
+//	public static final String GUI_GENERATE_TEST_FRAMEWORK 
+//		= "GenerateTestFramework";
 	
-	public static final String EVENT_MODEL_CREATED 
-		= "ModelCreation";
-	public static final String EVENT_GENERATE_MODEL 
-		= "ModelGeneration";
-	public static final String EVENT_GENERATE_PARTITION 
-		= "PartitionGeneration";
+//	public static final String EVENT_MODEL_CREATED 
+//		= "ModelCreation";
+//	public static final String EVENT_GENERATE_MODEL 
+//		= "ModelGeneration";
+//	public static final String EVENT_GENERATE_PARTITION 
+//		= "PartitionGeneration";
 	
-	public static final String EVENT_PARTITIONING_COMPLETE 
-		= "PartitioningComplete";
+//	public static final String EVENT_PARTITIONING_COMPLETE 
+//		= "PartitioningComplete";
 	public static final String AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK 
 		= "AfterPartitioningCreateTestFramework";
 	
-	 public static final String GUI_DISABLE_CONFIGURATION_PANEL 
-		 = "ActiveConfigurationPanel";
-	public static final String GUI_DISABLE_PARTITIONING_PANEL 
-		= "ActivePartitioningPanel";
+//	 public static final String GUI_DISABLE_CONFIGURATION_PANEL 
+//		 = "ActiveConfigurationPanel";
+//	public static final String GUI_DISABLE_PARTITIONING_PANEL 
+//		= "ActivePartitioningPanel";
 	
 	private PropertyChangeDelegate 	property_change_delegate;
 	
@@ -165,6 +166,8 @@ implements IModel
 		this.profiler_trace = "";
 		this.constraint_xml_path = "";
 		this.host_configuration = "";
+		this.partitioner_solution = "";
+		
        	
 		this.mSimFramework
        		= new SimulationFramework( Boolean.FALSE );
@@ -198,7 +201,7 @@ implements IModel
 			= model_coarsener;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_MODULE_COARSENER,
+			PartitionerModelMessages.MODULE_COARSENER,
 			old_coarsener, 
 			this.mModuleType
 		);
@@ -219,7 +222,7 @@ implements IModel
 		System.out.println( this.profiler_trace + " " );
 		
 		this.property_change_delegate.firePropertyChange(
-				PartitionerModel.GUI_PROFILER_TRACE, 
+			PartitionerModelMessages.PROFILER_TRACE, 
 			old_trace, 
 			this.profiler_trace
 		);
@@ -233,7 +236,7 @@ implements IModel
 		this.constraint_xml_path = module_exposer;
 		
 		this.property_change_delegate.firePropertyChange(
-				PartitionerModel.GUI_MODULE_EXPOSER, 
+				PartitionerModelMessages.MODULE_EXPOSER, 
 			old_exposer, 
 			module_exposer
 		);
@@ -247,7 +250,7 @@ implements IModel
 		this.host_configuration = host_configuration;
 		
 		this.property_change_delegate.firePropertyChange(
-				PartitionerModel.GUI_HOST_CONFIGURATION, 
+				PartitionerModelMessages.HOST_CONFIGURATION, 
 			old_configuration, 
 			host_configuration
 		);
@@ -263,7 +266,7 @@ implements IModel
 			= expose;
 		
 		this.property_change_delegate.firePropertyChange(
-				PartitionerModel.GUI_SET_MODULE_EXPOSURE, 
+			PartitionerModelMessages.SET_MODULE_EXPOSURE, 
 			old_expose, 
 			expose
 		);
@@ -279,7 +282,7 @@ implements IModel
 			= synthetic;
 		
 		this.property_change_delegate.firePropertyChange(
-				PartitionerModel.GUI_SET_SYNTHETIC_NODE,
+				PartitionerModelMessages.SET_SYNTHETIC_NODE,
 			old_synthetic,
 			synthetic
 		);
@@ -295,7 +298,7 @@ implements IModel
 			= preset_module_graph;
 		
 		this.property_change_delegate.firePropertyChange(
-				PartitionerModel.GUI_SET_PRESET_MODULE_GRAPH,
+			PartitionerModelMessages.SET_PRESET_MODULE_GRAPH,
 			old_preset,
 			preset_module_graph
 		);
@@ -311,7 +314,7 @@ implements IModel
 			= perform_partitioning;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_PERFORM_PARTITIONING,
+			PartitionerModelMessages.PERFORM_PARTITIONING,
 			old_perform,
 			perform_partitioning
 		);
@@ -327,7 +330,7 @@ implements IModel
 			= module_model;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.MODULE_MODEL, 
+			PartitionerModelMessages.MODULE_MODEL, 
 			old_module_model, 
 			this.mModuleModel
 		);
@@ -343,7 +346,7 @@ implements IModel
 			= host_model;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.HOST_MODEL,
+			PartitionerModelMessages.HOST_MODEL,
 			old_host_model,
 			this.mHostModel
 		);
@@ -359,7 +362,7 @@ implements IModel
 			= partitioner_type;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_PARTITIONER_TYPE,
+			PartitionerModelMessages.PARTITIONER_TYPE,
 			old_partitioner,
 			partitioner_type
 		);
@@ -375,7 +378,7 @@ implements IModel
 			= interaction_cost;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_INTERACTION_COST,
+			PartitionerModelMessages.INTERACTION_COST,
 			old_interaction,
 			interaction_cost
 		);
@@ -391,7 +394,7 @@ implements IModel
 			= execution_cost;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_EXECUTION_COST,
+			PartitionerModelMessages.EXECUTION_COST,
 			old_execution,
 			execution_cost
 		);
@@ -407,7 +410,7 @@ implements IModel
 			= activate;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
+			PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER,
 			old_activate,
 			this.activate_host_cost_filter
 		);
@@ -423,7 +426,7 @@ implements IModel
 			= generate;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK,
+			PartitionerModelMessages.GENERATE_TEST_FRAMEWORK,
 			old_generate,
 			this.generate_test_framework
 		);
@@ -439,7 +442,7 @@ implements IModel
 			= activate;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
+			PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER,
 			old_activate,
 			this.activate_interaction_cost_filter
 		);
@@ -455,7 +458,7 @@ implements IModel
 			= active;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL,
+			PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL,
 			old_active,
 			this.configuration_panel_enabled
 		);
@@ -471,7 +474,7 @@ implements IModel
 			= active;
 		
 		this.property_change_delegate.firePropertyChange(
-			PartitionerModel.GUI_DISABLE_PARTITIONING_PANEL,
+			PartitionerModelMessages.DISABLE_PARTITIONING_PANEL,
 			old_active,
 			this.partitioning_panel_enabled
 		);
@@ -656,13 +659,13 @@ implements IModel
 		);
 	
 		this.property_change_delegate.firePropertyChange(
-			Constants.ALGORITHM,
+			PartitionerModelMessages.ALGORITHM,
 			null,
 			this.partitioner_type.getText()
 		);
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.SOLUTION,
+			PartitionerModelMessages.SOLUTION,
 			null,
 			this.partitioner_solution
 		);
@@ -811,7 +814,8 @@ implements IModel
 				PartitionerModel.this.setActiveConfigurationPanel( false );
 				PartitionerModel.this
 					.property_change_delegate.notifyViews(
-						PartitionerModel.EVENT_MODEL_CREATED, null
+						PartitionerModelMessages.MODEL_CREATED, 
+						null
 					);
 				
 			} catch (FileNotFoundException e) {
@@ -876,7 +880,7 @@ implements IModel
 
 			PartitionerModel.this
 				.property_change_delegate.notifyViews(
-					PartitionerModel.EVENT_PARTITIONING_COMPLETE, 
+					PartitionerModelMessages.PARTITIONING_COMPLETE, 
 					null
 				);
 			
@@ -901,25 +905,25 @@ implements IModel
 		// ending is the string behind the constant
 		String[] property_names 
 			= {
-				PartitionerModel.GUI_MODULE_COARSENER,
-				PartitionerModel.GUI_PROFILER_TRACE,
-				PartitionerModel.GUI_MODULE_EXPOSER,
-				PartitionerModel.GUI_HOST_CONFIGURATION,
-				PartitionerModel.GUI_SET_MODULE_EXPOSURE,
-				PartitionerModel.GUI_SET_SYNTHETIC_NODE,
-				PartitionerModel.GUI_SET_PRESET_MODULE_GRAPH,
-				PartitionerModel.GUI_PERFORM_PARTITIONING,
-				PartitionerModel.GUI_PARTITIONER_TYPE,
-				PartitionerModel.GUI_INTERACTION_COST,
-				PartitionerModel.GUI_EXECUTION_COST,
-				PartitionerModel.GUI_DISABLE_CONFIGURATION_PANEL,
-				PartitionerModel.GUI_DISABLE_PARTITIONING_PANEL,
-				PartitionerModel.SIMULATION_FRAMEWORK,
-				PartitionerModel.MODULE_MODEL,
-				PartitionerModel.HOST_MODEL,
-				PartitionerModel.GUI_ACTIVATE_HOST_COST_FILTER,
-				PartitionerModel.GUI_ACTIVATE_INTERACTION_COST_FILTER,
-				PartitionerModel.GUI_GENERATE_TEST_FRAMEWORK,
+				PartitionerModelMessages.MODULE_COARSENER.NAME,
+				PartitionerModelMessages.PROFILER_TRACE.NAME,
+				PartitionerModelMessages.MODULE_EXPOSER.NAME,
+				PartitionerModelMessages.HOST_CONFIGURATION.NAME,
+				PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME,
+				PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME,
+				PartitionerModelMessages.SET_PRESET_MODULE_GRAPH.NAME,
+				PartitionerModelMessages.PERFORM_PARTITIONING.NAME,
+				PartitionerModelMessages.PARTITIONER_TYPE.NAME,
+				PartitionerModelMessages.INTERACTION_COST.NAME,
+				PartitionerModelMessages.EXECUTION_COST.NAME,
+				PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL.NAME,
+				PartitionerModelMessages.DISABLE_PARTITIONING_PANEL.NAME,
+				PartitionerModelMessages.SIMULATION_FRAMEWORK.NAME,
+				PartitionerModelMessages.MODULE_MODEL.NAME,
+				PartitionerModelMessages.HOST_MODEL.NAME,
+				PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
+				PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
+				PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
 			};
 		
 		Object[] properties

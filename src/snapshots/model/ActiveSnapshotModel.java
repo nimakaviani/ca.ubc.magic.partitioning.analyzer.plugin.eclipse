@@ -31,10 +31,10 @@ implements ISnapshotInfoModel
 	{
 		String[] property_names
 			= {
-				Constants.PATH_PROPERTY,
-				 Constants.NAME_PROPERTY,
-				 Constants.PORT_PROPERTY,
-				 Constants.HOST_PROPERTY
+				SnapshotModelMessages.PATH.NAME,
+				SnapshotModelMessages.NAME.NAME,
+				SnapshotModelMessages.PORT.NAME,
+				SnapshotModelMessages.HOST.NAME
 			};
 		Object[] properties
 			= {
@@ -61,8 +61,12 @@ implements ISnapshotInfoModel
 		this.path = path;
 		
 		System.out.println(this.path);
-		this.property_change_delegate.
-			firePropertyChange(Constants.PATH_PROPERTY, old_path);
+		this.property_change_delegate
+			.firePropertyChange(
+				SnapshotModelMessages.PATH, 
+				old_path,
+				this.path
+			);
 	}
 	
 	@Override
@@ -74,7 +78,9 @@ implements ISnapshotInfoModel
 		this.name 		= name;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.NAME_PROPERTY, old_name
+			SnapshotModelMessages.NAME, 
+			old_name,
+			this.name
 		);
 	}
 
@@ -87,7 +93,9 @@ implements ISnapshotInfoModel
 		this.port = port;
 		
 		this.property_change_delegate.firePropertyChange(
-			Constants.PORT_PROPERTY, old_port
+			SnapshotModelMessages.PORT, 
+			old_port,
+			this.port
 		);
 	}
 
@@ -101,7 +109,9 @@ implements ISnapshotInfoModel
 		
 		this.property_change_delegate
 			.firePropertyChange(
-				Constants.HOST_PROPERTY, old_host
+				SnapshotModelMessages.HOST,
+				old_host,
+				this.host
 			);
 	}
 

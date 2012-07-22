@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import plugin.mvc.messages.IndexEvent;
+import plugin.mvc.messages.PropertyEvent;
+import plugin.mvc.messages.ToModelEvent;
+import plugin.mvc.messages.ViewsEvent;
+
 public class 
 ControllerDelegate 
 implements IController,
@@ -79,12 +84,17 @@ implements IController,
 	
 	@Override
 	public void 
-	setModelProperty
-	(String property_name, Object new_value) 
+	updateModel
+	( PropertyEvent event, Object new_value) 
 	// I should really mention that the following technique is
 	// taken from the tutorial at:
 	// http://www.oracle.com/technetwork/articles/javase/index-142890.html
 	{
+		String property_name
+			= event.NAME;
+		
+		event.validatePackage( new_value );
+		
         try {
             Method method 
             	= this.model.getClass().getMethod( 
@@ -108,8 +118,13 @@ implements IController,
 	@Override
 	public void
 	notifyPeers
-	( String property_name, Object source, Object new_value )
+	( ViewsEvent event, Object source, Object new_value )
 	{
+		String property_name
+			= event.NAME;
+		
+		event.validatePackage(new_value);
+		
 		PropertyChangeEvent evt 
 			= new PropertyChangeEvent(
 				source, 
@@ -123,8 +138,11 @@ implements IController,
 	@Override
 	public void 
 	notifyModel
-	( String event_name ) 
+	( ToModelEvent event ) 
 	{
+		String event_name
+			= event.NAME;
+		
         try {
             Method method 
             	= this.model.getClass().getMethod( 
@@ -157,18 +175,21 @@ implements IController,
 	@Override
 	public Object 
 	index
-	( String event_name, Object key ) 
+	( IndexEvent event, Object key ) 
 	{
         Object obj
         	= null;
+        String event_name
+        	= event.NAME;
+        event.validatePackage(key);
         
-		 try {
-	            Method method 
-	            	= this.model.getClass().getMethod( 
-	            		"find" + event_name,
-	            		new Class[]{ key.getClass() }
-	            	);
-	            	obj = method.invoke(this.model, key);
+		try {
+			Method method 
+	        	= this.model.getClass().getMethod( 
+	            	"find" + event_name,
+	            	new Class[]{ key.getClass() }
+	            );
+	            obj = method.invoke(this.model, key);
 	            System.out.printf(
 	            	"Calling method find%s() in class %s\n",
 	            	event_name, 

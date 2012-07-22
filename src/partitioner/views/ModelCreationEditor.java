@@ -34,6 +34,7 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 
 import partitioner.models.PartitionerModel;
+import partitioner.models.PartitionerModelMessages;
 import partitioner.models.TestFrameworkModel;
 import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
@@ -262,8 +263,8 @@ implements IView
 			return_value = "";
 		}
 		
-		ModelCreationEditor.this.controller.setModelProperty(
-			PartitionerModel.GUI_PROFILER_TRACE, 
+		ModelCreationEditor.this.controller.updateModel(
+			PartitionerModelMessages.PROFILER_TRACE, 
 			return_value
 		);
 		
@@ -285,22 +286,23 @@ implements IView
 					+ evt.getPropertyName()
 				);
 				
-				switch(evt.getPropertyName())
-				{
-					case PartitionerModel.GUI_MODULE_COARSENER:
-						ModuleCoarsenerType mc 
-							= (ModuleCoarsenerType) evt.getNewValue();
-						System.out.println(
-							"The module coarsener was modified to " + mc.getText()
-						);
-						break;
-					case PartitionerModel.GUI_PERFORM_PARTITIONING:
-						ModelCreationEditor.this.perform_partitioning
-							= (Boolean) evt.getNewValue();
-						break;
-					default:
-						System.out.println("Swallowing message.");
-				};
+				String property
+					= evt.getPropertyName();
+				
+				if(property.equals(PartitionerModelMessages.MODULE_COARSENER.NAME)){
+					ModuleCoarsenerType mc 
+						= (ModuleCoarsenerType) evt.getNewValue();
+					System.out.println(
+						"The module coarsener was modified to " + mc.getText()
+					);
+				}
+				else if( property.equals( PartitionerModelMessages.PERFORM_PARTITIONING.NAME)){
+					ModelCreationEditor.this.perform_partitioning
+						= (Boolean) evt.getNewValue();
+				}
+				else {
+					System.out.println("Swallowing message.");
+				}
 			}
 		});
 	}
@@ -320,36 +322,35 @@ implements IView
 					+ evt.getPropertyName()
 				);
 				
-				switch(evt.getPropertyName())
-				{
-					case PartitionerModel.EVENT_PARTITIONING_COMPLETE:
-						// this is when the initialization must occur
-						//
-						// the most important thing is to know that the requested
-						// object will not be created until after the partitioning is
-						// performed; we can assume by the property name that the object
-						// will only be non-null after this event fires
-						Map<String, Object> map 
-							= ModelCreationEditor.this.controller.requestProperties(
-								new String[]{
-									PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
-								}
-							);
-						TestFrameworkModel test_framework_model
-							= (TestFrameworkModel) map.get(
+				String property
+					= evt.getPropertyName();
+				if( property.equals(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
+					// this is when the initialization must occur
+					//
+					// the most important thing is to know that the requested
+					// object will not be created until after the partitioning is
+					// performed; we can assume by the property name that the object
+					// will only be non-null after this event fires
+					Map<String, Object> map 
+						= ModelCreationEditor.this.controller.requestProperties(
+							new String[]{
 								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
-							);
-						// all the view is allowed to do is take the model and use
-						// it to generate a new view: anything more is too much logic
-						ModelCreationEditor.this
-							.activateTestPage( test_framework_model );
-						break;
-					case PartitionerModel.EVENT_MODEL_CREATED:
-						ModelCreationEditor.this.visualizeModuleModel();
-						break;
-					default:
-						System.out.println("Swallowing Message");
-						break;
+							}
+						);
+					TestFrameworkModel test_framework_model
+						= (TestFrameworkModel) map.get(
+							PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
+						);
+					// all the view is allowed to do is take the model and use
+					// it to generate a new view: anything more is too much logic
+					ModelCreationEditor.this
+						.activateTestPage( test_framework_model );
+				}
+				else if( property.equals( PartitionerModelMessages.MODEL_CREATED.NAME)){
+					ModelCreationEditor.this.visualizeModuleModel();
+				}
+				else {
+					System.out.println("Swallowing Message");
 				}
 			}
 		});
@@ -475,7 +476,8 @@ implements IView
 		
 		// notify peers on the controller
 		this.controller.notifyPeers(
-			Constants.EVENT_EDITOR_CLOSED, 
+			PartitionerModelMessages.EDITOR_CLOSED,
+			//Constants.EVENT_EDITOR_CLOSED, 
 			this, 
 			null
 		);

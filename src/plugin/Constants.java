@@ -5,14 +5,14 @@ Constants
 {
 	// the following are used to communicate with the
 	// active snapshot model
-	public static final String PATH_PROPERTY 				
-		= "SnapshotPath";
-	public static final String NAME_PROPERTY
-		= "SnapshotName";
-	public static final String HOST_PROPERTY 				
-		= "SnapshotHost";
-	public static final String PORT_PROPERTY 				
-		= "SnapshotPort";	
+//	public static final String PATH_PROPERTY 				
+//		= "SnapshotPath";
+//	public static final String NAME_PROPERTY
+//		= "SnapshotName";
+//	public static final String HOST_PROPERTY 				
+//		= "SnapshotHost";
+//	public static final String PORT_PROPERTY 				
+//		= "SnapshotPort";	
 	
 	public static final String KEY_ERR_DLGTITLE 			
 		= "err_dlgttle";
@@ -40,35 +40,21 @@ Constants
 	public static final String ERROR_LOG_VIEW_ID 
 		= "org.eclipse.pde.runtime.LogView";
 	
-	public static final String EVENT_SNAPSHOT_CAPTURED_PROPERTY	
-		= "snapshot_captured_message";
-	public static final String EVENT_SNAPSHOT_CAPTURE_FAILED 
-		= "snapshot_failed_message";
-	public static final String EVENT_SNAPSHOT_STARTED 
-		= "snapshot_started_message";
+//	public static final String EVENT_SNAPSHOT_CAPTURED_PROPERTY	
+//		= "snapshot_captured_message";
+//	public static final String EVENT_SNAPSHOT_CAPTURE_FAILED 
+//		= "snapshot_failed_message";
+//	public static final String EVENT_SNAPSHOT_STARTED 
+//		= "snapshot_started_message";
 	
-	public static final String SOLUTION 
-		= "Solution";
-	public static final String ALGORITHM 
-		= "Algorithm";
+//	public static final String SOLUTION 
+//		= "Solution";
+//	public static final String ALGORITHM 
+//		= "Algorithm";
 	public static final String PERSPECTIVE_CONFIGURATION_VIEW_ID 
 		= "plugin.views.partitioner_configuration_view";
 	
-	public static final String SIMULATION_UNITS 
-		= "InSimulationUnits";
 	
-	// belonging to the test framework model
-	public static final String GUI_SIMULATION_TYPE 
-		= "SimulationType";
-	public static final String EVENT_RUN_SIMULATION 
-		= "RunSimulation";
-	public static final String GUI_SIMULATION_REMOVED 
-		= "SimulationRemoved";
-	public static final String GUI_UPDATE_SIMULATION_REPORT 
-		= "UpdateSimulationReport";
-	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
-		= "UpdateBestSimulationReport";
-	
-	public static final String EVENT_EDITOR_CLOSED 
-			= "EditorClosed";
+//	public static final String EVENT_EDITOR_CLOSED 
+//			= "EditorClosed";
 }

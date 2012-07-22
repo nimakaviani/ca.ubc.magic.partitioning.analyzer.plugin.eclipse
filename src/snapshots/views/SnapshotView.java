@@ -49,14 +49,15 @@ import plugin.mvc.IView;
 import plugin.mvc.PublicationHandler;
 import plugin.mvc.Publications;
 
+import recycle_bin.LogAction;
 import snapshots.com.mentorgen.tools.util.profile.Start;
 import snapshots.events.logging.ErrorDisplayAction;
 import snapshots.events.logging.EventLogActionHandler;
 import snapshots.events.logging.EventLogEvent;
 import snapshots.events.logging.EventLogger;
-import snapshots.events.logging.LogAction;
 import snapshots.model.ActiveSnapshotModel;
 import snapshots.model.Snapshot;
+import snapshots.model.SnapshotModelMessages;
 
 public class 
 SnapshotView 
@@ -293,8 +294,8 @@ implements IView
 	// may become public if we have a handler call this
 	// or not: I wonder if I can make a handler a private class...
 	{
-		this.active_snapshot_controller.setModelProperty(
-			Constants.PATH_PROPERTY, 
+		this.active_snapshot_controller.updateModel(
+			SnapshotModelMessages.PATH, 
 			potential_directory.getAbsolutePath()
 		);
 	}
@@ -444,20 +445,20 @@ implements IView
 	{
 		String[] property_names
 			= {
-				Constants.PATH_PROPERTY,
-				Constants.NAME_PROPERTY,
-				Constants.HOST_PROPERTY,
-				Constants.PORT_PROPERTY
+				SnapshotModelMessages.PATH.NAME,
+				SnapshotModelMessages.NAME.NAME,
+				SnapshotModelMessages.HOST.NAME,
+				SnapshotModelMessages.PORT.NAME
 			};
 		Map<String, Object> map
 			= this.active_snapshot_controller.requestProperties(
 				property_names
 			);
 		
-		this.path_text.setText( (String) map.get(Constants.PATH_PROPERTY) );
-		this.name_text.setText( (String) map.get(Constants.NAME_PROPERTY) );
-		this.host_text.setText( (String) map.get(Constants.HOST_PROPERTY) );
-		this.port_text.setText( (String) map.get(Constants.PORT_PROPERTY) );
+		this.path_text.setText( (String) map.get(SnapshotModelMessages.PATH.NAME) );
+		this.name_text.setText( (String) map.get(SnapshotModelMessages.NAME.NAME) );
+		this.host_text.setText( (String) map.get(SnapshotModelMessages.HOST.NAME) );
+		this.port_text.setText( (String) map.get(SnapshotModelMessages.PORT.NAME) );
 	}
 	
 	@Override
@@ -472,25 +473,28 @@ implements IView
 				@Override
 				public void
 				run(){
-					System.out.println("modelPropertyChange(): Property changed");
-					switch(evt.getPropertyName())
-					{
-					case Constants.PATH_PROPERTY:
+					String property
+						= evt.getPropertyName();
+					
+					System.out.println("modelPropertyChange(): " + property);
+					System.out.println("New value: " + evt.getNewValue().toString());
+					
+					if( property.equals( SnapshotModelMessages.PATH.NAME)){
 						SnapshotView.this.path_text.setText((String) evt.getNewValue());
-						break;
-					case Constants.HOST_PROPERTY:
-						SnapshotView.this.host_text.setText((String) evt.getNewValue());
-						break;
-					case Constants.NAME_PROPERTY:
-						SnapshotView.this.name_text.setText( (String) evt.getNewValue());
-						break;
-					case Constants.PORT_PROPERTY:
-						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
-						break;
-//					case Constants.EVENT_LIST_PROPERTY:
-//						SnapshotView.this.log_console_table.refresh();
-//						break;
 					}
+					else if( property.equals( SnapshotModelMessages.HOST.NAME)){
+						SnapshotView.this.host_text.setText((String) evt.getNewValue());
+					}				
+					else if( property.equals( SnapshotModelMessages.NAME.NAME)){
+						SnapshotView.this.name_text.setText( (String) evt.getNewValue());				
+					}
+					else if( property.equals( SnapshotModelMessages.PORT.NAME)){
+						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
+					}
+					else {
+						System.out.println("SnapshotView swallowed a message.");
+					}
+					
 					SnapshotView.this.refresh();
 				}
 			});
@@ -507,16 +511,17 @@ implements IView
 				@Override
 				public void
 				run(){
-					System.out.println("modelPropertyChange(): Property changed");
-					switch(evt.getPropertyName())
-					{
-						case Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY:
-							SnapshotView.this.snapshot_tree_viewer.setInput("hello");
-							SnapshotView.this.snapshot_tree_viewer.refresh();
-							break;
-						default:
-							System.out.println("SnapshotView swallowed event");
-							break;
+					String property
+						= evt.getPropertyName();
+					
+					System.out.println("modelEvent():" + property);
+					
+					if( property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME)){
+						SnapshotView.this.snapshot_tree_viewer.setInput("hello");
+						SnapshotView.this.snapshot_tree_viewer.refresh();
+					}
+					else {
+						System.out.println("SnapshotView swallowed event");
 					}
 				}
 			});
@@ -664,17 +669,17 @@ implements IView
 				return;
 
 			// returned array should be ordered as in gui layout
-			this.controller.setModelProperty(
-				Constants.PATH_PROPERTY, SnapshotView.this.path_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.PATH, SnapshotView.this.path_text.getText()
 			);
-			this.controller.setModelProperty(
-				Constants.NAME_PROPERTY, SnapshotView.this.name_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.NAME, SnapshotView.this.name_text.getText()
 			);
-			this.controller.setModelProperty(
-				Constants.HOST_PROPERTY, SnapshotView.this.host_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.HOST, SnapshotView.this.host_text.getText()
 			);
-			this.controller.setModelProperty(
-				Constants.PORT_PROPERTY, SnapshotView.this.port_text.getText()
+			this.controller.updateModel(
+				SnapshotModelMessages.PORT, SnapshotView.this.port_text.getText()
 			);
 			
 		    Snapshot snapshot 
@@ -776,12 +781,13 @@ implements IView
 		    	  		"start"
 		    	  	);
 					this.controller.notifyPeers(
-						Constants.EVENT_SNAPSHOT_STARTED,
+						SnapshotModelMessages.SNAPSHOT_STARTED,
+						//Constants.EVENT_SNAPSHOT_STARTED,
 						this,
 					    snapshot
 					);
-					this.controller.setModelProperty(
-						Constants.NAME_PROPERTY, 
+					this.controller.updateModel(
+						SnapshotModelMessages.NAME, 
 						snapshot.getName()
 					);
 					this.setEnabled(false);
@@ -930,20 +936,22 @@ implements IView
 		modelEvent
 		( PropertyChangeEvent evt ) 
 		{
-			switch (evt.getPropertyName()) 
-			{
-				case Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY:
-				case Constants.EVENT_SNAPSHOT_CAPTURE_FAILED:
-					this.setEnabled(true);
-					break;
-				default:
-					System.out.println("StartAction swallowed message.");
-				    break;
-				}
+			// TODO may need to add a thread here
+			String property
+				= evt.getPropertyName();
+			
+			if( property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURE_FAILED.NAME)){
+				this.setEnabled(true);
+			}
+			else if(property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME)){
+				this.setEnabled(true);
+			}
+			else {
+				System.out.println("StartAction swallowed message.");
+			}
 		}
 	}
 }
-
 // note : the following class and the next modeled themselves
 // after the examples provided in 
 // http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/DemonstratesTreeViewer.htm
