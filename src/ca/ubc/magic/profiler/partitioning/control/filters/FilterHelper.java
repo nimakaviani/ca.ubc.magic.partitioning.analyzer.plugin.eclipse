@@ -6,16 +6,13 @@ package ca.ubc.magic.profiler.partitioning.control.filters;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import ca.ubc.magic.profiler.dist.control.Constants;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
-import ca.ubc.magic.profiler.dist.model.granularity.ColocationFilterConstraint;
 import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraint;
-import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel;
 import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
-import ca.ubc.magic.profiler.dist.model.granularity.HostFilterConstraint;
-import ca.ubc.magic.profiler.dist.model.granularity.InteractionFilterConstraint;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
@@ -39,13 +36,12 @@ public class FilterHelper {
     setFilter
     ( 		ModuleModel moduleModel, 
     		HostModel hostModel,
-    		FilterConstraintModel filterModel,
-    		FilterType type)
+    		Set<FilterConstraint> filterSet)
     {
     	Map<String, IFilter> filterMap = new HashMap<String, IFilter>();
     	
-    	for (FilterConstraint constraint : filterModel.getFilterSet(type)){
-    		IFilter filter = FilterFactory.getFilter(type, moduleModel,	hostModel, constraint);
+    	for (FilterConstraint constraint : filterSet){
+    		IFilter filter = FilterFactory.getFilter(moduleModel,	hostModel, constraint);
     		if (filter.getFilterSet() == null || filter.getFilterSet().isEmpty())
     			continue;
     		if (filterMap.containsKey(constraint.getName()))

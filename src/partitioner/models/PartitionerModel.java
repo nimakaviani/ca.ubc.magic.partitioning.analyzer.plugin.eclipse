@@ -775,46 +775,46 @@ implements IModel
 		// I looked for a factory that finds preinitialized subclasses,
 		// but it appears that is not Nima's way of doing things
 		
+		// Nima - your comment about preinitialized subclasses was valid. The getFilterSet
+		//		  method was there. you just had to pass it the filter type instead.
+		//		  I tweaked FitlterHelper's setFilter method to get the set of filters instead.
+		
+		Map<String, IFilter> map = null;
 		if( this.enable_synthetic_node_filter ){
-			Map<String, IFilter> map
-				= FilterHelper.setFilter(
+			
+				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel.getFilterConstraintModel(), 
-					FilterType.COLOCATION_CUT
+					this.mConstraintModel.getFilterConstraintModel().getFilterSet( 
+					FilterType.COLOCATION_CUT)
 				);
+				
+			mFilterMap.putAll(map);
 			System.err.println("Number of synthetic filters: " + map.size());
-			for( String s : map.keySet()){
-				this.mFilterMap.put(s, map.get(s));
-			}
 		}
 		
 		if( this.activate_host_cost_filter ){
-			Map<String, IFilter> map
-				= FilterHelper.setFilter(
+				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel.getFilterConstraintModel(), 
-					FilterType.HOST_CUT
+					this.mConstraintModel.getFilterConstraintModel().getFilterSet( 
+					FilterType.HOST_CUT)
 				);
+				
+			mFilterMap.putAll(map);
 			System.err.println("Number of host filters: " + map.size());
-			for( String s : map.keySet()){
-				this.mFilterMap.put(s, map.get(s));
-			}
 		}
 		
 		if( this.activate_interaction_cost_filter ){
-			Map<String, IFilter> map
-				= FilterHelper.setFilter(
+				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel.getFilterConstraintModel(),
-					FilterType.INTERACTION_CUT
+					this.mConstraintModel.getFilterConstraintModel().getFilterSet(
+					FilterType.INTERACTION_CUT)
 				);
+				
+			mFilterMap.putAll(map);
 			System.err.println("Number of interaction filters: " + map.size());
-			for( String s : map.keySet()){
-				this.mFilterMap.put(s, map.get(s));
-			}
 		}
 	}
 
