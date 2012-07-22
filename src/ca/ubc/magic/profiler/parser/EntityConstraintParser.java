@@ -65,7 +65,7 @@ public class EntityConstraintParser extends DefaultHandler {
     	text.reset();
 
         try{
-            System.err.println("startElt " + name);
+            //System.out.println("startElt " + name);
             if (name.equals("constraints")){
             }else if (name.equals("root")){
                 mHandler.setConstraintType(name);
@@ -90,6 +90,13 @@ public class EntityConstraintParser extends DefaultHandler {
             }
             else if (name.equals("target")){
                 mHandler.startTarget();
+            }else if (name.equals("filters")){
+            	mHandler.setConstraintType(name);
+            }else if (name.equals("filter")){
+            	mHandler.startFilter(
+            			getAttrString(atts, "type"), 
+            			getAttrString(atts, "name"),
+            			getAttrLong(atts, "host"));
             }
             
         }catch (Exception e){
@@ -99,23 +106,24 @@ public class EntityConstraintParser extends DefaultHandler {
 
     @Override
     public void endElement (String uri, String name, String qName) {
-    	System.err.println("endElement " + name);
         if (name.equals("constraints")){
-        }else if (name.equals("entity")){
-            mHandler.endEntity();
-        }else if (name.equals("entry")){
-            mHandler.endEntry();
-        }else if (name.equals("component")){
-            mHandler.endUnit(getText(), CodeUnitType.COMPONENT);
-        }else if (name.equals("class")){
-            mHandler.endUnit(getText(), CodeUnitType.CLASS);
-        }else if (name.equals("method")){
-            mHandler.endUnit(getText(), CodeUnitType.METHOD);
-        } else if (name.equals("target")){
-            mHandler.endTarget(getText());
-        }else {
-            mHandler.removeConstraintType();
-        }
+            }else if (name.equals("entity")){
+                mHandler.endEntity();
+            }else if (name.equals("entry")){
+                mHandler.endEntry();
+            }else if (name.equals("component")){
+                mHandler.endUnit(getText(), CodeUnitType.COMPONENT);
+            }else if (name.equals("class")){
+                mHandler.endUnit(getText(), CodeUnitType.CLASS);
+            }else if (name.equals("method")){
+                mHandler.endUnit(getText(), CodeUnitType.METHOD);
+            }else if (name.equals("target")){
+                mHandler.endTarget(getText());
+            }else if (name.equals("filter")){
+            	mHandler.endFilter();
+            }else {
+                mHandler.removeConstraintType();
+            }
     }
 
     private String getText()
