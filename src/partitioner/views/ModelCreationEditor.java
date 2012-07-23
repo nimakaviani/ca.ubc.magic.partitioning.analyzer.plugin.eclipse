@@ -32,8 +32,10 @@ import partitioner.models.PartitionerModelMessages;
 import partitioner.models.TestFrameworkModel;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
+import plugin.mvc.IPublisher;
 import plugin.mvc.IView;
 import plugin.mvc.Publications;
+import plugin.mvc.PublisherDelegate;
 import snapshots.views.VirtualModelFileInput;
 
 import ca.ubc.magic.profiler.dist.model.ModulePair;
@@ -61,6 +63,7 @@ implements IView
     
     private Frame 				frame;
 	private IController 		controller;
+	private IPublisher			publisher;
 	
 	private String 				algorithm;
 	private String 				solution;
@@ -74,6 +77,9 @@ implements IView
 		this.controller.addView( this );
 	    
 		this.controller.addModel( new PartitionerModel() );
+		
+		this.publisher	
+			= new PublisherDelegate();
 	}
 	
 	private void 
@@ -493,7 +499,7 @@ implements IView
 		VirtualModelFileInput input
 			= (VirtualModelFileInput) this.getEditorInput();
 		
-		this.controller.publish(
+		this.publisher.publish(
 			this.getClass(), 
 			Publications.MODEL_EDITOR_CLOSED, 
 			input
@@ -550,7 +556,7 @@ implements IView
 				
 				System.out.println( "Active: " + part_ref.getTitle() );
 				
-				ModelCreationEditor.this.controller.publish( 
+				ModelCreationEditor.this.publisher.publish( 
 					this.getClass(), 
 					Publications.ACTIVE_EDITOR_CHANGED, 
 					editor.getController()

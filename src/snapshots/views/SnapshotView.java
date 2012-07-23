@@ -47,9 +47,11 @@ import plugin.Activator;
 import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
+import plugin.mvc.IPublisher;
 import plugin.mvc.IView;
 import plugin.mvc.PublicationHandler;
 import plugin.mvc.Publications;
+import plugin.mvc.PublisherDelegate;
 
 import recycle_bin.LogAction;
 import snapshots.com.mentorgen.tools.util.profile.Start;
@@ -76,6 +78,8 @@ implements IView
 	
 	private IController 			active_snapshot_controller 
 		= new ControllerDelegate();
+	private IPublisher				publisher
+		= new PublisherDelegate();
 	//EventLogTable					log_console_table;
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
@@ -93,11 +97,11 @@ implements IView
 	public void 
 	dispose()
 	{
-		/// deregister message handler from controller
-		this.active_snapshot_controller.unregisterPublicationListener(
-			Publications.REFRESH_SNAPSHOT_TREE,
-			this.refresh_snapshot_event_registration
-		);
+		/// TODO deregister message handler from controller
+//		this.publisher.unregisterPublicationListener(
+//			Publications.REFRESH_SNAPSHOT_TREE,
+//			this.refresh_snapshot_event_registration
+//		);
 		
 		// temporary solution: implement true persistence later
 		Activator.getDefault().persistTreeContentProvider(
@@ -253,7 +257,7 @@ implements IView
 		this.initializeContextMenu();
 		
 		this.refresh_snapshot_event_registration
-			= this.active_snapshot_controller.registerPublicationListener(
+			= this.publisher.registerPublicationListener(
 				this.getClass(), 
 				Publications.REFRESH_SNAPSHOT_TREE, 
 				new PublicationHandler(){
@@ -271,7 +275,7 @@ implements IView
 				}
 			);
 		
-		this.active_snapshot_controller.registerPublicationListener(
+		this.publisher.registerPublicationListener(
 			this.getClass(),
 			Publications.MODEL_EDITOR_CLOSED,
 			new PublicationHandler(){

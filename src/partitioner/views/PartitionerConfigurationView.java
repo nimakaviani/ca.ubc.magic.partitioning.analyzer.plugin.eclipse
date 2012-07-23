@@ -70,7 +70,6 @@ implements IView
 	private Button 		host_config_browse;
 	
 	private Button 		exposure_button;
-	private Button 		synthetic_node_button;
 	
 	private IController controller;
 	private Combo 		set_coarsener_combo;
@@ -315,9 +314,6 @@ implements IView
 					PartitionerConfigurationView.this.exposure_button.setSelection( 
 						(Boolean) properties.get(PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME)
 						);
-					PartitionerConfigurationView.this.synthetic_node_button.setSelection( 
-						(Boolean) properties.get(PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME)
-					);
 					
 					PartitionerConfigurationView.this
 						.partitioner_widgets.setDisplayValues( properties );
@@ -523,29 +519,6 @@ implements IView
 		);
 		
 		this.createDummyLabel(parent, toolkit);
-		
-		this.synthetic_node_button
-			= toolkit.createButton(parent, "Add Synthetic Node", SWT.CHECK);
-		grid_data 
-			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-		grid_data.horizontalSpan = 1;
-		synthetic_node_button.setLayoutData( grid_data );
-		
-		synthetic_node_button.addSelectionListener(
-			new SelectionAdapter()
-			{
-				@Override
-				public void
-				widgetSelected
-				( SelectionEvent e )
-				{
-					PartitionerConfigurationView.this.controller.updateModel(
-						PartitionerModelMessages.SET_SYNTHETIC_NODE,
-						new Boolean(synthetic_node_button.getSelection())
-					);
-				}
-			}
-		);
 	}
 	
 	private Label 
@@ -850,7 +823,6 @@ implements IView
 		this.host_config_text.setText("");
 		
 		this.exposure_button.setSelection(false);
-		this.synthetic_node_button.setSelection(false);
 		if( this.partitioner_widgets != null ){
 			this.partitioner_widgets.clear_selections();
 		}
@@ -868,7 +840,6 @@ implements IView
 		this.module_exposer_text.setEditable(enabled);
 		this.generate_model.setVisible(enabled);
 		
-		this.synthetic_node_button.setEnabled(enabled);
 		this.exposure_button.setEnabled(enabled);
 		
 		this.mod_exposer_browse_button.setVisible(enabled);
@@ -938,6 +909,7 @@ implements IView
 		private Combo 		partitioning_algorithm_combo;
 		private Combo 		interaction_model_combo;
 		private Combo 		execution_model_combo;
+		private Button 		synthetic_node_button;
 		private Button 		activate_host_filter_button;
 		private Button 		activate_interaction_filter_button;
 
@@ -1017,6 +989,31 @@ implements IView
 										.generate_test_framework_button.getSelection()
 								)
 							);
+					}
+				}
+			);
+			PartitionerConfigurationView.this
+				.createDummyLabel( parent, toolkit );
+		
+			this.synthetic_node_button
+				= toolkit.createButton(parent, "Add Synthetic Node", SWT.CHECK);
+			grid_data 
+				= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
+			grid_data.horizontalSpan = 1;
+			synthetic_node_button.setLayoutData( grid_data );
+			
+			synthetic_node_button.addSelectionListener(
+				new SelectionAdapter()
+				{
+					@Override
+					public void
+					widgetSelected
+					( SelectionEvent e )
+					{
+						PartitionerConfigurationView.this.controller.updateModel(
+							PartitionerModelMessages.SET_SYNTHETIC_NODE,
+							new Boolean(synthetic_node_button.getSelection())
+						);
 					}
 				}
 			);
@@ -1115,7 +1112,8 @@ implements IView
 				this.partitioning_algorithm_combo,
 				this.interaction_model_combo,
 				this.execution_model_combo,
-				this.generate_test_framework_button
+				this.generate_test_framework_button,
+				this.synthetic_node_button
 			);
 		}
 		
@@ -1162,6 +1160,10 @@ implements IView
 				= (Boolean) map.get(
 					PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME
 				);
+			boolean activate_synthetic_node_filter
+				= (Boolean) map.get(
+					PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME
+				);
 			
 			int index;
 			
@@ -1195,6 +1197,11 @@ implements IView
 				);
 			
 			this.partitioning_algorithm_combo.select( index ); 
+			
+			this.synthetic_node_button
+				.setSelection( 
+					activate_synthetic_node_filter
+				);
 		}
 
 		public void 
@@ -1211,6 +1218,7 @@ implements IView
 			this.activate_host_filter_button.setSelection(false);
 			this.activate_interaction_filter_button.setSelection(false);
 			this.perform_partitioning_button.setSelection(false);
+			this.synthetic_node_button.setSelection(false);
 		}
 
 		private void 

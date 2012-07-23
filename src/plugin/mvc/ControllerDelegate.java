@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.event.EventHandler;
-
 import plugin.mvc.messages.IndexEvent;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
@@ -16,12 +13,10 @@ import plugin.mvc.messages.ViewsEvent;
 
 public class 
 ControllerDelegate 
-implements IController,
-	IPublisher
+implements IController
 {
 	private IModel 		model;
 	private List<IView> registered_views;
-	private IPublisher	publisher_delegate;
 	
 	public final static String EVENT_SENTINEL
 		= "Event";
@@ -31,8 +26,6 @@ implements IController,
 	{
 		this.registered_views
 			= new CopyOnWriteArrayList<IView>();
-		this.publisher_delegate
-			= new PublisherDelegate();
 	}
 	
 	@Override
@@ -230,42 +223,42 @@ implements IController,
 		}
 	}
 
-	///////////////////////////////////////////////////////////////////////////
-	///	Publisher interface
-	///////////////////////////////////////////////////////////////////////////
-	
-	@Override
-	public void 
-	publish 
-	( Class<?> sender_class, Publications publication, Object packet) 
-	{
-		this.publisher_delegate.publish(
-			sender_class, 
-			publication, 
-			packet
-		);
-	}
-
-	@Override
-	public ServiceRegistration<EventHandler> 
-	registerPublicationListener
-	( Class<?> listener_class, Publications publication, PublicationHandler publication_handler ) 
-	{
-		return this.publisher_delegate.registerPublicationListener(
-			listener_class,
-			publication,
-			publication_handler
-		);
-	}
-
-	@Override
-	public void 
-	unregisterPublicationListener
-	( Publications publication, ServiceRegistration<EventHandler> service ) 
-	{
-		this.publisher_delegate.unregisterPublicationListener(
-			publication,
-			service
-		);
-	}
+//	///////////////////////////////////////////////////////////////////////////
+//	///	Publisher interface
+//	///////////////////////////////////////////////////////////////////////////
+//	
+//	@Override
+//	public void 
+//	publish 
+//	( Class<?> sender_class, Publications publication, Object packet) 
+//	{
+//		this.publisher_delegate.publish(
+//			sender_class, 
+//			publication, 
+//			packet
+//		);
+//	}
+//
+//	@Override
+//	public ServiceRegistration<EventHandler> 
+//	registerPublicationListener
+//	( Class<?> listener_class, Publications publication, PublicationHandler publication_handler ) 
+//	{
+//		return this.publisher_delegate.registerPublicationListener(
+//			listener_class,
+//			publication,
+//			publication_handler
+//		);
+//	}
+//
+//	@Override
+//	public void 
+//	unregisterPublicationListener
+//	( Publications publication, ServiceRegistration<EventHandler> service ) 
+//	{
+//		this.publisher_delegate.unregisterPublicationListener(
+//			publication,
+//			service
+//		);
+//	}
 }

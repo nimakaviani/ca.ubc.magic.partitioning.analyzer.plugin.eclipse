@@ -98,9 +98,6 @@ implements IModel
 				"Static Time Simulator (No Trace Replay)"
 			)
 	  	);
-	// private javax.swing.JFileChooser fileChooser;
-
-	//private JipRun jipRun;
 
 	private volatile Boolean 	enable_synthetic_node_filter 
 		= false;
