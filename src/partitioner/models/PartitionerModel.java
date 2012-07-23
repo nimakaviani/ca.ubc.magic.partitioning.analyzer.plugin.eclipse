@@ -1,4 +1,3 @@
-
 package partitioner.models;
 
 import java.beans.PropertyChangeListener;
@@ -14,10 +13,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
-import plugin.Constants;
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
-import plugin.mvc.messages.DataEvent;
 
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
@@ -25,7 +22,6 @@ import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
-import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel;
 import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
@@ -714,10 +710,6 @@ implements IModel
 	private void 
 	initializeFilters() 
 	{
-		// I'm not so sure about simply passing in a raw FilterConstraintModel
-		// I looked for a factory that finds preinitialized subclasses,
-		// but it appears that is not Nima's way of doing things
-		
 		// Nima - your comment about preinitialized subclasses was valid. The getFilterSet
 		//		  method was there. you just had to pass it the filter type instead.
 		//		  I tweaked FitlterHelper's setFilter method to get the set of filters instead.
@@ -728,11 +720,12 @@ implements IModel
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel.getFilterConstraintModel().getFilterSet( 
-					FilterType.COLOCATION_CUT)
+					this.mConstraintModel
+						.getFilterConstraintModel()
+						.getFilterSet( FilterType.COLOCATION_CUT )
 				);
 				
-			mFilterMap.putAll(map);
+			this.mFilterMap.putAll(map);
 			System.err.println("Number of synthetic filters: " + map.size());
 		}
 		
@@ -740,11 +733,12 @@ implements IModel
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel.getFilterConstraintModel().getFilterSet( 
-					FilterType.HOST_CUT)
+					this.mConstraintModel
+						.getFilterConstraintModel()
+						.getFilterSet( FilterType.HOST_CUT )
 				);
 				
-			mFilterMap.putAll(map);
+			this.mFilterMap.putAll(map);
 			System.err.println("Number of host filters: " + map.size());
 		}
 		
@@ -752,11 +746,12 @@ implements IModel
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel.getFilterConstraintModel().getFilterSet(
-					FilterType.INTERACTION_CUT)
+					this.mConstraintModel
+						.getFilterConstraintModel()
+						.getFilterSet(FilterType.INTERACTION_CUT)
 				);
 				
-			mFilterMap.putAll(map);
+			this.mFilterMap.putAll(map);
 			System.err.println("Number of interaction filters: " + map.size());
 		}
 	}
@@ -910,9 +905,6 @@ implements IModel
 	private void 
 	registerProperties() 
 	{
-		// any registered properties should only be updated
-		// through a call to a set... function, where the
-		// ending is the string behind the constant
 		String[] property_names 
 			= {
 				PartitionerModelMessages.MODULE_COARSENER.NAME,
@@ -939,7 +931,6 @@ implements IModel
 		Object[] properties
 			= {
 			this.mModuleType,
-			// problem: profiler trace is not being modified
 			this.profiler_trace,
 			this.constraint_xml_path,
 			this.host_configuration,

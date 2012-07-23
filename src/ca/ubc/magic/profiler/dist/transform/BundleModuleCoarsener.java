@@ -11,7 +11,6 @@ import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeEntity;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeUnitType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
-import ca.ubc.magic.profiler.dist.transform.model.NodeObj;
 import ca.ubc.magic.profiler.parser.JipFrame;
 import ca.ubc.magic.profiler.parser.JipRun;
 import java.util.Set;

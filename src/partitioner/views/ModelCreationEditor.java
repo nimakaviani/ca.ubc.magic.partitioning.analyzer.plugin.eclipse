@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Frame;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JFrame;
@@ -27,16 +26,10 @@ import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.eclipse.ui.part.MultiPageEditorPart;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventAdmin;
 
 import partitioner.models.PartitionerModel;
 import partitioner.models.PartitionerModelMessages;
 import partitioner.models.TestFrameworkModel;
-import plugin.Constants;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IView;
@@ -151,7 +144,13 @@ implements IView
 	    this.frame 
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
 
-	  	this.initialize_model_analysis_page( model_analysis_composite );
+	  	try {
+			this.initialize_model_analysis_page( model_analysis_composite );
+		} catch (InvocationTargetException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		this.updateTitle();
 
 		// this should happen after the controller is assigned
@@ -162,14 +161,11 @@ implements IView
 	private void 
 	initialize_model_analysis_page
 	( Composite model_analysis_composite ) 
+	throws InvocationTargetException, InterruptedException 
 	// example code for dealing with swt/swing integration provided by
 	// http://www.eclipse.org/articles/article.php?file=Article-Swing-SWT-Integration/index.html
 	{
-		// the following should be set before any SWING widgets are
-		// instantiated it reduces flicker on a resize
-		System.setProperty("sun.awt.noerasebackground", "true");
-
-		SwingUtilities.invokeLater( 
+		SwingUtilities.invokeAndWait( 
 			new Runnable(){
 				@Override
 				public void run() {
@@ -185,11 +181,6 @@ implements IView
 					ModelCreationEditor.this.frame.setBackground(
 						Color.white
 					);
-					// TODO the following fixes the resize problem but I'm not
-					//	sure why. also, there is now the problem of remaining
-					// ghost images of graphs...will need to fix
-					ModelCreationEditor.this.frame.pack();
-					ModelCreationEditor.this.frame.setVisible(true);
 					SwingUtilities.updateComponentTreeUI(frame);	
 				}
 			}
@@ -345,6 +336,23 @@ implements IView
 					// it to generate a new view: anything more is too much logic
 					ModelCreationEditor.this
 						.activateTestPage( test_framework_model );
+					try {
+						SwingUtilities.invokeAndWait( 
+							// the following does not work if we try to pack or make visible
+							new Runnable(){
+								@Override
+								public void run() {
+									SwingUtilities.updateComponentTreeUI(frame);	
+								}
+								
+							}
+						);
+					} catch (InvocationTargetException e) {
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
 				}
 				else if( property.equals( PartitionerModelMessages.MODEL_CREATED.NAME)){
 					ModelCreationEditor.this.visualizeModuleModel();
@@ -477,7 +485,6 @@ implements IView
 		// notify peers on the controller
 		this.controller.notifyPeers(
 			PartitionerModelMessages.EDITOR_CLOSED,
-			//Constants.EVENT_EDITOR_CLOSED, 
 			this, 
 			null
 		);

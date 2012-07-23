@@ -40,6 +40,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.event.EventHandler;
 
 import plugin.Activator;
 import plugin.Constants;
@@ -77,6 +79,8 @@ implements IView
 	//EventLogTable					log_console_table;
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
+
+	private ServiceRegistration<EventHandler> refresh_snapshot_event_registration;
 	
 	//private IController 			event_log_controller
 	//	= new ControllerDelegate();
@@ -89,6 +93,12 @@ implements IView
 	public void 
 	dispose()
 	{
+		/// deregister message handler from controller
+		this.active_snapshot_controller.unregisterPublicationListener(
+			Publications.REFRESH_SNAPSHOT_TREE,
+			this.refresh_snapshot_event_registration
+		);
+		
 		// temporary solution: implement true persistence later
 		Activator.getDefault().persistTreeContentProvider(
 			this.file_tree_content_provider
@@ -242,23 +252,24 @@ implements IView
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
 		
-		this.active_snapshot_controller.registerPublicationListener(
-			this.getClass(), 
-			Publications.REFRESH_SNAPSHOT_TREE, 
-			new PublicationHandler(){
-				@Override
-				public void 
-				handle
-				( Object obj ) 
-				{
-					Boolean refresh
-						= (Boolean) obj;
-					if(refresh != null && refresh == true){
-						SnapshotView.this.refresh();
+		this.refresh_snapshot_event_registration
+			= this.active_snapshot_controller.registerPublicationListener(
+				this.getClass(), 
+				Publications.REFRESH_SNAPSHOT_TREE, 
+				new PublicationHandler(){
+					@Override
+					public void 
+					handle
+					( Object obj ) 
+					{
+						Boolean refresh
+							= (Boolean) obj;
+						if(refresh != null && refresh == true){
+							SnapshotView.this.refresh();
+						}
 					}
 				}
-			}
-		);
+			);
 		
 		this.active_snapshot_controller.registerPublicationListener(
 			this.getClass(),
@@ -533,10 +544,15 @@ implements IView
 	// http://cvalcarcel.wordpress.com/tag/setexpandedelements/
 	{
 		System.out.println("Refreshing the snapshot view");
-		Object[] treePaths 
-			= this.snapshot_tree_viewer.getExpandedElements();
-		this.snapshot_tree_viewer.refresh();
-		this.snapshot_tree_viewer.setExpandedElements(treePaths);
+		
+		// TODO: the following should work, but the real problem is that
+		// 	a message is being fired after an unregister event...
+		if( !this.snapshot_tree_viewer.getTree().isDisposed() ){
+			Object[] treePaths 
+				= this.snapshot_tree_viewer.getExpandedElements();
+			this.snapshot_tree_viewer.refresh();
+			this.snapshot_tree_viewer.setExpandedElements(treePaths);
+		}
 	}
 	
 	private void 

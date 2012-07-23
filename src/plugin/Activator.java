@@ -10,7 +10,6 @@ import snapshots.events.logging.EventLogActionHandler;
 public class 
 Activator 
 extends AbstractUIPlugin 
-// TODO: get rid of the global models
 {
 	public static final String PLUGIN_ID 
 		= "plugin";

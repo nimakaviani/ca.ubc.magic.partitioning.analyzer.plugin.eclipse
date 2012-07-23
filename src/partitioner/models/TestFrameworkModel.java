@@ -40,42 +40,6 @@ public class
 TestFrameworkModel 
 implements IModel
 {
-	// properties: features that a view can update
-//	public static final String PROPERTY_SIMULATION_ADDED 
-//		= "SimulationAdded";
-//	public static final String GUI_SIMULATION_REMOVED 
-//		= "SimulationRemoved";
-//	public static final String GUI_UPDATE_SIMULATION_REPORT 
-//		= "UpdateSimulationReport";
-//	public static final String GUI_UPDATE_BEST_SIMULATION_REPORT 
-//		= "UpdateBestSimulationReport";
-//	public static final String GUI_SIMULATION_TYPE 
-//		= "SimulationType";
-	
-	
-	// the following should all be properties that can be queried for...
-	// they are only events due to the nature of the program (which was a path 
-	// of least resistance in some cases);
-	// the problem is that I don't want the user to be able to set these...
-	// but I do want the user to be able to query for them...
-//	public static final String EVENT_UPDATE_BEST_RUN_NAME 
-//		= "BestRunName";
-//	public static final String EVENT_UPDATE_BEST_RUN_ALGORITHM 
-//		= "BestAlgorithmName";
-//	public static final String EVENT_UPDATE_BEST_RUN_COST 
-//		= "BestRunCost";
-//	public static final String EVENT_UPDATE_ID 
-//		= "IncrementID";
-	
-		
-	
-	// events to the model or originating from
-//	public static final String EVENT_RUN_SIMULATION 
-//		= "RunSimulation";
-	
-//	public static final String EVENT_SIMULATION_TABLE_RUN_UPDATE 
-//		= "RunSimulationTableUpdate";
-	
 	// Queryable
 	public static final String				TEST_SIMULATION_FRAMEWORK
 		= "SimulationFramework";
@@ -83,10 +47,6 @@ implements IModel
 		= "ModuleModel";
 	public static final String				TEST_HOST_MODEL
 		= "HostModel";
-	// collection queries: how to handle collections
-	//	that come into being at runtime?
-//	public static final String SIMULATION_UNITS 
-//		= "InSimulationUnits";
 		
 	private PropertyChangeDelegate 			property_change_delegate;
 	private Map<String, DefaultKeyValue> 	unitMap;
@@ -392,9 +352,9 @@ implements IModel
 	{
 		String[] property_names
 			= {
-				this.TEST_SIMULATION_FRAMEWORK,
-				this.TEST_MODULE_MODEL,
-				this.TEST_HOST_MODEL,
+				TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
+				TestFrameworkModel.TEST_MODULE_MODEL,
+				TestFrameworkModel.TEST_HOST_MODEL,
 			};
 		Object[] properties
 			= {

@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.event.EventHandler;
+
 import plugin.mvc.messages.IndexEvent;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
@@ -244,14 +247,25 @@ implements IController,
 	}
 
 	@Override
-	public void 
+	public ServiceRegistration<EventHandler> 
 	registerPublicationListener
 	( Class<?> listener_class, Publications publication, PublicationHandler publication_handler ) 
 	{
-		this.publisher_delegate.registerPublicationListener(
+		return this.publisher_delegate.registerPublicationListener(
 			listener_class,
 			publication,
 			publication_handler
+		);
+	}
+
+	@Override
+	public void 
+	unregisterPublicationListener
+	( Publications publication, ServiceRegistration<EventHandler> service ) 
+	{
+		this.publisher_delegate.unregisterPublicationListener(
+			publication,
+			service
 		);
 	}
 }

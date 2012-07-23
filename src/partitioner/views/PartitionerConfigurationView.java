@@ -48,6 +48,9 @@ import plugin.mvc.PublisherDelegate;
 import snapshots.views.VirtualModelFileInput;
 
 import org.eclipse.swt.widgets.Control;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.event.EventHandler;
+
 import java.util.List;
 
 public class 
@@ -83,6 +86,8 @@ implements IView
 	private Button partition_model;
 
 	private Button generate_model;
+
+	private ServiceRegistration<EventHandler> active_editor_event_service;
 	
 	@Override
 	public void 
@@ -92,22 +97,23 @@ implements IView
 		this.publisher_delegate
 			= new PublisherDelegate();
 		
-		this.publisher_delegate.registerPublicationListener(
-			this.getClass(),
-			Publications.ACTIVE_EDITOR_CHANGED,
-			new PublicationHandler(){
-				@Override
-				public void
-				handle
-				( Object obj )
-				{
-					System.out.println("Handling");
-					IController controller 
-						= (IController) obj;
-					PartitionerConfigurationView.this.setDisplayValues(controller);
+		this.active_editor_event_service
+			= this.publisher_delegate.registerPublicationListener(
+				this.getClass(),
+				Publications.ACTIVE_EDITOR_CHANGED,
+				new PublicationHandler(){
+					@Override
+					public void
+					handle
+					( Object obj )
+					{
+						System.out.println("Handling");
+						IController controller 
+							= (IController) obj;
+						PartitionerConfigurationView.this.setDisplayValues(controller);
+					}
 				}
-			}
-		);
+			);
 				
 		this.toolkit 
 			= new FormToolkit( parent.getDisplay() );
@@ -922,11 +928,6 @@ implements IView
 	//	5) in the view, register the partitioner widget with the list of
 	//		controls
 	//	6) if necessary, add the widget to the clear selections function
-	//	TODO: Yes...I agree there is something fundamentally wrong with the way the
-	//		model is organized...I will need to fix this, and I will need to 
-	//		remove the control decision logic in some of the views ( very minor,
-	//		but I don't like)
-	
 	private class
 	PartitionerWidgets
 	// the following class exists solely to group together all of the 
