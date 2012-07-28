@@ -28,7 +28,7 @@ extends TimingEvent
 				valid_package = false;
 			}
 		}
-		else if( !data_package.getClass().isAssignableFrom(this.CLASS)){
+		else if( !this.CLASS.isAssignableFrom( data_package.getClass() )){
 			valid_package = false;
 		}
 		

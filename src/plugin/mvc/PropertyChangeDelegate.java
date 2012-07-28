@@ -86,10 +86,7 @@ PropertyChangeDelegate
     firePropertyChange
     ( String property_name, Object old_value, Object new_value )
     {
-    	// to deal with reference switches
-    	if( this.property_map.containsKey(property_name)){
-        	this.property_map.put(property_name, new_value);
-    	}
+    	this.update_property(property_name, new_value);
     	
         if (this.listeners.hasListeners(property_name)) {
             this.listeners.firePropertyChange(
@@ -98,6 +95,16 @@ PropertyChangeDelegate
             	new_value
             );
         }
+    }
+    
+    public void
+    update_property
+    ( String property_name, Object new_value)
+    {
+    	// to deal with reference switches
+    	if( this.property_map.containsKey(property_name)){
+        	this.property_map.put(property_name, new_value);
+    	}
     }
     
 //    public void

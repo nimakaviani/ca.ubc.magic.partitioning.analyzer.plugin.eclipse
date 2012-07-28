@@ -9,9 +9,17 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.progress.IProgressConstants;
 
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
@@ -53,6 +61,12 @@ implements IModel
 // TODO: write an adapter around the Model so were more cleanly separate
 //		the mvc interface from the program logic
 {
+	public enum State {
+		NO_MODEL, MODEL_BEFORE_PARTITION, PARTITIONED
+	}
+	
+	private State state = State.NO_MODEL;
+	
 	public static final String AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP 
 		= "ModuleExchangeMap";
 
@@ -70,7 +84,7 @@ implements IModel
 	private volatile String 		constraint_xml_path;
 	private volatile String 		host_configuration; 
 	
-	private volatile Boolean		configuration_panel_enabled = true;
+
 	
 	private ModuleModelHandler 		mmHandler;
 	private SimulationFramework	 	mSimFramework; 
@@ -81,13 +95,6 @@ implements IModel
 	private volatile HostModel   			mHostModel; 
 	private volatile EntityConstraintModel	mConstraintModel;
 
-	// volatile due to visibility concerns
-	private volatile Boolean active_exposing_menu = false;
-	
-	private volatile Boolean module_model_checkbox = false;
-	 
-	private volatile Boolean perform_partitioning = false;
-	
 	private Map<String, IFilter> mFilterMap; 
 	 	
 	private String partitioner_solution;
@@ -105,9 +112,30 @@ implements IModel
 		= false;
 	private Boolean 			activate_interaction_cost_filter 
 		= false;
+	private Boolean generate_test_framework 
+		= false;
+	// volatile due to visibility concerns
+	private volatile Boolean active_exposing_menu 
+		= false;
+	private volatile Boolean module_model_checkbox 
+		= false;
+	private volatile Boolean perform_partitioning 
+		= false;
 	
-	private Boolean generate_test_framework = false;
-	private Boolean partitioning_panel_enabled = true;
+	//private Boolean partitioning_panel_enabled = true;
+	// private volatile Boolean		configuration_panel_enabled = true;
+	
+	private void
+	changeState
+	( State state )
+	{
+		this.state = state;
+		
+		this.property_change_delegate.update_property(
+			PartitionerModelMessages.MODEL_STATE.NAME, 
+			this.state
+		);
+	}
 	
 	public
 	PartitionerModel()
@@ -199,7 +227,7 @@ implements IModel
 		this.host_configuration = host_configuration;
 		
 		this.property_change_delegate.firePropertyChange(
-				PartitionerModelMessages.HOST_CONFIGURATION, 
+			PartitionerModelMessages.HOST_CONFIGURATION, 
 			old_configuration, 
 			host_configuration
 		);
@@ -397,37 +425,37 @@ implements IModel
 		);
 	}
 	
-	public void 
-	setActiveConfigurationPanel
-	( Boolean active ) 
-	{
-		Boolean old_active
-			= this.configuration_panel_enabled;
-		this.configuration_panel_enabled
-			= active;
-		
-		this.property_change_delegate.firePropertyChange(
-			PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL,
-			old_active,
-			this.configuration_panel_enabled
-		);
-	}
-	
-	public void
-	setActivePartitioningPanel
-	( Boolean active )
-	{
-		Boolean old_active
-			= this.partitioning_panel_enabled;
-		this.partitioning_panel_enabled
-			= active;
-		
-		this.property_change_delegate.firePropertyChange(
-			PartitionerModelMessages.DISABLE_PARTITIONING_PANEL,
-			old_active,
-			this.partitioning_panel_enabled
-		);
-	}
+//	public void 
+//	setActiveConfigurationPanel
+//	( Boolean active ) 
+//	{
+//		Boolean old_active
+//			= this.configuration_panel_enabled;
+//		this.configuration_panel_enabled
+//			= active;
+//		
+//		this.property_change_delegate.firePropertyChange(
+//			PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL,
+//			old_active,
+//			this.configuration_panel_enabled
+//		);
+//	}
+//	
+//	public void
+//	setActivePartitioningPanel
+//	( Boolean active )
+//	{
+//		Boolean old_active
+//			= this.partitioning_panel_enabled;
+//		this.partitioning_panel_enabled
+//			= active;
+//		
+//		this.property_change_delegate.firePropertyChange(
+//			PartitionerModelMessages.DISABLE_PARTITIONING_PANEL,
+//			old_active,
+//			this.partitioning_panel_enabled
+//		);
+//	}
 
 	
     @Override
@@ -492,86 +520,92 @@ implements IModel
 	public void 
 	createModuleModel
 	( InputStream in ) 
+	throws Exception 
 	{
-		try{
-			// don't assign to class variables until we know that no exception
-			// is being thrown
-			EntityConstraintModel new_constraint_model 
-				= null;
-			ModuleModel module_model
-				= null;
-			ModuleModelHandler module_handler
-				= null;
-			
-			// If the Profile XML file belongs to a real trace of the application
-	        // (i.e., the "Preset Module Placement" checkbox is checked),
-	        // create the ModuleModel from the collected traces.
-	        if ( !this.module_model_checkbox ){  
-	        	
-	            if( this.active_exposing_menu ){
-	                // parsing the entity constraints to be 
-	            	// exposed in the dependency graph
-	                EntityConstraintParser ccParser 
-	                	= new EntityConstraintParser();
-	                
-	                // for concurrency we create a temporary
-	                // constraint model and assign at the end
-	                new_constraint_model
-	                	= ccParser.parse(
-	                		this.constraint_xml_path
-		                );
-	            }
-	            
-	            // here we set the list of extra switch constraints 
-	            // that would affect the parsing of the model
-	            if (  new_constraint_model != null ){
+		// don't assign to class variables until we know that no exception
+		// is being thrown
+		EntityConstraintModel new_constraint_model 
+			= null;
+		ModuleModel module_model
+			= null;
+		ModuleModelHandler module_handler
+			= null;
+		
+		// If the Profile XML file belongs to a real trace of the application
+        // (i.e., the "Preset Module Placement" checkbox is checked),
+        // create the ModuleModel from the collected traces.
+        if ( !this.module_model_checkbox ){  
+        	
+            if( this.active_exposing_menu ){
+                // parsing the entity constraints to be 
+            	// exposed in the dependency graph
+                EntityConstraintParser ccParser 
+                	= new EntityConstraintParser();
+                
+                // for concurrency we create a temporary
+                // constraint model and assign at the end
+                new_constraint_model
+                	= ccParser.parse(
+                		this.constraint_xml_path
+	                );
+            }
+            
+            // here we set the list of extra switch constraints 
+            // that would affect the parsing of the model
+            if (  new_constraint_model != null ){
+            	new_constraint_model
+            	 	.getConstraintSwitches().setSyntheticNodeActivated(
+            	 		this.enable_synthetic_node_filter   
+            	 	);
+            }
+            else {
+            	new_constraint_model = null;
+            	if( this.mModuleType != ModuleCoarsenerType.BUNDLE ){
+            		throw new ModuleExposureException(
+            			"Module Exposure must be activated in order to use a "
+            			+ "coarsener other than " 
+            			+ ModuleCoarsenerType.BUNDLE.getText()
+            		);
+            	}
+            }
+            	 
+        	JipRun jipRun 
+            	= JipParser.parse(in);             
+	        IModuleCoarsener moduleCoarsener 
+	        	= ModuleCoarsenerFactory.getModuleCoarsener(
+	        		this.mModuleType, 
 	            	new_constraint_model
-	            	 	.getConstraintSwitches().setSyntheticNodeActivated(
-	            	 		this.enable_synthetic_node_filter   
-	            	 	);
-	            }
-	            	 
-            	JipRun jipRun 
-	            	= JipParser.parse(in);             
-		        IModuleCoarsener moduleCoarsener 
-		        	= ModuleCoarsenerFactory.getModuleCoarsener(
-		        		this.mModuleType, 
-		            	new_constraint_model
-		            );     
-	            
-	            module_model
-	            	= moduleCoarsener.getModuleModelFromParser( jipRun );
-	           assert module_model != null : "Module model should not be null";
-	        }
-	        
-	        // If the Profile XML file carries only the hypothetical information for
-	        // potential module placements use the ModuleModelParser together with
-	        // host information in order to derive the ModuleModel, the ModuleHost
-	        // placement and the ModulePairHostPair interactions.
-	        else {
-	            ModuleModelParser mmParser 
-	            	= new ModuleModelParser();
-	            module_handler
-	            	= mmParser.parse(in);
-	            module_model
-	            	= module_handler.getModuleModel();
-	            
-	            assert module_model != null : "Module model should not be null";
-	        }
-	        
-	        this.mConstraintModel 
-	        	= new_constraint_model;
-	        PartitionerModel.this.setModuleModel( 
-	        	module_model
-	        );
-	        this.mModuleModel
-	        	= module_model;
-	        this.mmHandler
-	        	= module_handler;
-	        
-		} catch( Exception ex ){
-			ex.printStackTrace();
-		}
+	            );     
+            
+            module_model
+            	= moduleCoarsener.getModuleModelFromParser( jipRun );
+           assert module_model != null : "Module model should not be null";
+        }
+        
+        // If the Profile XML file carries only the hypothetical information for
+        // potential module placements use the ModuleModelParser together with
+        // host information in order to derive the ModuleModel, the ModuleHost
+        // placement and the ModulePairHostPair interactions.
+        else {
+            ModuleModelParser mmParser 
+            	= new ModuleModelParser();
+            module_handler
+            	= mmParser.parse(in);
+            module_model
+            	= module_handler.getModuleModel();
+            
+            assert module_model != null : "Module model should not be null";
+        }
+        
+        this.mConstraintModel 
+        	= new_constraint_model;
+        PartitionerModel.this.setModuleModel( 
+        	module_model
+        );
+        this.mModuleModel
+        	= module_model;
+        this.mmHandler
+        	= module_handler;
 	}
 
 	public void 
@@ -769,11 +803,12 @@ implements IModel
 	
 	class 
 	GenerateModelJob 
-	extends org.eclipse.core.runtime.jobs.Job
+	extends Job
 	{
 		private String profiler_trace_path;
 		private PartitionerModel gui_state_model;
-		
+		protected String results_message = "Model successfully generated";
+
 		GenerateModelJob
 		( String profiler_trace_path, PartitionerModel gui_state_model )
 		{
@@ -786,7 +821,7 @@ implements IModel
 		}
 		
 		@Override
-		protected IStatus 
+		public IStatus 
 		run
 		( IProgressMonitor monitor ) 
 		{
@@ -805,7 +840,7 @@ implements IModel
 				in.close();
 				this.gui_state_model.finished();
 				
-				PartitionerModel.this.setActiveConfigurationPanel( false );
+				PartitionerModel.this.changeState(State.MODEL_BEFORE_PARTITION);
 				PartitionerModel.this
 					.property_change_delegate.notifyViews(
 						PartitionerModelMessages.MODEL_CREATED, 
@@ -814,7 +849,16 @@ implements IModel
 				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
+			} catch (ModuleExposureException e){
+				e.printStackTrace();
+				PartitionerModel.this
+					.property_change_delegate.notifyViews(
+						PartitionerModelMessages.MODEL_EXCEPTION, 
+						e
+					);
 			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 			
@@ -874,13 +918,20 @@ implements IModel
 								)
 							}
 						);
+					PartitionerModel.this
+						.property_change_delegate.notifyViews(
+							PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK, 
+							null
+						);
 				}
-	
 				PartitionerModel.this
 					.property_change_delegate.notifyViews(
 						PartitionerModelMessages.PARTITIONING_COMPLETE, 
 						null
 					);
+				PartitionerModel.this
+					.changeState(State.PARTITIONED);
+				
 			}
 			catch(Exception ex){
 				ex.printStackTrace();
@@ -915,14 +966,13 @@ implements IModel
 				PartitionerModelMessages.PARTITIONER_TYPE.NAME,
 				PartitionerModelMessages.INTERACTION_COST.NAME,
 				PartitionerModelMessages.EXECUTION_COST.NAME,
-				PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL.NAME,
-				PartitionerModelMessages.DISABLE_PARTITIONING_PANEL.NAME,
 				PartitionerModelMessages.SIMULATION_FRAMEWORK.NAME,
 				PartitionerModelMessages.MODULE_MODEL.NAME,
 				PartitionerModelMessages.HOST_MODEL.NAME,
 				PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
 				PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
 				PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
+				PartitionerModelMessages.MODEL_STATE.NAME
 			};
 		
 		Object[] properties
@@ -940,8 +990,6 @@ implements IModel
 			this.execution_cost_type,
 			// does not need to be a member field, since now
 			// it is in the map
-			this.configuration_panel_enabled,
-			this.partitioning_panel_enabled,
 			this.mSimFramework,
 			this.mModuleModel,
 			this.mHostModel,
@@ -949,6 +997,8 @@ implements IModel
 			this.activate_host_cost_filter,
 			this.activate_interaction_cost_filter,
 			this.generate_test_framework,
+			
+			this.state
 		};
 		
 		this.property_change_delegate.registerProperties(

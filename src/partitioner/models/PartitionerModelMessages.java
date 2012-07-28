@@ -7,6 +7,8 @@ import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.Interacti
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
+import partitioner.models.PartitionerModel.State;
+import plugin.mvc.messages.DataEvent;
 import plugin.mvc.messages.FromModelEvent;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
@@ -17,7 +19,9 @@ PartitionerModelMessages
 {
 	public static final FromModelEvent MODEL_CREATED
 		= new FromModelEvent("ModelCreation", null);
-	public static final FromModelEvent PARTITIONING_COMPLETE
+	public static final FromModelEvent VIEW_CREATE_TEST_FRAMEWORK
+		= new FromModelEvent("ViewCreateTestFramework", null);
+	public static DataEvent PARTITIONING_COMPLETE
 		= new FromModelEvent("PartitioningComplete", null);
 	
 	public static final ViewsEvent EDITOR_CLOSED
@@ -57,10 +61,6 @@ PartitionerModelMessages
 	public static final PropertyEvent PROFILER_TRACE
 		= new PropertyEvent("ProfilerTracePath", String.class);
 	
-	public static final PropertyEvent DISABLE_CONFIGURATION_PANEL
-		= new PropertyEvent("ActiveConfigurationPanel", Boolean.class );
-	public static final PropertyEvent DISABLE_PARTITIONING_PANEL
-		= new PropertyEvent("ActivePartitioningPanel", Boolean.class);
 	public static final PropertyEvent SET_PRESET_MODULE_GRAPH
 		= new PropertyEvent("PresetModuleGraph", Boolean.class);
 	public static final PropertyEvent MODULE_MODEL
@@ -75,4 +75,9 @@ PartitionerModelMessages
 		= new PropertyEvent("Solution", String.class );
 	public static final PropertyEvent ALGORITHM
 		= new PropertyEvent("Algorithm", String.class );
+	
+	public static final PropertyEvent MODEL_STATE
+		= new PropertyEvent("ModelState", State.class);
+	public static final FromModelEvent MODEL_EXCEPTION 
+		= new FromModelEvent("ModelException", Exception.class);
 }

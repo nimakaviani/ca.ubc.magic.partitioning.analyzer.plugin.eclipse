@@ -1,11 +1,13 @@
 package partitioner.views;
 
+import java.awt.Event;
 import java.beans.PropertyChangeEvent;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -36,6 +38,7 @@ import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 
 import partitioner.models.PartitionerModel;
+import partitioner.models.PartitionerModel.State;
 import partitioner.models.PartitionerModelMessages;
 import plugin.Constants;
 import plugin.mvc.IController;
@@ -82,9 +85,9 @@ implements IView
 
 	private Section partitioning_composite;
 
-	private Button partition_model;
+	private Button partition_model_button;
 
-	private Button generate_model;
+	private Button generate_model_button;
 
 	private ServiceRegistration<EventHandler> active_editor_event_service;
 	
@@ -203,9 +206,10 @@ implements IView
 		this.initialize_actions_widgets(actions_client, this.toolkit);
 		
 		this.set_configuration_widgets_enabled( false );
-		this.partitioner_widgets.enablePartitioning( true );
+		this.generate_model_button.setVisible(false);
+		this.partitioner_widgets.set_partitioning_trigger_enabled( true );
 		this.partitioner_widgets
-			.set_partitioning_widgets_enabled( false ); 
+			.set_partitioning_controls_enabled( false ); 
 	}
 	
 	private void 
@@ -270,12 +274,11 @@ implements IView
 					PartitionerModelMessages.EXECUTION_COST.NAME,
 					PartitionerModelMessages.INTERACTION_COST.NAME,
 					PartitionerModelMessages.PARTITIONER_TYPE.NAME,
-					PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL.NAME,
 				
 					PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
 					PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
 					PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
-					PartitionerModelMessages.DISABLE_PARTITIONING_PANEL.NAME
+					PartitionerModelMessages.MODEL_STATE.NAME
 				};
 			
 			final Map<String, Object> properties 
@@ -318,25 +321,97 @@ implements IView
 					PartitionerConfigurationView.this
 						.partitioner_widgets.setDisplayValues( properties );
 					
-					Boolean configuration_enabled
-						= (Boolean) properties.get(PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL.NAME);
-					PartitionerConfigurationView.this
-						.set_configuration_widgets_enabled(
-							configuration_enabled
-						);
-					PartitionerConfigurationView.this
-						.partitioning_composite.setVisible( 
-							!configuration_enabled
-						);
-					PartitionerConfigurationView.this	
-						.partition_model.setVisible(!configuration_enabled);
-					PartitionerConfigurationView.this
-						.partitioner_widgets.enablePartitioning(
-							(Boolean) properties.get(PartitionerModelMessages.DISABLE_PARTITIONING_PANEL.NAME)
-						);
+					State model_state
+						= (State) properties.get(PartitionerModelMessages.MODEL_STATE.NAME);
+					PartitionerConfigurationView.this.updateState(model_state);
 				}
 			});
 		}
+	}
+
+	private void 
+	updateState
+	( State model_state ) 
+	{
+		boolean configuration_widgets_enabled;
+		boolean partitioning_composite_visible;
+		boolean partition_model_button_visible;
+		boolean partitioner_widgets_enabled;
+		boolean partitioner_switch_enabled;
+		boolean actions_composite_visible;
+		
+		switch(model_state){
+		case NO_MODEL:
+			configuration_widgets_enabled
+				= true;
+			partitioning_composite_visible
+				= false;
+			partition_model_button_visible
+				= false;
+			partitioner_widgets_enabled
+				= false;
+			actions_composite_visible
+				= true;
+			partitioner_switch_enabled 
+				= true;
+			break;
+		case MODEL_BEFORE_PARTITION:
+			configuration_widgets_enabled
+				= false;
+			partitioning_composite_visible
+				= true;
+			partition_model_button_visible
+				= true;
+			partitioner_switch_enabled
+				= true;
+			partitioner_widgets_enabled
+				= PartitionerConfigurationView.this
+					.partitioner_widgets.perform_partitioning_button.getSelection();
+			actions_composite_visible
+				= true;
+			break;
+		case PARTITIONED:
+			configuration_widgets_enabled
+				= false;
+			partitioning_composite_visible
+				= true;
+			partition_model_button_visible
+				= false;
+			partitioner_switch_enabled
+				= false;
+			partitioner_widgets_enabled
+				= false;
+			actions_composite_visible
+				= false;
+			break;
+		default:
+			throw new RuntimeException("This is an impossible case for Partitioner model state");
+		}
+		
+		PartitionerConfigurationView.this
+			.set_configuration_widgets_enabled(
+				configuration_widgets_enabled
+			);
+		PartitionerConfigurationView.this
+			.generate_model_button.setVisible(
+				configuration_widgets_enabled
+			);
+		PartitionerConfigurationView.this
+			.partitioning_composite.setVisible( 
+				partitioning_composite_visible
+			);
+		PartitionerConfigurationView.this	
+			.partition_model_button.setVisible(partition_model_button_visible);
+		PartitionerConfigurationView.this
+			.partitioner_widgets.set_partitioning_trigger_enabled(
+				partitioner_switch_enabled
+			);
+		PartitionerConfigurationView.this
+			.partitioner_widgets.set_partitioning_controls_enabled(
+				partitioner_widgets_enabled
+			);
+		PartitionerConfigurationView.this
+			.actions_composite.setVisible(actions_composite_visible);
 	}
 
 	private int 
@@ -606,7 +681,7 @@ implements IView
 	initialize_actions_widgets
 	( Composite parent, FormToolkit toolkit ) 
 	{
-		this.generate_model
+		this.generate_model_button
 			= toolkit.createButton(
 				parent, 
 				"Generate Model", 
@@ -615,9 +690,9 @@ implements IView
 		GridData grid_data 
 			= new GridData( SWT.BEGINNING, SWT.FILL, false, false);
 		grid_data.horizontalSpan = 1;
-		generate_model.setLayoutData( grid_data );
+		generate_model_button.setLayoutData( grid_data );
 		
-		generate_model.addSelectionListener(
+		generate_model_button.addSelectionListener(
 			new SelectionAdapter()
 			{
 				@Override
@@ -643,7 +718,7 @@ implements IView
 			}
 		);
 		
-		this.partition_model
+		this.partition_model_button
 			= toolkit.createButton(
 				parent, 
 				"Partition Model", 
@@ -652,9 +727,9 @@ implements IView
 		grid_data 
 			= new GridData( SWT.BEGINNING, SWT.FILL, false, false);
 		grid_data.horizontalSpan = 1;
-		partition_model.setLayoutData( grid_data );
+		partition_model_button.setLayoutData( grid_data );
 		
-		partition_model.addSelectionListener(
+		partition_model_button.addSelectionListener(
 			new SelectionAdapter()
 			{
 				@Override
@@ -672,7 +747,7 @@ implements IView
 				}
 			}
 		);
-		this.partition_model.setVisible(false);
+		this.partition_model_button.setVisible(false);
 	}
 	
 	@Override
@@ -720,7 +795,7 @@ implements IView
 							= (Boolean) evt.getNewValue();
 						PartitionerConfigurationView.this
 							.partitioner_widgets
-							.set_partitioning_widgets_enabled( enabled );
+							.set_partitioning_controls_enabled( enabled );
 					}
 					else if(property.equals(PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME)){
 						Boolean enabled 
@@ -735,21 +810,6 @@ implements IView
 						PartitionerConfigurationView.this
 							.partitioner_widgets.activate_interaction_filter_button
 							.setSelection(enabled);
-					}
-					else if(property.equals(PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL.NAME)){
-						boolean enabled
-							= (boolean) evt.getNewValue();
-						PartitionerConfigurationView.this
-							.set_configuration_widgets_enabled( enabled );
-						PartitionerConfigurationView.this
-							.updateModelName();
-					}
-					else if(property.equals(PartitionerModelMessages.DISABLE_PARTITIONING_PANEL.NAME)){
-						boolean enabled
-							= (boolean) evt.getNewValue();
-						PartitionerConfigurationView.this
-							.partitioner_widgets
-							.enablePartitioning( enabled );
 					}
 					else {
 						System.out.println("Swallowing message.");
@@ -789,21 +849,52 @@ implements IView
 						PartitionerConfigurationView.this
 							.set_configuration_widgets_enabled( false );
 						PartitionerConfigurationView.this
-							.partitioner_widgets.enablePartitioning( false );
+							.generate_model_button.setVisible(true);
+						PartitionerConfigurationView.this
+							.partitioner_widgets.set_partitioning_trigger_enabled( false );
 						if( PartitionerConfigurationView.this.partitioner_widgets != null ){
 							PartitionerConfigurationView.this
 								.partitioner_widgets
-								.set_partitioning_widgets_enabled( false );
+								.set_partitioning_controls_enabled( false );
 						}
 					}
 					else if( property.equals(PartitionerModelMessages.MODEL_CREATED.NAME)){
-						PartitionerConfigurationView.this.partitioning_composite.setVisible( true );
-						PartitionerConfigurationView.this.partition_model.setVisible( true );
+						PartitionerConfigurationView.this
+							.set_configuration_widgets_enabled( false );
+						
+						PartitionerConfigurationView.this
+							.partitioning_composite.setVisible( true );
+						PartitionerConfigurationView
+							.this.partition_model_button.setVisible( true );
+						PartitionerConfigurationView.this
+							.generate_model_button.setVisible(false);
+						PartitionerConfigurationView.this
+							.partitioner_widgets.set_partitioning_trigger_enabled(true);
+						PartitionerConfigurationView.this
+							.partitioner_widgets.set_partitioning_controls_enabled(false);
+						PartitionerConfigurationView.this
+							.updateModelName();
 					}
 					else if( property.equals(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
 						PartitionerConfigurationView.this
 							.partitioner_widgets
-							.set_partitioning_widgets_enabled(false);
+							.set_partitioning_trigger_enabled(false);
+						PartitionerConfigurationView.this
+							.actions_composite.setVisible(false);
+						PartitionerConfigurationView.this
+							.partitioner_widgets
+							.set_partitioning_trigger_enabled( false );
+						PartitionerConfigurationView.this
+							.partitioner_widgets
+							.set_partitioning_controls_enabled(false);
+					}
+					else if (property.equals(PartitionerModelMessages.MODEL_EXCEPTION.NAME)){
+						Exception ex = (Exception) evt.getNewValue();
+						MessageDialog.openError(
+							PartitionerConfigurationView.this.getViewSite().getShell(), 
+							"Model Exception", 
+							ex.getMessage() 
+						);
 					}
 					else {
 						System.out.println("PartitionerConfigurationView swallowed model event");
@@ -846,12 +937,9 @@ implements IView
 	{
 		this.host_config_text.setEditable(enabled);
 		this.module_exposer_text.setEditable(enabled);
-		this.generate_model.setVisible(enabled);
-		
 		this.exposure_button.setEnabled(enabled);
-		
-		this.mod_exposer_browse_button.setVisible(enabled);
-		this.host_config_browse.setVisible(enabled);
+		this.mod_exposer_browse_button.setEnabled(enabled);
+		this.host_config_browse.setEnabled(enabled);
 		this.set_coarsener_combo.setEnabled(enabled);
 	}
 	
@@ -904,7 +992,7 @@ implements IView
 	//	2) create an associated state constant and object in the model
 	//	3) register that constant with the propertychangedelegate
 	//	4) write a setter for that state constant
-	//	5) in the view, register the partitioner widget with the list of
+	//	5) in the view, add the partitioner widget to the list of
 	//		controls
 	//	6) if necessary, add the widget to the clear selections function
 	private class
@@ -1213,13 +1301,6 @@ implements IView
 		}
 
 		public void 
-		enablePartitioning
-		( boolean enabled ) 
-		{
-			this.perform_partitioning_button.setEnabled(enabled);
-		}
-
-		public void 
 		clear_selections() 
 		{
 			this.generate_test_framework_button.setSelection(false);
@@ -1333,7 +1414,7 @@ implements IView
 		}
 		
 		void
-		set_partitioning_widgets_enabled
+		set_partitioning_controls_enabled
 		( boolean enabled )
 		// this function must execute in the SWT thread!!!
 		{
@@ -1343,11 +1424,10 @@ implements IView
 		}
 		
 		void 
-		set_partitioning_section_enabled
+		set_partitioning_trigger_enabled
 		( boolean enabled )
 		{
 			this.perform_partitioning_button.setEnabled(enabled);
-			this.set_partitioning_widgets_enabled(enabled);
 		}
 	}
 }

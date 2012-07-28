@@ -321,7 +321,7 @@ implements IView
 				
 				String property
 					= evt.getPropertyName();
-				if( property.equals(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
+				if( property.equals(PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK.NAME)){
 					// this is when the initialization must occur
 					//
 					// the most important thing is to know that the requested
