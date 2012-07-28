@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>plugin</name>
+	<name>ca.ubc.magic.partitioning.analyzer.plugin.eclipse</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -29,17 +29,17 @@
 		<link>
 			<name>EDU</name>
 			<type>2</type>
-			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego/src/EDU</location>
-		</link>
-		<link>
-			<name>oswego</name>
-			<type>2</type>
-			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego</location>
+			<location>/home/david/Desktop/eclipse/C::/cygwin/home/dillesca/eece_496_workspace/oswego/src/EDU</location>
 		</link>
 		<link>
 			<name>other_src</name>
 			<type>2</type>
-			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego/src</location>
+			<location>/home/david/Desktop/eclipse/C::/cygwin/home/dillesca/eece_496_workspace/oswego/src</location>
+		</link>
+		<link>
+			<name>oswego</name>
+			<type>2</type>
+			<location>/home/david/Desktop/eclipse/C::/cygwin/home/dillesca/eece_496_workspace/oswego</location>
 		</link>
 	</linkedResources>
 </projectDescription>
