@@ -1,3 +1,5 @@
+ -Djava.library.path=C:/cygwin/home/dillesca/eece_496_workspace/ca.ubc.magic.partitioning.analyzer.plugin.eclipse
+
 There are some things that are interesting about my implementation:
 	1) consider what is mentioned in
 	http://www.techrepublic.com/article/mvc-design-pattern-brings-about-better-organization-and-code-reuse/1049862

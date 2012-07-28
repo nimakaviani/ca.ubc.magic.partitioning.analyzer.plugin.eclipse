@@ -800,6 +800,14 @@ implements IView
 						PartitionerConfigurationView.this.partitioning_composite.setVisible( true );
 						PartitionerConfigurationView.this.partition_model.setVisible( true );
 					}
+					else if( property.equals(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
+						PartitionerConfigurationView.this
+							.partitioner_widgets
+							.set_partitioning_widgets_enabled(false);
+					}
+					else {
+						System.out.println("PartitionerConfigurationView swallowed model event");
+					}
 				}
 			});
 				
@@ -1332,6 +1340,14 @@ implements IView
 			for(Control partitioning_control : this.activate_and_deactivate_partitioner_list){
 				partitioning_control.setEnabled(enabled);
 			}
+		}
+		
+		void 
+		set_partitioning_section_enabled
+		( boolean enabled )
+		{
+			this.perform_partitioning_button.setEnabled(enabled);
+			this.set_partitioning_widgets_enabled(enabled);
 		}
 	}
 }

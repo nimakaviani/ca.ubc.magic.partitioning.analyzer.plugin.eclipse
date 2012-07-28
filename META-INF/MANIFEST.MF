@@ -47,4 +47,10 @@ Import-Package: org.eclipse.core.databinding.beans,
  org.eclipse.core.databinding.observable.list,
  org.eclipse.core.databinding.property.value,
  org.eclipse.jface.databinding.viewers
+Bundle-NativeCode: lpsolve55.dll;
+ lpsolve55j.dll;
+ osname=Win32; processor=x86,
+ lpsolve55.dll;
+ lpsolve55j.dll;
+ osname=Win32; processor=x86_64
 
