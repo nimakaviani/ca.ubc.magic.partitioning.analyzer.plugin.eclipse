@@ -47,12 +47,12 @@ Import-Package: org.eclipse.core.databinding.beans,
  org.eclipse.core.databinding.observable.list,
  org.eclipse.core.databinding.property.value,
  org.eclipse.jface.databinding.viewers
-Bundle-NativeCode: /lib/lpsolve/win32/lpsolve55.dll;
+Bundle-NativeCode: /lib/lpsolve/lpsolve55.dll;
  /lib/lpsolve/lpsolve55j.dll;
- osname=Win32; processor=x86,
- /lib/lpsolve/win64/lpsolve55.dll;
+ osname=win32; processor=x86,
+ /lib/lpsolve/lpsolve55.dll;
  /lib/lpsolve/lpsolve55j.dll;
- osname=Win32; processor=x86_64,
+ osname=win32; processor=x86_64,
  /lib/lpsolve/linux/liblpsolve55j.so;
  /lib/lpsolve/linux/liblpsolve55.so;
  osname=linux; processor=x86,
@@ -60,4 +60,3 @@ Bundle-NativeCode: /lib/lpsolve/win32/lpsolve55.dll;
  /lib/lpsolve/linux/liblpsolve55.so;
  osname=linux; processor=x86_64,
  *
-

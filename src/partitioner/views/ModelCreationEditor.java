@@ -406,6 +406,20 @@ implements IView
 			= bounds.width;
 		final int height
 			= bounds.height;
+
+		String[] properties 
+			= new String[]{
+				PartitionerModelMessages.MODULE_COARSENER.NAME
+			};
+		
+		Map<String, Object> objs
+			= this.controller.requestProperties(
+				properties
+			);
+		
+		final ModuleCoarsenerType coarsener_type
+			= (ModuleCoarsenerType) 
+				objs.get( PartitionerModelMessages.MODULE_COARSENER.NAME );
 		
 		SwingUtilities.invokeLater( new Runnable(){
 			@SuppressWarnings("unchecked")
@@ -415,7 +429,12 @@ implements IView
 			{
 				synchronized( ModelCreationEditor.this.current_vp_lock ){
 					ModelCreationEditor.this.currentVP
-						= new VisualizePartitioning( frame, width, height );
+						= new VisualizePartitioning( 
+							frame, 
+							width, 
+							height, 
+							coarsener_type 
+						);
 
 					Map<String, Object> map
 						= ModelCreationEditor.this.controller.requestProperties(

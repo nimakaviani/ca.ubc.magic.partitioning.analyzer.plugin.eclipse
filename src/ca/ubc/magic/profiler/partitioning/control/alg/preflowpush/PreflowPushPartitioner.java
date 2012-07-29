@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import partitioner.models.PartitionerModelExceptions;
+
 /**
  *
  * @author nima
@@ -195,6 +197,9 @@ public class PreflowPushPartitioner extends AbstractPartitioner {
     }
     @Override
 	protected void filterHostColocation(IColocationFilter filter, ModuleHost mh) {
-		throw new UnsupportedOperationException();
+		throw new PartitionerModelExceptions
+			.FilterHostColocationException(
+				"Synthetic node filtering is not implemented yet"
+			);
 	}
 }

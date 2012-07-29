@@ -122,9 +122,6 @@ implements IModel
 	private volatile Boolean perform_partitioning 
 		= false;
 	
-	//private Boolean partitioning_panel_enabled = true;
-	// private volatile Boolean		configuration_panel_enabled = true;
-	
 	private void
 	changeState
 	( State state )
@@ -250,22 +247,6 @@ implements IModel
 	}
 	
 	public void
-	setSyntheticNode
-	( Boolean synthetic )
-	{
-		boolean old_synthetic
-			= this.enable_synthetic_node_filter;
-		this.enable_synthetic_node_filter
-			= synthetic;
-		
-		this.property_change_delegate.firePropertyChange(
-				PartitionerModelMessages.SET_SYNTHETIC_NODE,
-			old_synthetic,
-			synthetic
-		);
-	}
-	
-	public void
 	setPresetModuleGraph
 	( Boolean preset_module_graph )
 	{
@@ -378,22 +359,6 @@ implements IModel
 	}
 	
 	public void
-	setActivateHostFilter
-	( Boolean activate )
-	{
-		Boolean old_activate
-			= this.activate_host_cost_filter;
-		this.activate_host_cost_filter
-			= activate;
-		
-		this.property_change_delegate.firePropertyChange(
-			PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER,
-			old_activate,
-			this.activate_host_cost_filter
-		);
-	}
-	
-	public void
 	setGenerateTestFramework
 	( Boolean generate )
 	{
@@ -406,6 +371,38 @@ implements IModel
 			PartitionerModelMessages.GENERATE_TEST_FRAMEWORK,
 			old_generate,
 			this.generate_test_framework
+		);
+	}
+	
+	public void
+	setSyntheticNode
+	( Boolean synthetic )
+	{
+		boolean old_synthetic
+			= this.enable_synthetic_node_filter;
+		this.enable_synthetic_node_filter
+			= synthetic;
+		
+		this.property_change_delegate.firePropertyChange(
+			PartitionerModelMessages.SET_SYNTHETIC_NODE,
+			old_synthetic,
+			this.enable_synthetic_node_filter
+		);
+	}
+	
+	public void
+	setActivateHostFilter
+	( Boolean activate )
+	{
+		Boolean old_activate
+			= this.activate_host_cost_filter;
+		this.activate_host_cost_filter
+			= activate;
+		
+		this.property_change_delegate.firePropertyChange(
+			PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER,
+			old_activate,
+			this.activate_host_cost_filter
 		);
 	}
 	
@@ -424,39 +421,6 @@ implements IModel
 			this.activate_interaction_cost_filter
 		);
 	}
-	
-//	public void 
-//	setActiveConfigurationPanel
-//	( Boolean active ) 
-//	{
-//		Boolean old_active
-//			= this.configuration_panel_enabled;
-//		this.configuration_panel_enabled
-//			= active;
-//		
-//		this.property_change_delegate.firePropertyChange(
-//			PartitionerModelMessages.DISABLE_CONFIGURATION_PANEL,
-//			old_active,
-//			this.configuration_panel_enabled
-//		);
-//	}
-//	
-//	public void
-//	setActivePartitioningPanel
-//	( Boolean active )
-//	{
-//		Boolean old_active
-//			= this.partitioning_panel_enabled;
-//		this.partitioning_panel_enabled
-//			= active;
-//		
-//		this.property_change_delegate.firePropertyChange(
-//			PartitionerModelMessages.DISABLE_PARTITIONING_PANEL,
-//			old_active,
-//			this.partitioning_panel_enabled
-//		);
-//	}
-
 	
     @Override
 	public void 
@@ -561,7 +525,7 @@ implements IModel
             else {
             	new_constraint_model = null;
             	if( this.mModuleType != ModuleCoarsenerType.BUNDLE ){
-            		throw new ModuleExposureException(
+            		throw new PartitionerModelExceptions.ModuleExposureException(
             			"Module Exposure must be activated in order to use a "
             			+ "coarsener other than " 
             			+ ModuleCoarsenerType.BUNDLE.getText()
@@ -741,9 +705,9 @@ implements IModel
 	private void 
 	initializeFilters() 
 	{
-		// Nima - your comment about preinitialized subclasses was valid. The getFilterSet
-		//		  method was there. you just had to pass it the filter type instead.
-		//		  I tweaked FitlterHelper's setFilter method to get the set of filters instead.
+		// we clear in case we are trying the operation a second time
+		// because the first time failed
+		this.mFilterMap.clear();
 		
 		Map<String, IFilter> map = null;
 		if( this.enable_synthetic_node_filter ){
@@ -849,7 +813,7 @@ implements IModel
 				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
-			} catch (ModuleExposureException e){
+			} catch (PartitionerModelExceptions.ModuleExposureException e){
 				e.printStackTrace();
 				PartitionerModel.this
 					.property_change_delegate.notifyViews(
@@ -933,10 +897,18 @@ implements IModel
 					.changeState(State.PARTITIONED);
 				
 			}
+			catch( PartitionerModelExceptions.FilterHostColocationException ex){
+				ex.printStackTrace();
+				PartitionerModel.this
+					.property_change_delegate
+					.notifyViews(
+						PartitionerModelMessages.MODEL_EXCEPTION, ex
+				);
+			}
 			catch(Exception ex){
 				ex.printStackTrace();
 			}
-			
+
 			return Status.OK_STATUS;
 		}
 		
