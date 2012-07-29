@@ -1,6 +1,5 @@
 package partitioner.views;
 
-import java.awt.Event;
 import java.beans.PropertyChangeEvent;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -37,10 +36,8 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory.ModuleCoarsen
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 
-import partitioner.models.PartitionerModel;
 import partitioner.models.PartitionerModel.State;
 import partitioner.models.PartitionerModelMessages;
-import plugin.Constants;
 import plugin.mvc.IController;
 import plugin.mvc.IPublisher;
 import plugin.mvc.IView;

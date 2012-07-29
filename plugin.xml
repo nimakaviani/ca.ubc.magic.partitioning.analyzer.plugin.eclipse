@@ -174,7 +174,7 @@
    <extension
          point="org.eclipse.debug.core.launchConfigurationTypes">
       <launchConfigurationType
-            delegate="LaunchDelegate"
+            delegate="LocalProfiledApplicationDelegate"
             id="plugin.profiled_application"
             modes="run, debug"
             name="Java Profile"
@@ -197,5 +197,13 @@
             label="Java Profile"
             modes="run, debug">
       </shortcut>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.LaunchConfigurationTabGroup"
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.launchConfigurationTabGroup2"
+            type="plugin.profiled_application">
+      </launchConfigurationTabGroup>
    </extension>
 </plugin>
