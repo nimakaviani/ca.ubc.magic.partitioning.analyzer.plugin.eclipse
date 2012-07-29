@@ -3,7 +3,6 @@ package snapshots.model;
 import java.beans.PropertyChangeListener;
 import java.util.Map;
 
-import plugin.Constants;
 import plugin.mvc.PropertyChangeDelegate;
 
 public class

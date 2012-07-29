@@ -1,11 +1,14 @@
 package plugin.mvc;
 
 import java.beans.PropertyChangeEvent;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.messages.IndexEvent;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
@@ -17,6 +20,7 @@ implements IController
 {
 	private IModel 		model;
 	private List<IView> registered_views;
+	private Map<IView, AdapterDelegate> adapter_map;
 	
 	public final static String EVENT_SENTINEL
 		= "Event";
@@ -26,6 +30,8 @@ implements IController
 	{
 		this.registered_views
 			= new CopyOnWriteArrayList<IView>();
+		this.adapter_map
+			= new HashMap<IView, AdapterDelegate>();
 	}
 	
 	@Override
@@ -222,43 +228,83 @@ implements IController
 			}
 		}
 	}
-
-//	///////////////////////////////////////////////////////////////////////////
-//	///	Publisher interface
-//	///////////////////////////////////////////////////////////////////////////
-//	
-//	@Override
-//	public void 
-//	publish 
-//	( Class<?> sender_class, Publications publication, Object packet) 
-//	{
-//		this.publisher_delegate.publish(
-//			sender_class, 
-//			publication, 
-//			packet
-//		);
-//	}
-//
-//	@Override
-//	public ServiceRegistration<EventHandler> 
-//	registerPublicationListener
-//	( Class<?> listener_class, Publications publication, PublicationHandler publication_handler ) 
-//	{
-//		return this.publisher_delegate.registerPublicationListener(
-//			listener_class,
-//			publication,
-//			publication_handler
-//		);
-//	}
-//
-//	@Override
-//	public void 
-//	unregisterPublicationListener
-//	( Publications publication, ServiceRegistration<EventHandler> service ) 
-//	{
-//		this.publisher_delegate.unregisterPublicationListener(
-//			publication,
-//			service
-//		);
-//	}
+	
+	/////////////////////////////////////////////////////////////////////////////////
+	//	Work with adapter
+	/////////////////////////////////////////////////////////////////////////////////
+	
+	@Override
+	public void
+	registerAdapter
+	( IView view, AdapterDelegate adapter )
+	{
+		if( this.adapter_map.containsKey(view)){
+			throw new IllegalArgumentException("That view is already contained in this map");
+		}
+		this.adapter_map.put(view, adapter);
+	}
+	
+	@Override
+	public void
+	unregisterAdapter
+	( IView view )
+	{
+		if( !this.adapter_map.containsKey(view)){
+			throw new IllegalArgumentException("That view is not contained in this map");
+		}
+		this.adapter_map.remove(view);
+	}
+	
+	@Override
+	@SuppressWarnings("rawtypes")
+	public void
+	requestDeposit
+	( IView view, String method_name )
+	{
+		AdapterDelegate adapter
+			= this.adapter_map.get(view);
+		
+		String[] query_keys
+			= adapter.getQueryKeys(method_name);
+		
+		System.err.println("Query Keys: ");
+		for(String s: query_keys){
+			System.err.println(s);
+		}
+		
+		Map<String, Object> objs
+			= this.requestProperties(query_keys);
+		Object[] parameters
+			= adapter.getMethodParameters(method_name, objs);
+		System.err.println("Parameters: ");
+		for(Object s: parameters){
+			System.err.println(s);
+		}
+		
+		Class[] parameter_types
+			= adapter.getParameterTypes(method_name);
+		System.err.println("Types: ");
+		for(Object s: parameter_types){
+			System.err.println(s);
+		}
+		try {
+			Method method 
+				= view.getClass().getMethod( 
+		     		method_name,
+		     		parameter_types
+		     	);
+			method.invoke(view, parameters );
+			
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			e.printStackTrace();
+		} catch (InvocationTargetException e){
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		}
+	}
 }

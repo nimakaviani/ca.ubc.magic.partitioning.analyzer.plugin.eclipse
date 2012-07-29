@@ -52,6 +52,10 @@ import plugin.mvc.IView;
 import plugin.mvc.PublicationHandler;
 import plugin.mvc.Publications;
 import plugin.mvc.PublisherDelegate;
+import plugin.mvc.adapter.AdapterDelegate;
+import plugin.mvc.adapter.Callback;
+import plugin.mvc.adapter.DefaultAdapter;
+import plugin.mvc.adapter.IAdapter;
 
 import recycle_bin.LogAction;
 import snapshots.com.mentorgen.tools.util.profile.Start;
@@ -80,15 +84,55 @@ implements IView
 		= new ControllerDelegate();
 	private IPublisher				publisher
 		= new PublisherDelegate();
-	//EventLogTable					log_console_table;
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 
 	private ServiceRegistration<EventHandler> refresh_snapshot_event_registration;
-	
-	//private IController 			event_log_controller
-	//	= new ControllerDelegate();
 
+	///////////////////////////////////////////////////////////////////////////////////////
+	//	Code for dealing with adapters
+	////////////////////////////////////////////////////////////////////////////////////////
+	
+	private AdapterDelegate adapter_delegate;
+	
+	// it may be possible to use annotations to automate this
+	private static final Callback set_display
+		= new Callback("setDisplayValues", new Class[]{ String.class, String.class, String.class, String.class } );
+
+	public AdapterDelegate 
+	getAdapterDelegate() 
+	{
+		if( this.adapter_delegate == null ){
+			this.adapter_delegate
+				= new AdapterDelegate();
+			this.adapter_delegate.registerCallback(
+				set_display, 
+				new DefaultAdapter( 
+					new String[]{ 
+						SnapshotModelMessages.PATH.NAME,
+						SnapshotModelMessages.NAME.NAME,
+						SnapshotModelMessages.HOST.NAME,
+						SnapshotModelMessages.PORT.NAME
+					}
+				)
+			);
+		}
+		
+		return adapter_delegate;
+	}
+	
+	public void 
+	setDisplayValues
+	(String path, String name, String host, String port)
+	{
+		this.path_text.setText(path);
+		this.name_text.setText(name);
+		this.host_text.setText(host);
+		this.port_text.setText(port);
+	}
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	public 
 	SnapshotView() 
 	{ }
@@ -97,12 +141,6 @@ implements IView
 	public void 
 	dispose()
 	{
-		/// TODO deregister message handler from controller
-//		this.publisher.unregisterPublicationListener(
-//			Publications.REFRESH_SNAPSHOT_TREE,
-//			this.refresh_snapshot_event_registration
-//		);
-		
 		// temporary solution: implement true persistence later
 		Activator.getDefault().persistTreeContentProvider(
 			this.file_tree_content_provider
@@ -118,6 +156,7 @@ implements IView
 			= new ActiveSnapshotModel();
 		this.active_snapshot_controller.addView(this);
 		this.active_snapshot_controller.addModel( active_snapshot_model );
+		this.active_snapshot_controller.registerAdapter(this, this.getAdapterDelegate());
 	
 		this.file_tree_content_provider
 			= (FileTreeContentProvider)
@@ -458,22 +497,10 @@ implements IView
 	private void 
 	setWidgetText()
 	{
-		String[] property_names
-			= {
-				SnapshotModelMessages.PATH.NAME,
-				SnapshotModelMessages.NAME.NAME,
-				SnapshotModelMessages.HOST.NAME,
-				SnapshotModelMessages.PORT.NAME
-			};
-		Map<String, Object> map
-			= this.active_snapshot_controller.requestProperties(
-				property_names
+		this.active_snapshot_controller
+			.requestDeposit(
+				this, this.set_display.getName()
 			);
-		
-		this.path_text.setText( (String) map.get(SnapshotModelMessages.PATH.NAME) );
-		this.name_text.setText( (String) map.get(SnapshotModelMessages.NAME.NAME) );
-		this.host_text.setText( (String) map.get(SnapshotModelMessages.HOST.NAME) );
-		this.port_text.setText( (String) map.get(SnapshotModelMessages.PORT.NAME) );
 	}
 	
 	@Override
