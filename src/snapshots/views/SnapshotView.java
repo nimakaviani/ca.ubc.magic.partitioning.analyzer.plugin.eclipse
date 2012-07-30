@@ -55,7 +55,6 @@ import plugin.mvc.PublisherDelegate;
 import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.adapter.Callback;
 import plugin.mvc.adapter.DefaultAdapter;
-import plugin.mvc.adapter.IAdapter;
 
 import recycle_bin.LogAction;
 import snapshots.com.mentorgen.tools.util.profile.Start;
@@ -87,7 +86,7 @@ implements IView
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 
-	private ServiceRegistration<EventHandler> refresh_snapshot_event_registration;
+	// private ServiceRegistration<EventHandler> refresh_snapshot_event_registration;
 
 	///////////////////////////////////////////////////////////////////////////////////////
 	//	Code for dealing with adapters
@@ -98,6 +97,14 @@ implements IView
 	// it may be possible to use annotations to automate this
 	private static final Callback set_display
 		= new Callback("setDisplayValues", new Class[]{ String.class, String.class, String.class, String.class } );
+	private static final Callback set_path
+		= new Callback("setPath", new Class[]{ String.class} );
+	private static final Callback set_name
+		= new Callback("setName", new Class[]{ String.class} );
+	private static final Callback set_host
+		= new Callback("setHost", new Class[]{ String.class} );
+	private static final Callback set_port	
+		= new Callback("setPort", new Class[]{ String.class} );
 
 	public AdapterDelegate 
 	getAdapterDelegate() 
@@ -105,7 +112,7 @@ implements IView
 		if( this.adapter_delegate == null ){
 			this.adapter_delegate
 				= new AdapterDelegate();
-			this.adapter_delegate.registerCallback(
+			this.adapter_delegate.registerDepositCallback(
 				set_display, 
 				new DefaultAdapter( 
 					new String[]{ 
@@ -116,6 +123,31 @@ implements IView
 					}
 				)
 			);
+			
+			this.adapter_delegate.registerPropertyCallback(
+				set_path,
+				new DefaultAdapter(
+					new String[]{ SnapshotModelMessages.PATH.NAME }
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				set_name, 
+				new DefaultAdapter(
+					new String[]{ SnapshotModelMessages.NAME.NAME }
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				set_port, 
+				new DefaultAdapter(
+					new String[]{ SnapshotModelMessages.PORT.NAME}
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				set_host,
+				new DefaultAdapter(
+					new String[]{ SnapshotModelMessages.HOST.NAME}
+				)
+			);
 		}
 		
 		return adapter_delegate;
@@ -123,12 +155,85 @@ implements IView
 	
 	public void 
 	setDisplayValues
-	(String path, String name, String host, String port)
+	(final String path, final String name, final String host, final String port)
 	{
-		this.path_text.setText(path);
-		this.name_text.setText(name);
-		this.host_text.setText(host);
-		this.port_text.setText(port);
+		System.out.println("Inside setDisplayValues");
+		Display.getDefault().asyncExec(
+				new Runnable(){
+					@Override
+					public void
+					run(){
+						SnapshotView.this.path_text.setText(path);
+						SnapshotView.this.name_text.setText(name);
+						SnapshotView.this.host_text.setText(host);
+						SnapshotView.this.port_text.setText(port);
+					}
+				}
+		);
+	}
+	
+	public void
+	setPath
+	( final String path)
+	{
+		System.out.println("Inside setPath");
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					SnapshotView.this.path_text.setText(path);
+				}
+			}
+		);
+	}
+	
+	public void
+	setName
+	( final String name )
+	{
+		System.out.println("Inside setName");
+		Display.getDefault().asyncExec(
+				new Runnable(){
+					@Override
+					public void
+					run(){
+						SnapshotView.this.name_text.setText(name);
+					}
+				}
+			);
+	}
+	
+	public void
+	setHost
+	( final String host )
+	{
+		System.out.println("Inside setHost");
+		Display.getDefault().asyncExec(
+				new Runnable(){
+					@Override
+					public void
+					run(){
+						SnapshotView.this.host_text.setText( host );
+					}
+				}
+			);
+	}
+	
+	public void
+	setPort
+	( final String port )
+	{
+		System.out.println("Inside setPort");
+		Display.getDefault().asyncExec(
+				new Runnable(){
+					@Override
+					public void
+					run(){
+						SnapshotView.this.port_text.setText( port );
+					}
+				}
+			);
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -295,7 +400,7 @@ implements IView
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
 		
-		this.refresh_snapshot_event_registration
+		ServiceRegistration<EventHandler> refresh_snapshot_event_registration
 			= this.publisher.registerPublicationListener(
 				this.getClass(), 
 				Publications.REFRESH_SNAPSHOT_TREE, 
@@ -427,6 +532,9 @@ implements IView
 				String selected = file_dialog.open();
 				if(selected != null){
 					path_text.setText(selected);
+					SnapshotView.this
+						.active_snapshot_controller
+						.updateModel( SnapshotModelMessages.PATH, selected );
 				}
 				
 				// add the new directory to the list of directories in the
@@ -508,38 +616,37 @@ implements IView
 	modelPropertyChange
 	( final PropertyChangeEvent evt ) 
 	{
-
-		// event may be triggered by a process in a non-SWT thread
-		Display.getDefault().asyncExec(
-			new Runnable(){
-				@Override
-				public void
-				run(){
-					String property
-						= evt.getPropertyName();
-					
-					System.out.println("modelPropertyChange(): " + property);
-					System.out.println("New value: " + evt.getNewValue().toString());
-					
-					if( property.equals( SnapshotModelMessages.PATH.NAME)){
-						SnapshotView.this.path_text.setText((String) evt.getNewValue());
-					}
-					else if( property.equals( SnapshotModelMessages.HOST.NAME)){
-						SnapshotView.this.host_text.setText((String) evt.getNewValue());
-					}				
-					else if( property.equals( SnapshotModelMessages.NAME.NAME)){
-						SnapshotView.this.name_text.setText( (String) evt.getNewValue());				
-					}
-					else if( property.equals( SnapshotModelMessages.PORT.NAME)){
-						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
-					}
-					else {
-						System.out.println("SnapshotView swallowed a message.");
-					}
-					
-					SnapshotView.this.refresh();
-				}
-			});
+//		// event may be triggered by a process in a non-SWT thread
+//		Display.getDefault().asyncExec(
+//			new Runnable(){
+//				@Override
+//				public void
+//				run(){
+//					String property
+//						= evt.getPropertyName();
+//					
+//					System.out.println("modelPropertyChange(): " + property);
+//					System.out.println("New value: " + evt.getNewValue().toString());
+//					
+//					if( property.equals( SnapshotModelMessages.PATH.NAME)){
+//						SnapshotView.this.path_text.setText((String) evt.getNewValue());
+//					}
+//					else if( property.equals( SnapshotModelMessages.HOST.NAME)){
+//						SnapshotView.this.host_text.setText((String) evt.getNewValue());
+//					}				
+//					else if( property.equals( SnapshotModelMessages.NAME.NAME)){
+//						SnapshotView.this.name_text.setText( (String) evt.getNewValue());				
+//					}
+//					else if( property.equals( SnapshotModelMessages.PORT.NAME)){
+//						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
+//					}
+//					else {
+//						System.out.println("SnapshotView swallowed a message.");
+//					}
+//					
+//					SnapshotView.this.refresh();
+//				}
+//			});
 	}
 	
 	@Override

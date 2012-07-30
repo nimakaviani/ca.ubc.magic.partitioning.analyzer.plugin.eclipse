@@ -107,32 +107,6 @@ PropertyChangeDelegate
     	}
     }
     
-//    public void
-//    firePropertyChange
-//    ( String property_name, Object new_value )
-//    {
-//    	if( this.listeners.hasListeners(property_name) ) {
-//    		if(this.property_map.containsKey(property_name)){
-//    			Object old_value
-//    				= this.property_map.get(property_name);
-//    			this.listeners.firePropertyChange(
-//    				property_name, 
-//    				old_value, 
-//    				new_value
-//    			);
-//    		}
-//    		else {
-//    			throw new IllegalArgumentException(
-//    				"You assumed that the property "
-//    				+ property_name 
-//    				+ " has been registered with the "
-//    				+ "property change delegate, but it has not."
-//    				+ " Please correct your code."
-//    			);
-//    		}
-//        }
-//    }
-
 	public Map<String, Object> 
 	getAll
 	( String[] property_names ) 

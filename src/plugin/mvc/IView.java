@@ -2,8 +2,6 @@ package plugin.mvc;
 
 import java.beans.PropertyChangeEvent;
 
-import plugin.mvc.adapter.AdapterDelegate;
-
 public interface 
 IView 
 {

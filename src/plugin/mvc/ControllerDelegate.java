@@ -21,6 +21,7 @@ implements IController
 	private IModel 		model;
 	private List<IView> registered_views;
 	private Map<IView, AdapterDelegate> adapter_map;
+	private Map<String, Object> buffer_map;
 	
 	public final static String EVENT_SENTINEL
 		= "Event";
@@ -32,6 +33,8 @@ implements IController
 			= new CopyOnWriteArrayList<IView>();
 		this.adapter_map
 			= new HashMap<IView, AdapterDelegate>();
+		this.buffer_map	
+			= new HashMap<String, Object>();
 	}
 	
 	@Override
@@ -217,6 +220,8 @@ implements IController
 	propertyChange
 	( PropertyChangeEvent evt ) 
 	{
+		// we use the event sentinel to indicate that an event is being 
+		// generated
 		if( evt.getOldValue() == ControllerDelegate.EVENT_SENTINEL ){
 			for(IView view : this.registered_views){
 				view.modelEvent(evt);
@@ -224,6 +229,7 @@ implements IController
 		}
 		else {
 			for(IView view : this.registered_views){
+				this.callDesignatedMethod(view, evt);
 				view.modelPropertyChange(evt);
 			}
 		}
@@ -233,6 +239,45 @@ implements IController
 	//	Work with adapter
 	/////////////////////////////////////////////////////////////////////////////////
 	
+	@SuppressWarnings({ "rawtypes", "unused" })
+	private void 
+	callDesignatedMethod
+	( IView view, PropertyChangeEvent evt ) 
+	{
+		AdapterDelegate adapter
+			= this.adapter_map.get(view);
+		if( adapter != null ){
+			String method_name
+				= adapter.getMethodName(evt.getPropertyName());
+			Class[] parameter_types
+				= adapter.getParameterTypes(method_name);
+			this.buffer_map.clear();
+			this.buffer_map.put(evt.getPropertyName(), evt.getNewValue());
+			Object[] parameters
+				= adapter.getPropertyMethodParameters(method_name, this.buffer_map );
+			if( !method_name.equals("") ){
+				Method method;
+				try {
+					method = view.getClass().getMethod( 
+		            	method_name,
+		            	parameter_types
+		            );
+					method.invoke(view, evt.getNewValue());
+				} catch (NoSuchMethodException e) {
+					e.printStackTrace();
+				} catch (SecurityException e) {
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (InvocationTargetException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
 	@Override
 	public void
 	registerAdapter
@@ -275,7 +320,7 @@ implements IController
 		Map<String, Object> objs
 			= this.requestProperties(query_keys);
 		Object[] parameters
-			= adapter.getMethodParameters(method_name, objs);
+			= adapter.getQueryMethodParameters(method_name, objs);
 		System.err.println("Parameters: ");
 		for(Object s: parameters){
 			System.err.println(s);

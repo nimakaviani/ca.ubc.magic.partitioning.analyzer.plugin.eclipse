@@ -14,7 +14,7 @@ TestFrameworkMessages
 	public static final FromModelEvent UPDATE_ID
 		= new FromModelEvent("IncrementID", Integer.class);
 	public static final FromModelEvent UPDATE_BEST_RUN_NAME
-		= new FromModelEvent("BestRunName", Integer.class);
+		= new FromModelEvent("BestRunName", String.class);
 	public static final FromModelEvent UPDATE_BEST_RUN_ALGORITHM
 		= new FromModelEvent("BestAlgorithmName", String.class);
 	public static final FromModelEvent UPDATE_BEST_RUN_COST

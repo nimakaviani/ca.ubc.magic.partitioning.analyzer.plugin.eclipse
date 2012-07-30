@@ -219,19 +219,16 @@ implements IModel
 			
 			this.property_change_delegate.notifyViews(
 				TestFrameworkMessages.UPDATE_BEST_RUN_NAME,
-				//TestFrameworkModel.EVENT_UPDATE_BEST_RUN_NAME,
 				((Integer) (this.unitMap.get(unit.getKey()).getKey())) + ": " + unit.getName()
 			);
 			
 			this.property_change_delegate.notifyViews(
 				TestFrameworkMessages.UPDATE_BEST_RUN_ALGORITHM,
-				//TestFrameworkModel.EVENT_UPDATE_BEST_RUN_ALGORITHM,
 				unit.getAlgorithmName()
 			);
 			
 			this.property_change_delegate.notifyViews(
 				TestFrameworkMessages.UPDATE_BEST_RUN_COST,
-				//TestFrameworkModel.EVENT_UPDATE_BEST_RUN_COST, 
 				Double.toString( unit.getUnitCost() )
 			);
 		}

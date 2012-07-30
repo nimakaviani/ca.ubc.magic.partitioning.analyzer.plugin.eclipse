@@ -32,7 +32,6 @@ PartitionerModelMessages
 	public static final ToModelEvent GENERATE_PARTITION
 		= new ToModelEvent("PartitionGeneration");
 	
-
 	public static final PropertyEvent MODULE_EXPOSER
 		= new PropertyEvent("ModuleExposer", String.class );
 	public static final PropertyEvent HOST_CONFIGURATION

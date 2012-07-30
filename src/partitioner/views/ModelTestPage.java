@@ -84,11 +84,18 @@ implements IFrameworkListener,
 	( 	FormToolkit toolkit, 
 		Composite parent, 
 		ModelCreationEditor model_creation_editor,
-		TestFrameworkModel test_framework_model ) 
+		IModel test_framework_model ) 
 	{
 		super( parent );
 		
-		this.activate( test_framework_model );
+		this.test_framework_controller
+			= new ControllerDelegate();
+		this.test_framework_controller.addModel(
+			test_framework_model
+		);
+		this.activate( test_framework_controller );
+		
+		
 		this.initialize_page_properties( toolkit );
 		
 		this.control_composite
@@ -144,14 +151,11 @@ implements IFrameworkListener,
 	// and have everything happen in the constructor
 	private void
 	activate
-	( IModel test_framework_model )
+	( IController controller )
 	{
 		this.test_framework_controller
-			= new ControllerDelegate();
+			= controller;
 		this.test_framework_controller.addView(this);
-		this.test_framework_controller.addModel(
-			test_framework_model
-		);
 		
 		this.initialize_simulation_framework();
 		

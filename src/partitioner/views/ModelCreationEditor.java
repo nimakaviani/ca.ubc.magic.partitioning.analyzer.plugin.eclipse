@@ -32,6 +32,7 @@ import partitioner.models.PartitionerModelMessages;
 import partitioner.models.TestFrameworkModel;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
+import plugin.mvc.IModel;
 import plugin.mvc.IPublisher;
 import plugin.mvc.IView;
 import plugin.mvc.Publications;
@@ -334,8 +335,8 @@ implements IView
 								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
 							}
 						);
-					TestFrameworkModel test_framework_model
-						= (TestFrameworkModel) map.get(
+					IModel test_framework_model
+						= (IModel) map.get(
 							PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
 						);
 					// all the view is allowed to do is take the model and use
@@ -372,7 +373,7 @@ implements IView
 	
 	private void 
 	activateTestPage
-	( TestFrameworkModel test_framework_model ) 
+	( IModel test_framework_model ) 
 	{
 		Composite parent 
 			= super.getContainer();
