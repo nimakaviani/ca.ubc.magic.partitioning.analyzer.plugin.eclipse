@@ -108,12 +108,12 @@ implements IController
             		new Class[] { new_value.getClass() }
             	);
             method.invoke(this.model, new_value);
-            System.out.printf("Calling method set%s() in class %s\n",
+            System.out.printf("Calling method set%s() in class %s%n",
             	property_name, this.model.getClass()
             );
         } catch (NoSuchMethodException ex) {
         	System.err.printf( 
-        		"No method set%s() in class %s\n", 
+        		"No method set%s() in class %s%n", 
         		property_name, this.model.getClass()
         	);
         } catch (Exception ex) {
@@ -156,13 +156,13 @@ implements IController
             	);
             method.invoke(this.model);
             System.out.printf(
-            	"Calling method do%s() in class %s\n",
+            	"Calling method do%s() in class %s%n",
             	event_name, 
             	this.model.getClass()
             );
         } catch (NoSuchMethodException ex) {
         	System.err.printf( 
-        		"No method do%s() in class %s\n", 
+        		"No method do%s() in class %s%n", 
         		event_name, this.model.getClass()
         	);
         } catch (Exception ex) {
@@ -189,7 +189,7 @@ implements IController
 	{
 		// we use the event sentinel to indicate that an event is being 
 		// generated
-		if( evt.getOldValue() == ControllerDelegate.EVENT_SENTINEL ){
+		if( evt.getOldValue().equals( ControllerDelegate.EVENT_SENTINEL) ){
 			for(IView view : this.registered_views){
 				view.modelEvent(evt);
 			}

@@ -8,7 +8,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IPersistableElement;
 import org.eclipse.ui.IStorageEditorInput;
 
-@SuppressWarnings("serial")
 public class 
 VirtualModelFileInput 
 extends File
@@ -17,7 +16,8 @@ implements IStorageEditorInput
 // must be synchronized, since they are updated by the editor
 // and then must be visible to the snapshot view
 {
-	private IStorage storage;
+	private static final long serialVersionUID = 6830081047819279737L;
+	transient private IStorage storage;
 	private String secondary_name;
 	
 	public
@@ -113,20 +113,5 @@ implements IStorageEditorInput
 	isFile()
 	{
 		return false;
-	}
-	
-	@Override
-	public boolean
-	equals
-	( Object file)
-	// this is used by the IWorkBenchPage.openEditor function
-	// to determine when two editors are the same
-	{
-		if(file instanceof VirtualModelFileInput){
-			return file == this;
-		}
-		else {
-			return false;
-		}
 	}
 }

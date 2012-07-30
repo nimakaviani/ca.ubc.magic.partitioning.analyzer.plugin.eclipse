@@ -764,7 +764,6 @@ implements IModel
 	{
 		private String profiler_trace_path;
 		private PartitionerModel gui_state_model;
-		protected String results_message = "Model successfully generated";
 
 		GenerateModelJob
 		( String profiler_trace_path, PartitionerModel gui_state_model )
@@ -782,9 +781,10 @@ implements IModel
 		run
 		( IProgressMonitor monitor ) 
 		{
+			
+			InputStream in = null; 
 			try {
-				final InputStream in 
-					=  new BufferedInputStream(
+					in =  new BufferedInputStream(
 						new FileInputStream(
 							this.profiler_trace_path
 						)
@@ -817,6 +817,15 @@ implements IModel
 				e.printStackTrace();
 			} catch (Exception e) {
 				e.printStackTrace();
+			}
+			finally {
+				try {
+					if( in != null ){
+						in.close();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 			
 			return Status.OK_STATUS;

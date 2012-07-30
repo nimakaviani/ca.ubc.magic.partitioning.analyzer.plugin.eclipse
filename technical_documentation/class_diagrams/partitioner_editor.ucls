@@ -37,18 +37,18 @@
       <operations public="true" package="true" protected="true" private="true"/>    
     </display>  
   </class>  
-  <class id="5" corner="BOTTOM_RIGHT" language="java" name="partitioner.views.ModelView.ViewLabelProvider" 
+  <class id="5" corner="BOTTOM_RIGHT" language="java" name="recycle_bin.ModelView.ViewLabelProvider" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/views/ModelView.java" binary="false">    
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/recycle_bin/ModelView.java" binary="false">    
     <position height="129" width="186" x="493" y="682"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
       <attributes public="false" package="false" protected="false" private="false"/>      
       <operations public="true" package="true" protected="true" private="true"/>    
     </display>  
   </class>  
-  <class id="6" corner="BOTTOM_RIGHT" language="java" name="partitioner.views.ModelView" 
+  <class id="6" corner="BOTTOM_RIGHT" language="java" name="recycle_bin.ModelView" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/partitioner/views/ModelView.java" binary="false">    
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/recycle_bin/ModelView.java" binary="false">    
     <position height="-1" width="-1" x="716" y="584"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true"/>      

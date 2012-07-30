@@ -20,7 +20,7 @@ PartitionerModelMessages
 		= new FromModelEvent("ModelCreation", null);
 	public static final FromModelEvent VIEW_CREATE_TEST_FRAMEWORK
 		= new FromModelEvent("ViewCreateTestFramework", null);
-	public static FromModelEvent PARTITIONING_COMPLETE
+	public static final FromModelEvent PARTITIONING_COMPLETE
 		= new FromModelEvent("PartitioningComplete", null);
 	
 	public static final ViewsEvent EDITOR_CLOSED

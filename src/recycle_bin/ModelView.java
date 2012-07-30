@@ -1,4 +1,4 @@
-package partitioner.views;
+package recycle_bin;
 
 import java.util.Vector;
 
@@ -30,7 +30,7 @@ extends ViewPart
 	public ModelView() {
 	}
 
-	class 
+	private static class 
 	ViewLabelProvider 
 	extends LabelProvider 
 	implements ITableLabelProvider 
@@ -49,31 +49,31 @@ extends ViewPart
 		}
 	}
 	
-	class 
-	ViewContentProvider 
-	implements IStructuredContentProvider 
-	{
-		public void 
-		inputChanged
-		( Viewer v, Object oldInput, Object newInput ) 
-		{
-		}
-
-		public void 
-		dispose() 
-		{
-		}
-
-		public Object[] 
-		getElements
-		( Object parent ) 
-		{
-			if (parent instanceof Object[]) {
-				return (Object[]) parent;
-			}
-	        return new Object[0];
-		}
-	}
+//	class 
+//	ViewContentProvider 
+//	implements IStructuredContentProvider 
+//	{
+//		public void 
+//		inputChanged
+//		( Viewer v, Object oldInput, Object newInput ) 
+//		{
+//		}
+//
+//		public void 
+//		dispose() 
+//		{
+//		}
+//
+//		public Object[] 
+//		getElements
+//		( Object parent ) 
+//		{
+//			if (parent instanceof Object[]) {
+//				return (Object[]) parent;
+//			}
+//	        return new Object[0];
+//		}
+//	}
 	
 	@Override
 	public void 

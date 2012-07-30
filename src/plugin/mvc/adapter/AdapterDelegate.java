@@ -1,6 +1,7 @@
 package plugin.mvc.adapter;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // the adapter is supposed to help us change
@@ -59,7 +60,7 @@ AdapterDelegate
 	registerPropertyCallback
 	( Callback callback, IAdapter adapter )
 	{
-		if( this.callback_map.containsKey(callback)){
+		if( this.callback_map.containsKey(callback.getName())){
 			System.err.println("Callback for " + callback.getName() + " is already contained. Not added.");
 		}
 		else {
@@ -153,7 +154,9 @@ AdapterDelegate
 				"Method " + method_name + " is not registered as a callback"
 			);
 		}
-		return this.callback_map.get(method_name).getParameters().toArray( new Class[0] );
+		List<Class> parameters 
+			= this.callback_map.get(method_name).getParameters();
+		return parameters.toArray( new Class[parameters.size()] );
 	}
 	
 	public String

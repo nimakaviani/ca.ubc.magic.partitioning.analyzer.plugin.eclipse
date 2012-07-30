@@ -14,13 +14,13 @@ implements ISnapshotInfoModel
 // change delegate
 {
 	private String path 
-		= new String("");
+		= "";
 	private String name 
-		= new String("");
+		= "";
 	private String port 
-		= new String("15599");
+		= "15599";
 	private String host 
-		= new String("localhost");
+		= "localhost";
 	
 	private PropertyChangeDelegate property_change_delegate
 		= new PropertyChangeDelegate();

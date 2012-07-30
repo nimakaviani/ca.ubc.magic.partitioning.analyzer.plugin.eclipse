@@ -562,7 +562,7 @@ implements IFrameworkListener,
     	this.test_framework_controller.requestReply(
     		this, 
     		create_simulation_unit_customization.getName(), 
-    		new Integer(id)
+    		Integer.valueOf(id)
     	);
     }
     

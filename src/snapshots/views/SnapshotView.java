@@ -1187,7 +1187,7 @@ implements ITreeContentProvider
 			Set<File> child_list 
 				= this.snapshot_models.get(parent.getAbsolutePath());
 			if(child_list != null){
-				children = child_list.toArray(new File[0]);
+				children = child_list.toArray(new File[child_list.size()]);
 			}
 		}
 		return children;

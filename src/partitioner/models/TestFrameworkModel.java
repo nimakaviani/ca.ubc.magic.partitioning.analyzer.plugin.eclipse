@@ -138,7 +138,7 @@ implements IModel
 		this.unitMap.put(
 			unit.getKey(), 
 			new DefaultKeyValue(
-				new Integer(this.id), 
+				Integer.valueOf(this.id), 
 				unit.getSignature()
 			)
 		);
@@ -165,7 +165,7 @@ implements IModel
 		System.err.println("Updating the id");
 		this.property_change_delegate.notifyViews(
 			TestFrameworkMessages.UPDATE_ID, 
-			new Integer(this.id)
+			Integer.valueOf(this.id)
 		);
 	}
 	

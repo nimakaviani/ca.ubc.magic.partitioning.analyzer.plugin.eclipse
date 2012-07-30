@@ -433,7 +433,7 @@ implements IView
 				{
 					PartitionerConfigurationView.this.controller.updateModel(
 						PartitionerModelMessages.SET_MODULE_EXPOSURE, 
-						new Boolean(
+						Boolean.valueOf(
 							PartitionerConfigurationView.this
 								.exposure_button.getSelection()
 							)
@@ -742,8 +742,6 @@ implements IView
 						= (ModelCreationEditor) 
 							PartitionerConfigurationView.this
 								.getSite().getPage().getActiveEditor();
-					assert page instanceof ModelCreationEditor 
-						: "Uh oh. We need to pass the editor reference as an argument.";
 					VirtualModelFileInput input
 						= (VirtualModelFileInput) page.getEditorInput();
 						
@@ -751,7 +749,9 @@ implements IView
 					input.setSecondaryName(new_name);
 					
 					PartitionerConfigurationView.this.publisher_delegate.publish(
-						this.getClass(), Publications.REFRESH_SNAPSHOT_TREE, new Boolean(true)
+						this.getClass(), 
+						Publications.REFRESH_SNAPSHOT_TREE,
+						Boolean.valueOf(true)
 					);
 			        
 			        page.updateTitle();
@@ -822,7 +822,7 @@ implements IView
 					{
 						PartitionerConfigurationView.this.controller.updateModel(
 							PartitionerModelMessages.PERFORM_PARTITIONING, 
-							new Boolean(
+							Boolean.valueOf(
 								PartitionerWidgets.this
 									.perform_partitioning_button.getSelection()
 							)
@@ -860,7 +860,7 @@ implements IView
 						PartitionerConfigurationView.this
 							.controller.updateModel(
 								PartitionerModelMessages.GENERATE_TEST_FRAMEWORK,
-								new Boolean(
+								Boolean.valueOf(
 									PartitionerWidgets.this
 										.generate_test_framework_button.getSelection()
 								)
@@ -888,7 +888,7 @@ implements IView
 					{
 						PartitionerConfigurationView.this.controller.updateModel(
 							PartitionerModelMessages.SET_SYNTHETIC_NODE,
-							new Boolean(synthetic_node_button.getSelection())
+							Boolean.valueOf(synthetic_node_button.getSelection())
 						);
 					}
 				}
@@ -922,7 +922,7 @@ implements IView
 						PartitionerConfigurationView.this
 							.controller.updateModel(
 								PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER,
-								new Boolean(
+								Boolean.valueOf(
 									PartitionerWidgets.this
 										.activate_host_filter_button.getSelection()
 								)
@@ -959,7 +959,7 @@ implements IView
 					{
 						PartitionerConfigurationView.this.controller.updateModel(
 							PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER,
-							new Boolean(
+							Boolean.valueOf(
 								PartitionerWidgets.this
 									.activate_interaction_filter_button
 									.getSelection()

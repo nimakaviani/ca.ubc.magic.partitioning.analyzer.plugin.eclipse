@@ -367,8 +367,8 @@ implements IView
 				create_visualize_partitioning.getName(), 
 				new Object[]{ 
 					ModelCreationEditor.this.frame, 
-					new Integer(width), 
-					new Integer(height),
+					Integer.valueOf(width), 
+					Integer.valueOf(height),
 				}
 			);
 	}	
