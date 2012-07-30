@@ -37,6 +37,9 @@ import plugin.mvc.IView;
 import plugin.mvc.Publications;
 import plugin.mvc.PublisherDelegate;
 import plugin.mvc.adapter.AdapterDelegate;
+import plugin.mvc.adapter.Callback;
+import plugin.mvc.adapter.DefaultAdapter;
+import plugin.mvc.adapter.IAdapter;
 import snapshots.views.VirtualModelFileInput;
 
 import ca.ubc.magic.profiler.dist.model.ModulePair;
@@ -76,7 +79,7 @@ implements IView
 		this.controller 
 			= new ControllerDelegate();
 		this.controller.addView( this );
-		this.controller.registerAdapter(this, new AdapterDelegate());
+		this.controller.registerAdapter(this, getAdapterDelegate() );
 	    
 		this.controller.addModel( new PartitionerModel() );
 		
@@ -294,20 +297,11 @@ implements IView
 					// object will not be created until after the partitioning is
 					// performed; we can assume by the property name that the object
 					// will only be non-null after this event fires
-					Map<String, Object> map 
-						= ModelCreationEditor.this.controller.requestProperties(
-							new String[]{
-								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
-							}
-						);
-					IModel test_framework_model
-						= (IModel) map.get(
-							PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
-						);
-					// all the view is allowed to do is take the model and use
-					// it to generate a new view: anything more is too much logic
-					ModelCreationEditor.this
-						.activateTestPage( test_framework_model );
+					ModelCreationEditor.this.controller.requestReply(
+						ModelCreationEditor.this, 
+						activate_test_page.getName(), 
+						null
+					);
 					try {
 						SwingUtilities.invokeAndWait( 
 							// the following does not work if we try to pack or make visible
@@ -357,33 +351,6 @@ implements IView
 		});
 	}
 	
-	private void 
-	activateTestPage
-	( IModel test_framework_model ) 
-	{
-		Composite parent 
-			= super.getContainer();
-			
-		this.test_page
-			= new ModelTestPage(
-				this.toolkit, 
-				parent,
-				this,
-				test_framework_model
-			);
-		this.toolkit.adapt( this.test_page );
-			
-		int index
-			= super.addPage( this.test_page );
-		super.setPageText( 
-			index, 
-			"Simulate and Test" 
-		);
-	}
-
-	// TODO the following is something that would traditionally be handled by the
-	// controller: the view detects the event, but does not decide how to handle it
-	// only how to notify the controller
 	void 
 	visualizeModuleModel() 
 	{
@@ -394,74 +361,16 @@ implements IView
 		final int height
 			= bounds.height;
 
-		String[] properties 
-			= new String[]{
-				PartitionerModelMessages.MODULE_COARSENER.NAME
-			};
-		
-		Map<String, Object> objs
-			= this.controller.requestProperties(
-				properties
-			);
-		
-		final ModuleCoarsenerType coarsener_type
-			= (ModuleCoarsenerType) 
-				objs.get( PartitionerModelMessages.MODULE_COARSENER.NAME );
-		
-		SwingUtilities.invokeLater( new Runnable(){
-			@SuppressWarnings("unchecked")
-			@Override
-			public void
-			run()
-			{
-				synchronized( ModelCreationEditor.this.current_vp_lock ){
-					ModelCreationEditor.this.currentVP
-						= new VisualizePartitioning( 
-							frame, 
-							width, 
-							height, 
-							coarsener_type 
-						);
-
-					Map<String, Object> map
-						= ModelCreationEditor.this.controller.requestProperties(
-							new String[]{
-								PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
-							}
-						);
-					// problem: currentVP is both a view type component and
-					// a model type component: where does it go? 
-					ModelCreationEditor.this.currentVP.drawModules(
-						(Map<ModulePair, InteractionData>) map.get(
-							PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
-						)
-					);  
-					
-					try {
-						ModelCreationEditor.this.frame.pack();
-						SwingUtilities.updateComponentTreeUI(
-							ModelCreationEditor.this.frame
-						);
-						
-						Display.getDefault().syncExec( new Runnable(){
-							@Override
-							public void run() {
-								ModelCreationEditor.this
-									.getControl(ModelCreationEditor.MODEL_ANALYSIS_PAGE)
-									.pack(true);
-								ModelCreationEditor.this.getContainer().layout();
-							}
-							
-						});
-						
-						
-					
-					} catch (Exception e) {
-						e.printStackTrace();
-					};
+		ModelCreationEditor.this
+			.controller.requestReply(
+				ModelCreationEditor.this, 
+				create_visualize_partitioning.getName(), 
+				new Object[]{ 
+					ModelCreationEditor.this.frame, 
+					new Integer(width), 
+					new Integer(height),
 				}
-			}
-		});
+			);
 	}	
 	
 	@Override
@@ -591,14 +500,152 @@ implements IView
 	
 	private AdapterDelegate adapter_delegate;
 	
-	private static Callback 
+	private static Callback create_visualize_partitioning
+		= new Callback("createVisualizePartitioning", VisualizePartitioning.class);
+	private static Callback activate_test_page
+		= new Callback("activateTestPage", IModel.class);
+	
 	private AdapterDelegate
 	getAdapterDelegate()
 	{
 		if(this.adapter_delegate == null){
 			this.adapter_delegate 
 				= new AdapterDelegate();
-			this.adapter_delegate.
+			
+			this.adapter_delegate.registerDepositCallback(
+				activate_test_page, 
+				new DefaultAdapter( PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK )
+			);
+			this.adapter_delegate.registerDepositCallback(
+				create_visualize_partitioning, 
+				new IAdapter(){
+					VisualizePartitioning vp = null;
+					
+					String[] keys
+						= new String[]{ 
+							PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP,
+							PartitionerModelMessages.MODULE_COARSENER.NAME
+						};
+					
+					@SuppressWarnings("unchecked")
+					@Override
+					public Object[] 
+					adapt
+					( final Map<String, Object> objs, final Object arg )
+					{
+						try {
+							SwingUtilities.invokeAndWait( new Runnable(){
+								@Override
+								public void
+								run()
+								{
+									Object[] args = (Object[]) arg;
+									Frame frame = (Frame) args[0];
+									int width = (int) args[1];
+									int height = (int) args[2];
+									ModuleCoarsenerType coarsener_type 
+										= (ModuleCoarsenerType) objs.get(
+											PartitionerModelMessages.MODULE_COARSENER.NAME
+										);
+									
+									vp = new VisualizePartitioning( 
+											frame, 
+											width, 
+											height, 
+											coarsener_type 
+										);
+
+									vp.drawModules(
+											(Map<ModulePair, InteractionData>) objs.get(
+												PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
+											)
+										); 
+									}
+								});
+						} catch (InvocationTargetException e) {
+							e.printStackTrace();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						
+						return new Object[]{ vp };
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return keys;
+					}
+					
+				}
+			);
 		}
+		
+		return this.adapter_delegate;
+	}
+	
+	public void
+	createVisualizePartitioning
+	( final VisualizePartitioning vp )
+	{
+		SwingUtilities.invokeLater(
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					synchronized( ModelCreationEditor.this.current_vp_lock ){
+						ModelCreationEditor.this.currentVP
+							= vp;
+						
+						try {
+							ModelCreationEditor.this.frame.pack();
+							SwingUtilities.updateComponentTreeUI(
+								ModelCreationEditor.this.frame
+							);
+							
+							Display.getDefault().syncExec( new Runnable(){
+								@Override
+								public void run() {
+									ModelCreationEditor.this
+										.getControl(ModelCreationEditor.MODEL_ANALYSIS_PAGE)
+										.pack(true);
+									ModelCreationEditor.this.getContainer().layout();
+								}
+								
+							});
+						
+						} catch (Exception e) {
+							e.printStackTrace();
+						};
+					}
+				}
+			}
+		);
+	}
+	
+	public void 
+	activateTestPage
+	( IModel test_framework_model ) 
+	{
+		Composite parent 
+			= super.getContainer();
+			
+		this.test_page
+			= new ModelTestPage(
+				this.toolkit, 
+				parent,
+				this,
+				test_framework_model
+			);
+		this.toolkit.adapt( this.test_page );
+			
+		int index
+			= super.addPage( this.test_page );
+		super.setPageText( 
+			index, 
+			"Simulate and Test" 
+		);
 	}
 }

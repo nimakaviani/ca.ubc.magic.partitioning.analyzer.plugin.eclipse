@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import plugin.mvc.adapter.AdapterDelegate;
-import plugin.mvc.messages.IndexEvent;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
 import plugin.mvc.messages.ViewsEvent;
@@ -177,40 +176,6 @@ implements IController
 	( String[] property_names ) 
 	{
 		return this.model.request( property_names );
-	}
-	
-	@Override
-	public Object 
-	index
-	( IndexEvent event, Object key ) 
-	{
-        Object obj
-        	= null;
-        String event_name
-        	= event.NAME;
-        event.validatePackage(key);
-        
-		try {
-			Method method 
-	        	= this.model.getClass().getMethod( 
-	            	"find" + event_name,
-	            	new Class[]{ key.getClass() }
-	            );
-	            obj = method.invoke(this.model, key);
-	            System.out.printf(
-	            	"Calling method find%s() in class %s\n",
-	            	event_name, 
-	            	this.model.getClass()
-	            );
-	        } catch (NoSuchMethodException ex) {
-	        	System.err.printf( 
-	        		"No method find%s() in class %s\n", 
-	        		event_name, this.model.getClass()
-	        	);
-	        } catch (Exception ex) {
-	        	ex.printStackTrace();
-			}
-         return obj;
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////

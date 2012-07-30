@@ -8,7 +8,6 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory.ModuleCoarsen
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import partitioner.models.PartitionerModel.State;
-import plugin.mvc.messages.DataEvent;
 import plugin.mvc.messages.FromModelEvent;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;

@@ -4,7 +4,6 @@ import java.beans.PropertyChangeEvent;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jface.dialogs.MessageDialog;

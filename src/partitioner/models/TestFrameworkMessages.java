@@ -4,7 +4,6 @@ import java.util.Map;
 
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 import plugin.mvc.messages.FromModelEvent;
-import plugin.mvc.messages.IndexEvent;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
 
@@ -24,9 +23,6 @@ TestFrameworkMessages
 	
 	public static final ToModelEvent RUN_SIMULATION
 		= new ToModelEvent("RunSimulation");
-	
-	public static final IndexEvent SIMULATION_UNITS
-		= new IndexEvent("InSimulationUnits", Integer.class);
 	
 	public static final PropertyEvent SIMULATION_ADDED
 		= new PropertyEvent("SimulationAdded", SimulationUnit.class);

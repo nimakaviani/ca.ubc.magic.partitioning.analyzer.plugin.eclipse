@@ -9,17 +9,10 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.action.Action;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.progress.IProgressConstants;
 
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
