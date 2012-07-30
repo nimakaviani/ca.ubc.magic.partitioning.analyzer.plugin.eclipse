@@ -4,9 +4,6 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import recycle_bin.EventLogListModel;
-import snapshots.events.logging.EventLogActionHandler;
-
 public class 
 Activator 
 extends AbstractUIPlugin 
@@ -15,8 +12,6 @@ extends AbstractUIPlugin
 		= "plugin";
 	private static Activator plugin;
 	
-	private EventLogActionHandler 	action_handler;
-	private EventLogListModel 		event_log_list_model;
 	private Object 					file_tree_content_provider;
 	
 	public 
@@ -29,16 +24,7 @@ extends AbstractUIPlugin
 	throws Exception 
 	{
 		super.start(context);
-		
 		plugin = this;
-		
-		this.action_handler 
-			= new EventLogActionHandler();
-		this.event_log_list_model
-			= new EventLogListModel();
-		
-//		System.loadLibrary("lpsolve55");
-//		System.loadLibrary("lpsolve55j");
 	}
 
 	public void 
@@ -64,18 +50,6 @@ extends AbstractUIPlugin
 		return imageDescriptorFromPlugin(PLUGIN_ID, path);
 	}
 	
-	public EventLogActionHandler
-	getActionHandler()
-	{
-		return this.action_handler;
-	}
-	
-	public EventLogListModel
-	getEventLogListModel()
-	{
-		return this.event_log_list_model;
-	}
-
 	public void 
 	persistTreeContentProvider
 	( Object missing ) 

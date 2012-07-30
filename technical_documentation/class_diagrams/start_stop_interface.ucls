@@ -99,9 +99,9 @@
       <operations public="true" package="true" protected="true" private="true"/>    
     </display>  
   </interface>  
-  <class id="12" corner="BOTTOM_RIGHT" language="java" name="snapshots.views.BasicListTable" 
+  <class id="12" corner="BOTTOM_RIGHT" language="java" name="recycle_bin.BasicListTable" 
     project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
-    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/views/BasicListTable.java" binary="false">    
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/recycle_bin/BasicListTable.java" binary="false">    
     <position height="-1" width="-1" x="941" y="1090"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
       <attributes public="false" package="false" protected="false" private="false"/>      

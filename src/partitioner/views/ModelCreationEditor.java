@@ -29,6 +29,7 @@ import org.eclipse.ui.part.MultiPageEditorPart;
 
 import partitioner.models.PartitionerModel;
 import partitioner.models.PartitionerModelMessages;
+import plugin.LogUtilities;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IModel;
@@ -148,8 +149,9 @@ implements IView
 		
 		try {
 			this.setSwingLookAndFeel();
-		} catch( InvocationTargetException | InterruptedException e ) {
-			e.printStackTrace();
+		} catch( InvocationTargetException | InterruptedException ex ) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
 		}
 		
 	    this.frame 
@@ -157,10 +159,12 @@ implements IView
 
 	  	try {
 			this.initialize_model_analysis_page( model_analysis_composite );
-		} catch (InvocationTargetException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} catch (InvocationTargetException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
 		}
 		this.updateTitle();
 
@@ -213,8 +217,9 @@ implements IView
 						UIManager.setLookAndFeel(
 							UIManager.getSystemLookAndFeelClassName() 
 						);
-					} catch (Exception e) {
-						e.printStackTrace();
+					} catch (Exception ex) {
+						ex.printStackTrace();
+						LogUtilities.logError(ex);
 					}
 				}
 			});
@@ -313,10 +318,12 @@ implements IView
 								
 							}
 						);
-					} catch (InvocationTargetException e) {
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+					} catch (InvocationTargetException ex) {
+						ex.printStackTrace();
+						LogUtilities.logError(ex);
+					} catch (InterruptedException ex) {
+						ex.printStackTrace();
+						LogUtilities.logError(ex);
 					}
 					
 				}
@@ -562,10 +569,12 @@ implements IView
 										); 
 									}
 								});
-						} catch (InvocationTargetException e) {
-							e.printStackTrace();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
+						} catch (InvocationTargetException ex) {
+							ex.printStackTrace();
+							LogUtilities.logError(ex);
+						} catch (InterruptedException ex) {
+							ex.printStackTrace();
+							LogUtilities.logError(ex);
 						}
 						
 						return new Object[]{ vp };
@@ -616,8 +625,9 @@ implements IView
 								
 							});
 						
-						} catch (Exception e) {
-							e.printStackTrace();
+						} catch (Exception ex) {
+							ex.printStackTrace();
+							LogUtilities.logError(ex);
 						};
 					}
 				}

@@ -8,11 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import plugin.LogUtilities;
 import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
 import plugin.mvc.messages.ViewsEvent;
 
+// all view must register an adapterDelegate with the
+// controller that they are interacting with
 public class 
 ControllerDelegate 
 implements IController
@@ -112,12 +115,16 @@ implements IController
             	property_name, this.model.getClass()
             );
         } catch (NoSuchMethodException ex) {
-        	System.err.printf( 
-        		"No method set%s() in class %s%n", 
-        		property_name, this.model.getClass()
-        	);
+        	String message
+        	 	= String.format(
+	        		"No method set%s() in class %s%n", 
+	        		property_name, this.model.getClass()
+	        	);
+        	System.err.println(message);
+        	LogUtilities.logError(message, ex);
         } catch (Exception ex) {
         	ex.printStackTrace();
+        	LogUtilities.logError(ex);
 		}
 	}
 	
@@ -161,12 +168,15 @@ implements IController
             	this.model.getClass()
             );
         } catch (NoSuchMethodException ex) {
-        	System.err.printf( 
+        	String message = String.format(
         		"No method do%s() in class %s%n", 
         		event_name, this.model.getClass()
         	);
+        	System.err.println(message);
+        	LogUtilities.logError(message, ex);
         } catch (Exception ex) {
         	ex.printStackTrace();
+        	LogUtilities.logError(ex);
 		}
 	}
 	
@@ -189,7 +199,7 @@ implements IController
 	{
 		// we use the event sentinel to indicate that an event is being 
 		// generated
-		if( evt.getOldValue().equals( ControllerDelegate.EVENT_SENTINEL) ){
+		if( evt.getOldValue() != null && evt.getOldValue().equals( ControllerDelegate.EVENT_SENTINEL) ){
 			for(IView view : this.registered_views){
 				view.modelEvent(evt);
 			}
@@ -198,7 +208,6 @@ implements IController
 			for(IView view : this.registered_views){
 				System.out.println("PropertyChange: " + evt.getPropertyName());
 				this.callDesignatedMethod( view, evt );
-				//view.modelPropertyChange(evt);
 			}
 		}
 	}
@@ -284,16 +293,21 @@ implements IController
 		     	);
 			method.invoke(view, parameters );
 			
-		} catch (NoSuchMethodException e) {
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (InvocationTargetException e){
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
+		} catch (NoSuchMethodException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (SecurityException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (InvocationTargetException ex){
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (IllegalAccessException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (IllegalArgumentException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
 		}
 	}
 	
@@ -307,7 +321,9 @@ implements IController
 			= this.adapter_map.get(view);
 		if( adapter == null ){
 			throw new IllegalArgumentException(
-				"The calling view has not registered an adapter"
+				"The calling view "
+				+ view.getClass().getName()
+				+ " has not registered an adapter"
 			);
 		}
 		String method_name
@@ -330,16 +346,21 @@ implements IController
 		            	parameter_types
 		            );
 					method.invoke(view, parameters);
-				} catch (NoSuchMethodException e) {
-					e.printStackTrace();
-				} catch (SecurityException e) {
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					e.printStackTrace();
+				} catch (NoSuchMethodException ex) {
+					ex.printStackTrace();
+					LogUtilities.logError(ex);
+				} catch (SecurityException ex) {
+					ex.printStackTrace();
+					LogUtilities.logError(ex);
+				} catch (IllegalAccessException ex) {
+					ex.printStackTrace();
+					LogUtilities.logError(ex);
+				} catch (IllegalArgumentException ex) {
+					ex.printStackTrace();
+					LogUtilities.logError(ex);
+				} catch (InvocationTargetException ex) {
+					ex.printStackTrace();
+					LogUtilities.logError(ex);
 				}
 			}
 		}

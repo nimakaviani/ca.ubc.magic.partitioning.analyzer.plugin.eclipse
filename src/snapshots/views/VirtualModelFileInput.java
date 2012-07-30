@@ -16,7 +16,8 @@ implements IStorageEditorInput
 // must be synchronized, since they are updated by the editor
 // and then must be visible to the snapshot view
 {
-	private static final long serialVersionUID = 6830081047819279737L;
+	private static final long serialVersionUID 
+		= 6830081047819279737L;
 	transient private IStorage storage;
 	private String secondary_name;
 	
@@ -75,14 +76,7 @@ implements IStorageEditorInput
 	synchronized public String 
 	getToolTipText() 
 	{
-		return this.storage.getName() + " " + this.format(this.storage.getFullPath().toString());
-	}
-
-	private String 
-	format
-	( String string ) 
-	{
-		return string.replace("\\", "/");
+		return this.storage.getName() + " " + this.storage.getFullPath().toString();
 	}
 
 	@Override

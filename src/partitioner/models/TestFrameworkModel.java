@@ -31,6 +31,7 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFrameworkHelper;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
+import plugin.LogUtilities;
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
 
@@ -261,6 +262,7 @@ implements IModel
 	                    ((TimeSimulator) this.mSim).init(this.jipRun, this.module_coarsener);
 	                }catch(Exception ex){
 	                    ex.printStackTrace();
+	                    LogUtilities.logError(ex);
 	                }
 	                break;
 	            case STATIC_TIME_SIMULATOR:
@@ -313,6 +315,7 @@ implements IModel
 			});
 		}catch( Exception ex ){
 			ex.printStackTrace();
+			LogUtilities.logError(ex);
 		}
 	}
 	

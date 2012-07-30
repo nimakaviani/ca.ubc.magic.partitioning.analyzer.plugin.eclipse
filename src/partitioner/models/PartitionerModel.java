@@ -14,6 +14,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
+import plugin.LogUtilities;
 import plugin.mvc.IModel;
 import plugin.mvc.PropertyChangeDelegate;
 
@@ -518,11 +519,14 @@ implements IModel
             else {
             	new_constraint_model = null;
             	if( this.mModuleType != ModuleCoarsenerType.BUNDLE ){
-            		throw new PartitionerModelExceptions.ModuleExposureException(
-            			"Module Exposure must be activated in order to use a "
-            			+ "coarsener other than " 
-            			+ ModuleCoarsenerType.BUNDLE.getText()
-            		);
+            		PartitionerModelExceptions.ModuleExposureException ex
+            			= new PartitionerModelExceptions.ModuleExposureException(
+	            			"Module Exposure must be activated in order to use a "
+	            			+ "coarsener other than " 
+	            			+ ModuleCoarsenerType.BUNDLE.getText()
+	            		);
+            		LogUtilities.logError(ex);
+            		throw ex;
             	}
             }
             	 

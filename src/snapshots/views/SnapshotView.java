@@ -3,6 +3,7 @@ package snapshots.views;
 import java.beans.PropertyChangeEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,14 +25,11 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.part.*;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -42,7 +40,7 @@ import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
 
 import plugin.Activator;
-import plugin.Constants;
+import plugin.LogUtilities;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IPublisher;
@@ -54,12 +52,8 @@ import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.adapter.Callback;
 import plugin.mvc.adapter.DefaultAdapter;
 
-import recycle_bin.LogAction;
+import snapshots.com.mentorgen.tools.util.profile.Finish;
 import snapshots.com.mentorgen.tools.util.profile.Start;
-import snapshots.events.logging.ErrorDisplayAction;
-import snapshots.events.logging.EventLogActionHandler;
-import snapshots.events.logging.EventLogEvent;
-import snapshots.events.logging.EventLogger;
 import snapshots.model.ActiveSnapshotModel;
 import snapshots.model.Snapshot;
 import snapshots.model.SnapshotModelMessages;
@@ -84,156 +78,6 @@ implements IView
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 
-	// private ServiceRegistration<EventHandler> refresh_snapshot_event_registration;
-
-	///////////////////////////////////////////////////////////////////////////////////////
-	//	Code for dealing with adapters
-	////////////////////////////////////////////////////////////////////////////////////////
-	
-	private AdapterDelegate adapter_delegate;
-	
-	// it may be possible to use annotations to automate this
-	private static final Callback set_display
-		= new Callback("setDisplayValues", String.class, String.class, String.class, String.class );
-	private static final Callback set_path
-		= new Callback("setPath", String.class );
-	private static final Callback set_name
-		= new Callback("setName", String.class );
-	private static final Callback set_host
-		= new Callback("setHost", String.class );
-	private static final Callback set_port	
-		= new Callback("setPort", String.class );
-
-	private AdapterDelegate 
-	getAdapterDelegate() 
-	{
-		if( this.adapter_delegate == null ){
-			this.adapter_delegate
-				= new AdapterDelegate();
-			this.adapter_delegate.registerDepositCallback(
-				set_display, 
-				new DefaultAdapter( 
-					SnapshotModelMessages.PATH.NAME,
-					SnapshotModelMessages.NAME.NAME,
-					SnapshotModelMessages.HOST.NAME,
-					SnapshotModelMessages.PORT.NAME
-				)
-			);
-			
-			this.adapter_delegate.registerPropertyCallback(
-				set_path,
-				new DefaultAdapter(
-					SnapshotModelMessages.PATH.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				set_name, 
-				new DefaultAdapter(
-					SnapshotModelMessages.NAME.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				set_port, 
-				new DefaultAdapter(
-					SnapshotModelMessages.PORT.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				set_host,
-				new DefaultAdapter(
-					SnapshotModelMessages.HOST.NAME
-				)
-			);
-		}
-		
-		return adapter_delegate;
-	}
-	
-	public void 
-	setDisplayValues
-	(final String path, final String name, final String host, final String port)
-	{
-		System.out.println("Inside setDisplayValues");
-		Display.getDefault().asyncExec(
-				new Runnable(){
-					@Override
-					public void
-					run(){
-						SnapshotView.this.path_text.setText(path);
-						SnapshotView.this.name_text.setText(name);
-						SnapshotView.this.host_text.setText(host);
-						SnapshotView.this.port_text.setText(port);
-					}
-				}
-		);
-	}
-	
-	public void
-	setPath
-	( final String path)
-	{
-		System.out.println("Inside setPath");
-		Display.getDefault().asyncExec(
-			new Runnable(){
-				@Override
-				public void
-				run(){
-					SnapshotView.this.path_text.setText(path);
-				}
-			}
-		);
-	}
-	
-	public void
-	setName
-	( final String name )
-	{
-		System.out.println("Inside setName");
-		Display.getDefault().asyncExec(
-				new Runnable(){
-					@Override
-					public void
-					run(){
-						SnapshotView.this.name_text.setText(name);
-					}
-				}
-			);
-	}
-	
-	public void
-	setHost
-	( final String host )
-	{
-		System.out.println("Inside setHost");
-		Display.getDefault().asyncExec(
-				new Runnable(){
-					@Override
-					public void
-					run(){
-						SnapshotView.this.host_text.setText( host );
-					}
-				}
-			);
-	}
-	
-	public void
-	setPort
-	( final String port )
-	{
-		System.out.println("Inside setPort");
-		Display.getDefault().asyncExec(
-				new Runnable(){
-					@Override
-					public void
-					run(){
-						SnapshotView.this.port_text.setText( port );
-					}
-				}
-			);
-	}
-	
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	
 	public 
 	SnapshotView() 
 	{ }
@@ -338,8 +182,9 @@ implements IView
 									(VirtualModelFileInput) objects[0],
 									"plugin.views.model_creation_editor"
 								);
-							} catch (PartInitException e1) {
-								e1.printStackTrace();
+							} catch (PartInitException ex) {
+								ex.printStackTrace();
+								LogUtilities.logError(ex);
 							}
 						}
 						else if( objects[0] instanceof File ){
@@ -366,8 +211,9 @@ implements IView
 											input,
 											"plugin.views.model_creation_editor"
 										);
-									} catch (PartInitException e1) {
-										e1.printStackTrace();
+									} catch (PartInitException ex) {
+										ex.printStackTrace();
+										LogUtilities.logError(ex);
 									}
 									
 									SnapshotView.this.refresh();
@@ -387,7 +233,7 @@ implements IView
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
 		
-		this.initializeEventLogActionHandler();
+	//	this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
 		
 		this.publisher.registerPublicationListener(
@@ -475,9 +321,6 @@ implements IView
 	initializeToolbar
 	(IToolBarManager toolBar) 
 	{		
-	//	this.event_log_controller.addView(this);	
-	//	this.event_log_controller.addModel(Activator.getDefault().getEventLogListModel());
-		
 		IAction finish	
 			= new FinishAction(
 				this.active_snapshot_controller
@@ -526,9 +369,11 @@ implements IView
 						.updateModel( SnapshotModelMessages.PATH, selected );
 				}
 				
-				// add the new directory to the list of directories in the
-				// tree viewer
-				SnapshotView.this.addFolder( selected );
+				if(selected != null ){
+					// add the new directory to the list of directories in the
+					// tree viewer
+					SnapshotView.this.addFolder( selected );
+				}
 			}
 		});
 		
@@ -601,12 +446,6 @@ implements IView
 			);
 	}
 	
-//	@Override
-//	public void 
-//	modelPropertyChange
-//	( final PropertyChangeEvent evt ) 
-//	{ }
-	
 	@Override
 	public void 
 	modelEvent
@@ -649,40 +488,6 @@ implements IView
 			this.snapshot_tree_viewer.refresh();
 			this.snapshot_tree_viewer.setExpandedElements(treePaths);
 		}
-	}
-	
-	private void 
-	initializeEventLogActionHandler() 
-	{
-		EventLogActionHandler action_handler
-			= Activator.getDefault().getActionHandler();
-		
-		action_handler.registerAction(
-			Constants.ACTKEY_ERROR_DISPLAY,
-			new ErrorDisplayAction()
-		);
-		action_handler.registerAction(
-			Constants.ACTKEY_LOG_DISPLAY, 
-			new LogAction()
-		);
-	}
-	
-	public void 
-	displayErrorDialog
-	(Shell shell, String string) 
-	{
-		ErrorDialog.openError(
-				shell, 
-				null, 
-				null,
-				new Status(
-					IStatus.ERROR, 
-					Activator.PLUGIN_ID, 
-					IStatus.OK, 
-					string,
-					null
-				)
-			);
 	}
 	
 	public void
@@ -732,13 +537,130 @@ implements IView
 		this.refresh();
 	}
 	
-	class 
+	private static class 
+	FinishAction 
+	extends Action 
+	implements IView
+	{
+		private Snapshot 					current_snapshot;
+		private IController 				active_snapshot_controller;
+		
+		public
+		FinishAction
+		( IController active_snapshot_controller )
+		{
+			this.active_snapshot_controller
+				= active_snapshot_controller;
+			
+			this.active_snapshot_controller.addView( this );
+			this.active_snapshot_controller.registerAdapter(this, new AdapterDelegate());
+			
+			this.setToolTipText
+			("Disconnect from application to produce snapshot.");
+			
+			this.setEnabled(false);
+		}
+		
+		@Override
+		public void
+		setEnabled
+		(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			
+			String image_path
+				= enabled 
+				? "icons/disconnect_co_active.gif"
+				: "icons/disconnect_co2.gif";
+			
+			this.setImageDescriptor
+			(Activator.getImageDescriptor(image_path));
+		}
+		
+		@Override
+		public void run()
+		{
+			try{
+				inner_run();
+			}
+			catch( IOException ex ){
+				ex.printStackTrace();
+				LogUtilities.logError(ex);
+			}
+		}
+		
+		private void 
+		inner_run()
+		throws IOException 
+		{
+			boolean got_exception = false;
+			try {
+				Finish.doFinish(
+					this.current_snapshot.getHost(), 
+					this.current_snapshot.getPort()
+				);
+			}
+			catch(IOException ioex){
+				got_exception = true;
+				LogUtilities.logError(ioex);
+			}
+			
+			if (!got_exception) {
+				LogUtilities.logInfo("Finished Obtaining Snapshot");
+				this.active_snapshot_controller.notifyPeers(
+						SnapshotModelMessages.SNAPSHOT_CAPTURED,
+						//Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY,
+						this,
+						null
+				);
+		    }
+		    else {
+		    	this.active_snapshot_controller.notifyPeers(
+		    		SnapshotModelMessages.SNAPSHOT_CAPTURE_FAILED,
+		    		//Constants.EVENT_SNAPSHOT_CAPTURE_FAILED,
+		    		this,
+		    		null
+		    	);
+		    }
+			this.active_snapshot_controller.updateModel(
+				SnapshotModelMessages.NAME, ""
+			);
+			this.active_snapshot_controller.notifyPeers(
+				SnapshotModelMessages.SNAPSHOT_CAPTURED,
+				// Constants.EVENT_SNAPSHOT_CAPTURED_PROPERTY, 
+				this, null
+			);
+		    this.setEnabled(false);
+		}
+
+		@Override
+		public void 
+		modelEvent
+		( PropertyChangeEvent evt ) 
+		{
+			String property
+				= evt.getPropertyName();
+			
+			if( property.equals(SnapshotModelMessages.SNAPSHOT_STARTED.NAME)){
+				this.setEnabled(true);
+			      this.current_snapshot 
+			      	= (Snapshot) evt.getNewValue();
+			}
+			else {
+				System.out.println(
+					"FinishAction swallowing event: " 
+					+ evt.getPropertyName()
+				);
+			}
+		}
+	}
+
+	private class 
 	StartAction 
 	extends Action 
 	implements IView
 	{
 		private IController 				controller;
-		private EventLogger 				event_logger;
 		
 		public 
 		StartAction
@@ -746,13 +668,12 @@ implements IView
 		{
 			this.controller
 				= controller;
-			this.event_logger
-				= new EventLogger();
 			
 			this.setToolTipText
 			("Record a profile snapshot.");
 			this.setEnabled(true);
 			this.controller.addView(this);
+			this.controller.registerAdapter(this, new AdapterDelegate());
 		}
 		
 		@Override
@@ -802,6 +723,7 @@ implements IView
 		    }
 		    catch(IOException ex){
 	        	ex.printStackTrace();
+	        	LogUtilities.logError(ex);
 	        }
 		}
 		
@@ -829,8 +751,10 @@ implements IView
 			}
 			
 			if(error_message.length() != 0 ){
-				SnapshotView.this
-					.displayErrorDialog(shell, error_message.toString());
+				LogUtilities.displayErrorDialog(
+					shell, error_message.toString()
+				);
+				LogUtilities.logInfo(error_message.toString());
 			}
 			return error_message.length() == 0;
 		}
@@ -858,6 +782,8 @@ implements IView
 		(Snapshot snapshot) 
 		throws IOException 
 		{
+			Shell shell
+				= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 		    if (snapshot != null) {
 		    	boolean gotException = false;
 		    	try {
@@ -866,35 +792,40 @@ implements IView
 		    			snapshot.getPort(),
 		    			snapshot.getPathAndName());
 		    	}
-		    	catch (IOException ioex) {
+		    	catch (ConnectException ioex) {
 		    		gotException = true;
-		        	this.event_logger.updateConsoleLog(ioex);
+		    		String message
+		    			= "Unable to connect to a profiled application on the given port";
+		    		LogUtilities.logError(message, ioex);
+					LogUtilities.displayErrorDialog(
+		    			shell,
+		    			message
+		    		);
+		    	}
+		    	catch( IOException ioex){
+		    		gotException = true;
+		    		LogUtilities.logError(ioex);
 		    	}
 				      
 		    	// if no exception, ie the above succeeded, then go to start
 		    	// command and report file success
 		    	if (!gotException) {
-		    		this.event_logger.updateForSuccessfulCall(
-		    			"file"
-		    		);
+		    		LogUtilities.logInfo("Successfully obtained file handle");
 		    		try {
 		    			Start.doStart(snapshot.getHost(),
 		    					snapshot.getPort());
 		    		}
 		    		catch (IOException ioex) {
 		    			gotException = true;
-		    			this.event_logger.updateConsoleLog(ioex);
+		    			LogUtilities.logError("Unable to Start collecting profile information", ioex);
 		    		}
 		    	}
 		    	// if no exception, ie the above succeeded, then
 		    	//report start success and send event
 		    	if (!gotException) {
-		    	  	this.event_logger.updateForSuccessfulCall(
-		    	  		"start"
-		    	  	);
+		    		LogUtilities.logInfo("Successfully started collecting profile info");
 					this.controller.notifyPeers(
 						SnapshotModelMessages.SNAPSHOT_STARTED,
-						//Constants.EVENT_SNAPSHOT_STARTED,
 						this,
 					    snapshot
 					);
@@ -913,65 +844,47 @@ implements IView
 		    // check path specified
 		    String path 
 		    	= SnapshotView.this.path_text.getText();	    
+		    Shell shell
+		    	= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 		    
 		    if (path == null || path.trim().length() == 0) {
-		    	EventLogEvent event
-		    		= this.event_logger.getErrorEvent();
-		    	event.addProperty(
-		    		Constants.KEY_ERR_MSSG, 
-		    		"A folder in which to store the snapshot " 
-		    		+ "must be specified."
+		    	String message 
+		    		= "A folder in which to store the snapshot " 
+			    	+ "must be specified.";
+				LogUtilities.displayErrorDialog(
+		    		shell, 
+		    		message
 		    	);
-		    	EventLogActionHandler action_handler
-		    		= Activator.getDefault().getActionHandler();
-		    	action_handler.performActionByKey(
-		    		Constants.ACTKEY_ERROR_DISPLAY, 
-		    		event
-		    	);
+		    	LogUtilities.logInfo(message);
+		    	
 		    	return null; 
 		    }
 		    
 		    File pathFile = new File(path);
 		    if (!pathFile.exists() || !pathFile.isDirectory()) {
-		    	EventLogEvent event
-		    		= this.event_logger.getErrorEvent();
-		    	event.addProperty(
-		    		Constants.KEY_ERR_MSSG,
-		    		"The folder ({0}) does not exist."
+		    	String message
+		    		= "The folder " 
+		    		+ pathFile.getPath() 
+		    		+ " does not exist.";
+				LogUtilities.displayErrorDialog(
+		    		shell, 
+    				message
 		    	);
-		    	event.addProperty(
-		    		Constants.KEY_ERR_VALUES,
-		    		new Object[]{ pathFile.getPath() }
-		    	);
-		    	EventLogActionHandler action_handler
-		    		= Activator.getDefault().getActionHandler();
-		    	action_handler.performActionByKey(
-		    		Constants.ACTKEY_ERROR_DISPLAY,
-		    		event
-		    	);
-		    	
+		    	LogUtilities.logInfo(message);
 		    	return null; 
 		    }
 		    
 		    if (!pathFile.canWrite() || !pathFile.canRead()) {
-		    	EventLogEvent event
-		    		= this.event_logger.getErrorEvent();
-		    	event.addProperty(
-		    		Constants.KEY_ERR_MSSG, 
-		    		"The folder ({0}) must have both read and "
-		    		+ "write access."
+		    	String message
+		    		= "The folder "
+		    		+ pathFile.getPath()
+		    		+ " must have both read and "
+				    + "write access.";
+				LogUtilities.displayErrorDialog(
+		    		shell, 
+    				message
 		    	);
-		    	event.addProperty(
-		    		Constants.KEY_ERR_VALUES, 
-		    		new Object[]{pathFile.getPath()}
-		    	);
-		    	EventLogActionHandler event_handler
-		    		= Activator.getDefault().getActionHandler();
-		    	event_handler.performActionByKey(
-		    		Constants.ACTKEY_ERROR_DISPLAY,
-		    		event
-		    	);
-		    	
+		    	LogUtilities.logInfo(message);
 		    	return null;
 		    }
 		    
@@ -1037,12 +950,6 @@ implements IView
 		    return newName;
 		}
 
-//		@Override
-//		public void 
-//		modelPropertyChange
-//		( PropertyChangeEvent evt ) 
-//		{}
-
 		@Override
 		public void 
 		modelEvent
@@ -1063,247 +970,396 @@ implements IView
 			}
 		}
 	}
-}
-// note : the following class and the next modeled themselves
-// after the examples provided in 
-// http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/DemonstratesTreeViewer.htm
-class 
-FileTreeContentProvider 
-implements ITreeContentProvider
-{
-	Set<File> snapshot_folders
-		= new CopyOnWriteArraySet<File>();
-	Map<String, Integer> snapshots_map
-		= new HashMap<String, Integer>();
-	Map<String, Set<File>> snapshot_models;
 	
-	public
-	FileTreeContentProvider
-	( String path, TreeViewer tree_viewer )
+	// note : the following class and the next modeled themselves
+	// after the examples provided in 
+	// http://www.java2s.com/Code/Java/SWT-JFace-Eclipse/DemonstratesTreeViewer.htm
+	private static class 
+	FileTreeContentProvider 
+	implements ITreeContentProvider
 	{
-		File default_directory
-			= new File(path);
-		if(default_directory.exists()){
-			this.snapshot_folders.add( default_directory );
-		}
-		this.snapshot_models
-			= new HashMap<String, Set<File>>();
-	}
-	
-	public void 
-	remove_model
-	( VirtualModelFileInput model ) 
-	{
-		// to delete we need the path
-		String full_path
-			= model.getAbsolutePath();
-		System.out.println(full_path);
-		if( this.snapshot_models.containsKey( full_path )){
-			System.out.println("Contained.");
-			Set<File> models
-				= this.snapshot_models.get( full_path );
-			models.remove(model);
-		} else {
-			System.out.println("That is not contained.");
-		}
-	}
-
-	public VirtualModelFileInput 
-	addVirtualModelInput
-	( String absolute_path ) 
-	{
-		int count = 1;
-		Set<File> models = null;
+		Set<File> snapshot_folders
+			= new CopyOnWriteArraySet<File>();
+		Map<String, Integer> snapshots_map
+			= new HashMap<String, Integer>();
+		Map<String, Set<File>> snapshot_models;
 		
-		// if contained, 
-		if( this.snapshot_models.containsKey(absolute_path) ){
-			count = this.snapshots_map.get(absolute_path) + 1;
-			models = this.snapshot_models.get(absolute_path);
+		public
+		FileTreeContentProvider
+		( String path, TreeViewer tree_viewer )
+		{
+			File default_directory
+				= new File(path);
+			if(default_directory.exists()){
+				this.snapshot_folders.add( default_directory );
+			}
+			this.snapshot_models
+				= new HashMap<String, Set<File>>();
 		}
-		else {
-			models = new TreeSet<File>( 
-				new Comparator<File>(){
-					@Override
-					public int compare(File arg0, File arg1) {
-						return arg0.getName().compareTo(arg1.getName());
+		
+		public void 
+		remove_model
+		( VirtualModelFileInput model ) 
+		{
+			// to delete we need the path
+			String full_path
+				= model.getAbsolutePath();
+			System.out.println(full_path);
+			if( this.snapshot_models.containsKey( full_path )){
+				System.out.println("Contained.");
+				Set<File> models
+					= this.snapshot_models.get( full_path );
+				models.remove(model);
+			} else {
+				System.out.println("That is not contained.");
+			}
+		}
+
+		public VirtualModelFileInput 
+		addVirtualModelInput
+		( String absolute_path ) 
+		{
+			int count = 1;
+			Set<File> models = null;
+			
+			// if contained, 
+			if( this.snapshot_models.containsKey(absolute_path) ){
+				count = this.snapshots_map.get(absolute_path) + 1;
+				models = this.snapshot_models.get(absolute_path);
+			}
+			else {
+				models = new TreeSet<File>( 
+					new Comparator<File>(){
+						@Override
+						public int compare(File arg0, File arg1) {
+							return arg0.getName().compareTo(arg1.getName());
+						}
+					});
+				this.snapshot_models.put(absolute_path, models);
+			}
+			
+			String virtual_file_name
+				= "Model " + count;
+			VirtualModelFile virtual_file 
+				= new VirtualModelFile(absolute_path, virtual_file_name );
+			VirtualModelFileInput return_value
+				= new VirtualModelFileInput(absolute_path, virtual_file);
+		
+			models.add(return_value);
+			this.snapshots_map.put(absolute_path, count);
+			
+			return return_value;
+		}
+
+		public void 
+		add
+		( String path ) 
+		{
+			File directory
+				= new File( path );
+			this.snapshot_folders.add(directory);
+		}
+
+		public void 
+		remove
+		( File folder ) 
+		{
+			this.snapshot_folders.remove(folder);
+		}
+
+		public void 
+		clear()
+		{
+			this.snapshot_folders.clear();
+		}
+
+		public Object[] 
+		getChildren
+		( Object arg0 ) 
+		{
+			File parent
+				= (File) arg0;
+			List<File> xml_files
+				= new ArrayList<File>();
+			File[] children = parent.listFiles();
+			if(children != null){
+				for(File f : children){
+					if(f.getName().endsWith(".xml") || f.getName().endsWith(".XML") || f.isDirectory()){
+						xml_files.add(f);
 					}
-				});
-			this.snapshot_models.put(absolute_path, models);
-		}
-		
-		String virtual_file_name
-			= "Model " + count;
-		VirtualModelFile virtual_file 
-			= new VirtualModelFile(absolute_path, virtual_file_name );
-		VirtualModelFileInput return_value
-			= new VirtualModelFileInput(absolute_path, virtual_file);
-	
-		models.add(return_value);
-		this.snapshots_map.put(absolute_path, count);
-		
-		return return_value;
-	}
-
-	public void 
-	add
-	( String path ) 
-	{
-		File directory
-			= new File( path );
-		this.snapshot_folders.add(directory);
-	}
-
-	public void 
-	remove
-	( File folder ) 
-	{
-		this.snapshot_folders.remove(folder);
-	}
-
-	public void 
-	clear()
-	{
-		this.snapshot_folders.clear();
-	}
-
-	public Object[] 
-	getChildren
-	( Object arg0 ) 
-	{
-		File parent
-			= (File) arg0;
-		List<File> xml_files
-			= new ArrayList<File>();
-		File[] children = parent.listFiles();
-		if(children != null){
-			for(File f : children){
-				if(f.getName().endsWith(".xml") || f.getName().endsWith(".XML") || f.isDirectory()){
-					xml_files.add(f);
+				}
+				return xml_files.toArray();
+			}
+			else if(parent.isFile()){
+				Set<File> child_list 
+					= this.snapshot_models.get(parent.getAbsolutePath());
+				if(child_list != null){
+					children = child_list.toArray(new File[child_list.size()]);
 				}
 			}
-			return xml_files.toArray();
+			return children;
 		}
-		else if(parent.isFile()){
-			Set<File> child_list 
-				= this.snapshot_models.get(parent.getAbsolutePath());
-			if(child_list != null){
-				children = child_list.toArray(new File[child_list.size()]);
+		
+		public Object 
+		getParent
+		( Object arg0 ) 
+		{
+			return ((File) arg0).getParentFile();
+		}
+		
+		public boolean 
+		hasChildren
+		( Object arg0 ) 
+		{
+			Object[] obj = getChildren( arg0 );
+		
+			return obj == null ? false : obj.length > 0;
+		}
+
+		public Object[] 
+		getElements
+		( Object arg0 ) 
+		{
+			return this.snapshot_folders.toArray();
+		}
+
+		public void 
+		dispose() 
+		{
+		}
+
+		@Override
+		public void 
+		inputChanged
+		( Viewer arg0, Object arg1, Object arg2 ) 
+		{
+		}
+	}
+
+	private static class 
+	FileTreeLabelProvider 
+	implements ILabelProvider 
+	{
+	  private List<ILabelProviderListener> listeners;
+
+	  private Image file;
+	  private Image dir;
+
+	  public 
+	  FileTreeLabelProvider() 
+	  {
+		this.listeners 
+			= new ArrayList<ILabelProviderListener>();
+	  }
+
+	  public Image 
+	  getImage
+	  ( Object arg0 ) 
+	  {
+		  if( this.file == null){
+			  this.file 
+		    	= PlatformUI.getWorkbench()
+		    	.getSharedImages()
+		    	.getImage(ISharedImages.IMG_OBJ_FILE); 
+		  }
+		  if( this.dir == null ){
+			  this.dir 
+		    	= PlatformUI.getWorkbench()
+		    	.getSharedImages()
+		    	.getImage(ISharedImages.IMG_OBJ_FOLDER); 
+		  }
+		  
+	    return ((File) arg0).isDirectory() ? dir : file;
+	  }
+
+	  public String 
+	  getText
+	  ( Object arg0 ) 
+	  {
+	    String text 
+	    	= ((File) arg0).getName();
+
+	    if (text.length() == 0) {
+	      text = ((File) arg0).getPath();
+	    }
+
+	    return text;
+	  }
+	 
+	  public void 
+	  dispose() 
+	  {
+	  }
+
+	  public boolean 
+	  isLabelProperty
+	  ( Object arg0, String arg1 ) 
+	  {
+	    return false;
+	  }
+
+	  @Override
+	  public void 
+	  addListener
+	  ( ILabelProviderListener arg0 ) 
+	  {
+		  this.listeners.add( arg0 );
+	  }
+
+	  @Override
+	  public void 
+	  removeListener
+	  ( ILabelProviderListener arg0 ) 
+	  {
+		  this.listeners.remove( arg0 );
+	  }
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////
+	//	Code for dealing with adapters
+	////////////////////////////////////////////////////////////////////////////////////////
+	
+	private AdapterDelegate adapter_delegate;
+	
+	// it may be possible to use annotations to automate this
+	private static final Callback set_display
+		= new Callback("setDisplayValues", String.class, String.class, String.class, String.class );
+	private static final Callback set_path
+		= new Callback("setPath", String.class );
+	private static final Callback set_name
+		= new Callback("setName", String.class );
+	private static final Callback set_host
+		= new Callback("setHost", String.class );
+	private static final Callback set_port	
+		= new Callback("setPort", String.class );
+	
+	private AdapterDelegate 
+	getAdapterDelegate() 
+	{
+		if( this.adapter_delegate == null ){
+			this.adapter_delegate
+				= new AdapterDelegate();
+			this.adapter_delegate.registerDepositCallback(
+				set_display, 
+				new DefaultAdapter( 
+					SnapshotModelMessages.PATH.NAME,
+					SnapshotModelMessages.NAME.NAME,
+					SnapshotModelMessages.HOST.NAME,
+					SnapshotModelMessages.PORT.NAME
+				)
+			);
+	
+			this.adapter_delegate.registerPropertyCallback(
+				set_path,
+				new DefaultAdapter(
+					SnapshotModelMessages.PATH.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				set_name, 
+				new DefaultAdapter(
+					SnapshotModelMessages.NAME.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				set_port, 
+				new DefaultAdapter(
+					SnapshotModelMessages.PORT.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				set_host,
+				new DefaultAdapter(
+					SnapshotModelMessages.HOST.NAME
+				)
+			);
+		}
+	
+		return adapter_delegate;
+	}
+	
+	public void 
+	setDisplayValues
+	(final String path, final String name, final String host, final String port)
+	{
+		System.out.println("Inside setDisplayValues");
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					SnapshotView.this.path_text.setText(path);
+					SnapshotView.this.name_text.setText(name);
+					SnapshotView.this.host_text.setText(host);
+					SnapshotView.this.port_text.setText(port);
+				}
 			}
-		}
-		return children;
+		);
 	}
 	
-	public Object 
-	getParent
-	( Object arg0 ) 
+	public void
+	setPath
+	( final String path)
 	{
-		return ((File) arg0).getParentFile();
+		System.out.println("Inside setPath");
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					SnapshotView.this.path_text.setText(path);
+				}
+			}
+		);
 	}
 	
-	public boolean 
-	hasChildren
-	( Object arg0 ) 
+	public void
+	setName
+	( final String name )
 	{
-		Object[] obj = getChildren( arg0 );
+		System.out.println("Inside setName");
+		Display.getDefault().asyncExec(
+		new Runnable(){
+				@Override
+				public void
+				run(){
+					SnapshotView.this.name_text.setText(name);
+				}
+			}
+		);
+	}
 	
-		return obj == null ? false : obj.length > 0;
-	}
-
-	public Object[] 
-	getElements
-	( Object arg0 ) 
+	public void
+	setHost
+	( final String host )
 	{
-		return this.snapshot_folders.toArray();
+		System.out.println("Inside setHost");
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					SnapshotView.this.host_text.setText( host );
+				}
+			}
+		);
 	}
-
-	public void 
-	dispose() 
+	
+	public void
+	setPort
+	( final String port )
 	{
-	}
-
-	@Override
-	public void 
-	inputChanged
-	( Viewer arg0, Object arg1, Object arg2 ) 
-	{
+		System.out.println("Inside setPort");
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run(){
+					SnapshotView.this.port_text.setText( port );
+				}
+			}
+		);
 	}
 }
 
-class 
-FileTreeLabelProvider 
-implements ILabelProvider 
-{
-  private List<ILabelProviderListener> listeners;
 
-  private Image file;
-  private Image dir;
-
-  public 
-  FileTreeLabelProvider() 
-  {
-	this.listeners 
-		= new ArrayList<ILabelProviderListener>();
-  }
-
-  public Image 
-  getImage
-  ( Object arg0 ) 
-  {
-	  if( this.file == null){
-		  this.file 
-	    	= PlatformUI.getWorkbench()
-	    	.getSharedImages()
-	    	.getImage(ISharedImages.IMG_OBJ_FILE); 
-	  }
-	  if( this.dir == null ){
-		  this.dir 
-	    	= PlatformUI.getWorkbench()
-	    	.getSharedImages()
-	    	.getImage(ISharedImages.IMG_OBJ_FOLDER); 
-	  }
-	  
-    return ((File) arg0).isDirectory() ? dir : file;
-  }
-
-  public String 
-  getText
-  ( Object arg0 ) 
-  {
-    String text 
-    	= ((File) arg0).getName();
-
-    if (text.length() == 0) {
-      text = ((File) arg0).getPath();
-    }
-
-    return text;
-  }
- 
-  public void 
-  dispose() 
-  {
-  }
-
-  public boolean 
-  isLabelProperty
-  ( Object arg0, String arg1 ) 
-  {
-    return false;
-  }
-
-  @Override
-  public void 
-  addListener
-  ( ILabelProviderListener arg0 ) 
-  {
-	  this.listeners.add( arg0 );
-  }
-
-  @Override
-  public void 
-  removeListener
-  ( ILabelProviderListener arg0 ) 
-  {
-	  this.listeners.remove( arg0 );
-  }
-}
