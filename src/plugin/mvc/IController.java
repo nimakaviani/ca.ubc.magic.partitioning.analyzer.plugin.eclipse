@@ -24,9 +24,9 @@ extends PropertyChangeListener
 	public void 				notifyModel(ToModelEvent event);
 	public Object 				index(IndexEvent event, Object key);
 	
-	public Map<String, Object> 	requestProperties( String[] property_names );
+	// public Map<String, Object> 	requestProperties( String[] property_names );
 	public void 				updateModel( PropertyEvent event, Object contribution );
 	void registerAdapter(IView view, AdapterDelegate adapter);
 	void unregisterAdapter(IView view);
-	void requestDeposit( IView view, String method_name );
+	void requestReply( IView view, String method_name, Object args);
 }

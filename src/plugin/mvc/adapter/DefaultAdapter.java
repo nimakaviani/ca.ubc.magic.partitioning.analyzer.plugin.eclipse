@@ -12,14 +12,14 @@ implements IAdapter
 
 	public
 	DefaultAdapter
-	( String[] query_keys )
+	( String... query_keys )
 	{
 		this.keys
 			= query_keys;
 	}
 	@Override
 	public String[] 
-	getQueryKeys() 
+	getKeys() 
 	{
 		return this.keys;
 	}
@@ -27,7 +27,7 @@ implements IAdapter
 	@Override
 	public Object[] 
 	adapt
-	( Map<String, Object> objs ) 
+	( Map<String, Object> objs, Object arg) 
 	{
 		List<Object> objs_list = new ArrayList<Object>(10);
 		for( String key: this.keys){

@@ -6,7 +6,6 @@ import java.io.IOException;
 import org.eclipse.jface.action.Action;
 
 import plugin.Activator;
-import plugin.Constants;
 import plugin.mvc.IController;
 import plugin.mvc.IView;
 
@@ -114,11 +113,11 @@ implements IView
 	    this.setEnabled(false);
 	}
 
-	@Override
-	public void 
-	modelPropertyChange
-	( PropertyChangeEvent evt ) 
-	{}
+//	@Override
+//	public void 
+//	modelPropertyChange
+//	( PropertyChangeEvent evt ) 
+//	{}
 	
 	@Override
 	public void 

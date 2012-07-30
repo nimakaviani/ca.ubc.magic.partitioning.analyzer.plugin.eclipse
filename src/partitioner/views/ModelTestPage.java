@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections15.keyvalue.DefaultKeyValue;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.TableViewer;
@@ -40,6 +41,10 @@ import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IModel;
 import plugin.mvc.IView;
+import plugin.mvc.adapter.AdapterDelegate;
+import plugin.mvc.adapter.Callback;
+import plugin.mvc.adapter.DefaultAdapter;
+import plugin.mvc.adapter.IAdapter;
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
@@ -48,6 +53,7 @@ import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 import ca.ubc.magic.profiler.simulator.framework.IFrameworkListener;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
+import ca.ubc.magic.profiler.simulator.framework.SimulationFrameworkHelper;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
 // should only be active when the partitioning has completed
@@ -156,7 +162,7 @@ implements IFrameworkListener,
 		this.test_framework_controller
 			= controller;
 		this.test_framework_controller.addView(this);
-		
+		this.test_framework_controller.registerAdapter(this, getAdapterDelegate());
 		this.initialize_simulation_framework();
 		
 		assert this.test_framework_controller != null 
@@ -166,18 +172,10 @@ implements IFrameworkListener,
 	private void 
 	initialize_simulation_framework() 
 	{
-		Map<String, Object> map 
-			= this.test_framework_controller.requestProperties(
-				new String[] {
-					TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
-				}
-			);
-		SimulationFramework simulation_framework
-			= (SimulationFramework) map.get(
-				TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
-			);
-		simulation_framework.addFrameworkListener(
-			(IFrameworkListener) this
+		this.test_framework_controller.requestReply(
+			this,
+			initialize_simulation_framework.getName(),
+			null
 		);
 	}
 	
@@ -426,55 +424,6 @@ implements IFrameworkListener,
 	
 	@Override
 	public void 
-	modelPropertyChange
-	( final java.beans.PropertyChangeEvent evt ) 
-	{
-		System.err.println("inside modeltestpage modelPropertyChange");
-		
-		// event may be triggered by a process in a non-SWT thread
-		Display.getDefault().asyncExec(
-			new Runnable(){
-				@Override
-				public void run(){
-					System.err.println("Received event: " + evt.getPropertyName());
-					
-					String property
-						= evt.getPropertyName();
-					
-					if( property.equals(TestFrameworkMessages.SIMULATION_ADDED.NAME)){
-						SimulationUnit unit = (SimulationUnit) evt.getNewValue();
-						
-						ModelTestPage.this.table_input.add(
-							// the first element is the id, I am removing it for now until 
-							// I am certain how it is used and what I do to accommodate it
-							new Object[]{ 
-								ModelTestPage.this.current_id++, 
-								// we may have a threading problem, under the debugger
-								// the following throws a null pointer exception
-								new String(unit.getName()), 
-								new String( unit.getAlgorithmName() ), 
-								"", "", "..."
-							}
-						);
-						
-						Integer total_run
-							= Integer.parseInt(ModelTestPage.this.total_simulation_units.getText());
-						ModelTestPage.this.total_simulation_units.setText(  Integer.toString(total_run + 1) );
-						System.err.println("New total run: " + ModelTestPage.this.total_simulation_units.getText());
-					}
-					else if( property.equals(TestFrameworkMessages.SIMULATION_REMOVED)){
-						
-					}
-					else {
-						System.out.println("Model Test Page swallowed PropertyChange: " + evt.getPropertyName());
-					}
-				}
-			}
-		);
-	}
-	
-	@Override
-	public void 
 	modelEvent
 	( final PropertyChangeEvent evt ) 
 	{
@@ -595,94 +544,26 @@ implements IFrameworkListener,
     	);
     }
     
-	// TODO the following is something that would traditionally be handled by the
-	// controller: the view detects the event, but does not decide how to handle it
-	// only how to notify the controller
     public void 
     customSimulationButtonActionPerformed
     ( java.awt.event.ActionEvent evt ) 
     {
-    	// for now pass the controller and have the dialog query for
-    	// any necessary information...this will introduce a necessary
-    	// split, which is the most important thing...later refactor
-    	// model and possibly introduce something to allow splitting of
-    	// state or passing of partial state through a controller
-    	///
-    	Map<String, Object> args 
-    		= this.test_framework_controller.requestProperties(
-    			new String[]{
-					TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
-					TestFrameworkModel.TEST_MODULE_MODEL,
-					TestFrameworkModel.TEST_HOST_MODEL,
-    			}
-    		);
-    	
-    	SimulationFramework simulation_framework
-    		= (SimulationFramework) args.get(
-    			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
-    		);
-    	ModuleModel module_model
-    		= (ModuleModel) args.get(
-    			TestFrameworkModel.TEST_MODULE_MODEL
-    		);
-    	HostModel host_model
-    		= (HostModel) args.get(
-    			TestFrameworkModel.TEST_HOST_MODEL
-    		);
-    	
-    	this.mSimUnitCustomization
-    		= new SimulationUnitCustomizationNew(
-    			simulation_framework,
-    			 new SimulationUnit(
-                	module_model.getName(), 
-                	(simulation_framework.getTemplate().getAlgorithmName() != null 
-                	? simulation_framework.getTemplate().getAlgorithmName()
-                	: "Template" ), 
-                	new DistributionModel( module_model, host_model )
-                )
-    		);
-    	
-    	System.err.println("Created dialog window.");
-    	
-    	this.mSimUnitCustomization.create();
-    	if( this.mSimUnitCustomization.open() == Window.OK ){
-    		System.err.println("Returned ok");
-    	} 
+    	this.test_framework_controller.requestReply(
+    		this, 
+    		create_simulation_unit.getName(), 
+    		null
+    	);
     }
     
     public void 
     simTableMouseClicked
     ( int id ) 
     {	
-        SimulationUnit unit
-        	= (SimulationUnit) this.test_framework_controller.index(
-        		TestFrameworkMessages.SIMULATION_UNITS,
-        		//TestFrameworkModel.SIMULATION_UNITS,
-        		new Integer(id)
-        	);
-        
-        assert unit != null : "There is a bug in the program if we received a null unit";
-        
-        Map<String, Object> map 
-        	= this.test_framework_controller.requestProperties(
-        		new String[]{
-        			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
-        		}
-        	);
-        this.mSimUnitCustomization 
-        	= new SimulationUnitCustomizationNew(
-        		(SimulationFramework) map.get(
-        			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
-        		), 
-        		unit
-            );
-        
-        System.err.println("Created dialog window.");
-    	
-    	this.mSimUnitCustomization.create();
-    	if( this.mSimUnitCustomization.open() == Window.OK ) {
-    		System.err.println("Returned ok");
-    	} 	
+    	this.test_framework_controller.requestReply(
+    		this, 
+    		create_simulation_unit_customization.getName(), 
+    		new Integer(id)
+    	);
     }
     
     /////////////////////////////////////////////////////////////////////////////////////////
@@ -770,5 +651,243 @@ implements IFrameworkListener,
 				);
 			}
 		}
+	}
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///	Code for working with the adapter
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+	private AdapterDelegate adapter_delegate;
+	
+	private static final Callback add_simulation
+		= new Callback( "addSimulation", String.class, String.class );
+	private static final Callback initialize_simulation_framework
+		= new Callback("initializeSimulationFramework", SimulationFramework.class );
+	private static final Callback create_simulation_unit_customization
+		= new Callback("createSimulationUnitCustomization", SimulationUnitCustomizationNew.class );
+	private static final Callback create_simulation_unit
+		= new Callback("createSimulationUnit", SimulationUnitCustomizationNew.class);
+	
+	public void
+	createSimulationUnit
+	(SimulationUnitCustomizationNew simulation_unit)
+	{
+    	this.mSimUnitCustomization
+    		= simulation_unit;
+    	
+    	this.mSimUnitCustomization.create();
+    	if( this.mSimUnitCustomization.open() == Window.OK ){
+    		System.err.println("Returned ok");
+    	} 
+	}
+	
+	public AdapterDelegate
+	getAdapterDelegate()
+	{
+		if(this.adapter_delegate == null ){
+			this.adapter_delegate
+				= new AdapterDelegate();
+
+			this.adapter_delegate.registerDepositCallback(
+				create_simulation_unit,
+				new IAdapter(){
+					String[] keys
+						= new String[]{
+							TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
+							TestFrameworkModel.TEST_MODULE_MODEL,
+							TestFrameworkModel.TEST_HOST_MODEL,
+						};
+					
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+				    	SimulationFramework simulation_framework
+				    		= (SimulationFramework) objs.get(
+				    			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
+				    		);
+				    	ModuleModel module_model
+				    		= (ModuleModel) objs.get(
+				    			TestFrameworkModel.TEST_MODULE_MODEL
+				    		);
+				    	HostModel host_model
+				    		= (HostModel) objs.get(
+				    			TestFrameworkModel.TEST_HOST_MODEL
+				    		);
+				    	
+				    	SimulationUnitCustomizationNew simulation_unit
+				    		= new SimulationUnitCustomizationNew(
+				    			simulation_framework,
+				    			 new SimulationUnit(
+				                	module_model.getName(), 
+				                	(simulation_framework.getTemplate().getAlgorithmName() != null 
+				                	? simulation_framework.getTemplate().getAlgorithmName()
+				                	: "Template" ), 
+				                	new DistributionModel( module_model, host_model )
+				                )
+				    		);
+				    	
+				    	return new Object[]{ simulation_unit };
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return keys;
+					}
+				}
+			);
+			this.adapter_delegate.registerDepositCallback(
+				create_simulation_unit_customization,
+				new IAdapter(){
+					String[] keys 
+						= new String[]{
+							TestFrameworkMessages.UNIT_MAP.NAME,
+							TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
+						};
+					
+					@SuppressWarnings({ "unchecked", "rawtypes" })
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						Integer id = (Integer) arg;
+						
+						SimulationFramework simulation_framework
+							= (SimulationFramework) objs.get(TestFrameworkModel.TEST_SIMULATION_FRAMEWORK);
+						Map<String, DefaultKeyValue> unit_map
+							= (Map<String, DefaultKeyValue>) objs.get(
+								TestFrameworkMessages.UNIT_MAP.NAME
+							);
+						
+						SimulationUnit unit
+							= null;
+						
+						for( DefaultKeyValue keyVal : unit_map.values() ){
+							System.err.println("Key: "+ (Integer) keyVal.getKey());
+							if (((Integer) keyVal.getKey()).equals(id)){
+								unit 
+									= SimulationFrameworkHelper.getUnitFromSig(
+										( String ) keyVal.getValue(), 
+										simulation_framework.getTemplate(), 
+										Boolean.TRUE
+									);
+							}
+						}
+
+				       	SimulationUnitCustomizationNew simulation_unit_customization
+				       		= new SimulationUnitCustomizationNew(
+				        		simulation_framework,
+				        		unit
+				            );
+			        
+			       		return new Object[]{ simulation_unit_customization };
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return this.keys;
+					}
+					
+				}
+			);
+			
+			this.adapter_delegate.registerDepositCallback(
+				initialize_simulation_framework, 
+				new DefaultAdapter(TestFrameworkModel.TEST_SIMULATION_FRAMEWORK)
+			);
+			
+			this.adapter_delegate.registerPropertyCallback(
+				add_simulation, 
+				new IAdapter(){
+					String[] keys 
+						= new String[]{
+							TestFrameworkMessages.SIMULATION_ADDED.NAME
+						};
+					
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						SimulationUnit unit
+							= (SimulationUnit) 
+								objs.get( TestFrameworkMessages.SIMULATION_ADDED.NAME );
+						
+						return new Object[]{ unit.getName(), unit.getAlgorithmName() };
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						
+						return this.keys;
+					}
+				
+				}
+			);
+		}
+		return adapter_delegate;
+	}
+	
+	public void
+	addSimulation
+	( String name, String algorithm )
+	{
+		System.err.println("Inside addSimulation");
+		ModelTestPage.this.table_input.add(
+			// the first element is the id, I am removing it for now until 
+			// I am certain how it is used and what I do to accommodate it
+			new Object[]{ 
+				ModelTestPage.this.current_id++, 
+				// we may have a threading problem, under the debugger
+				// the following throws a null pointer exception
+				name, 
+				algorithm, 
+				"", "", "..."
+			}
+		);
+		
+		Integer total_run
+			= Integer.parseInt(ModelTestPage.this.total_simulation_units.getText());
+		ModelTestPage.this.total_simulation_units.setText(  Integer.toString(total_run + 1) );
+		System.err.println("New total run: " + ModelTestPage.this.total_simulation_units.getText());
+	}
+	
+	public void
+	createSimulationUnitCustomization
+	( final SimulationUnitCustomizationNew simulation_unit_customization )
+	{
+		Display.getDefault().asyncExec(
+			new Runnable(){
+				@Override
+				public void
+				run() 
+				{
+					ModelTestPage.this.mSimUnitCustomization 
+				    	= simulation_unit_customization;
+				    
+				    System.err.println("Created dialog window.");
+					
+					ModelTestPage.this.mSimUnitCustomization.create();
+					if( ModelTestPage.this.mSimUnitCustomization.open() == Window.OK ) {
+						System.err.println("Returned ok");
+					} 	
+				}
+			}
+		);
+	}
+	
+	public void
+	initializeSimulationFramework
+	( SimulationFramework sim )
+	{
+		sim.addFrameworkListener( this );
 	}
 }

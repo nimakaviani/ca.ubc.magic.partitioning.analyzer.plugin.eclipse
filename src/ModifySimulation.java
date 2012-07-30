@@ -28,14 +28,18 @@ extends AbstractHandler
 					= (IStructuredSelection) selection;
 				Object[] obj
 					= (Object[]) row_selection.getFirstElement();
-				
-				for( int i = 0; i < obj.length; ++i ) {
-					System.out.println( obj[i] );
+				if( obj != null ){
+					for( int i = 0; i < obj.length; ++i ) {
+						System.out.println( obj[i] );
+					}
+					
+					// call function to open a new customization dialog
+					// given that we have the index
+					model_creation_editor.simTableMouseClicked( (Integer) obj[0] );
 				}
-				
-				// call function to open a new customization dialog
-				// given that we have the index
-				model_creation_editor.simTableMouseClicked( (Integer) obj[0] );
+				else {
+					throw new RuntimeException("Nothing has been selected");
+				}
 			}
 		}
 		else {

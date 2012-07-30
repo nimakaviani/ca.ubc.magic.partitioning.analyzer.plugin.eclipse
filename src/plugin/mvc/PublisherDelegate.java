@@ -1,6 +1,5 @@
 package plugin.mvc;
 
-import java.util.Collection;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -8,7 +7,6 @@ import java.util.Map;
 
 import org.eclipse.swt.widgets.Display;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.event.Event;
@@ -24,9 +22,6 @@ implements IPublisher
 {
 	private static final BundleContext CONTEXT
 		= Activator.getDefault().getBundle().getBundleContext();
-	private int EVENT_ID = 0;
-	private Map<String, ServiceRegistration<EventHandler>> events_map
-		= new HashMap<String, ServiceRegistration<EventHandler>>();
 	
 	// the following code is a view-communication solution
 	// found in:

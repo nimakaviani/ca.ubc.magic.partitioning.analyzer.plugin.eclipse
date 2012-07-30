@@ -13,7 +13,7 @@ Callback
 	
 	@SuppressWarnings("rawtypes")
 	public Callback
-	( String method_name, Class[] parameters )
+	( String method_name, Class... parameters )
 	{
 		this.method_name
 			= method_name;

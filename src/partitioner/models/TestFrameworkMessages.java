@@ -1,5 +1,7 @@
 package partitioner.models;
 
+import java.util.Map;
+
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 import plugin.mvc.messages.FromModelEvent;
 import plugin.mvc.messages.IndexEvent;
@@ -36,4 +38,6 @@ TestFrameworkMessages
 		= new PropertyEvent("UpdateSimulationReport", Object[].class);
 	public static final PropertyEvent UPDATE_BEST_SIMULATION_REPORT
 		= new PropertyEvent("UpdateBestSimulationReport", SimulationUnit.class);
+	public static final PropertyEvent UNIT_MAP
+		= new PropertyEvent("UnitMap", Map.class);
 }

@@ -40,8 +40,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.event.EventHandler;
 
 import plugin.Activator;
 import plugin.Constants;
@@ -96,17 +94,17 @@ implements IView
 	
 	// it may be possible to use annotations to automate this
 	private static final Callback set_display
-		= new Callback("setDisplayValues", new Class[]{ String.class, String.class, String.class, String.class } );
+		= new Callback("setDisplayValues", String.class, String.class, String.class, String.class );
 	private static final Callback set_path
-		= new Callback("setPath", new Class[]{ String.class} );
+		= new Callback("setPath", String.class );
 	private static final Callback set_name
-		= new Callback("setName", new Class[]{ String.class} );
+		= new Callback("setName", String.class );
 	private static final Callback set_host
-		= new Callback("setHost", new Class[]{ String.class} );
+		= new Callback("setHost", String.class );
 	private static final Callback set_port	
-		= new Callback("setPort", new Class[]{ String.class} );
+		= new Callback("setPort", String.class );
 
-	public AdapterDelegate 
+	private AdapterDelegate 
 	getAdapterDelegate() 
 	{
 		if( this.adapter_delegate == null ){
@@ -115,37 +113,35 @@ implements IView
 			this.adapter_delegate.registerDepositCallback(
 				set_display, 
 				new DefaultAdapter( 
-					new String[]{ 
-						SnapshotModelMessages.PATH.NAME,
-						SnapshotModelMessages.NAME.NAME,
-						SnapshotModelMessages.HOST.NAME,
-						SnapshotModelMessages.PORT.NAME
-					}
+					SnapshotModelMessages.PATH.NAME,
+					SnapshotModelMessages.NAME.NAME,
+					SnapshotModelMessages.HOST.NAME,
+					SnapshotModelMessages.PORT.NAME
 				)
 			);
 			
 			this.adapter_delegate.registerPropertyCallback(
 				set_path,
 				new DefaultAdapter(
-					new String[]{ SnapshotModelMessages.PATH.NAME }
+					SnapshotModelMessages.PATH.NAME
 				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
 				set_name, 
 				new DefaultAdapter(
-					new String[]{ SnapshotModelMessages.NAME.NAME }
+					SnapshotModelMessages.NAME.NAME
 				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
 				set_port, 
 				new DefaultAdapter(
-					new String[]{ SnapshotModelMessages.PORT.NAME}
+					SnapshotModelMessages.PORT.NAME
 				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
 				set_host,
 				new DefaultAdapter(
-					new String[]{ SnapshotModelMessages.HOST.NAME}
+					SnapshotModelMessages.HOST.NAME
 				)
 			);
 		}
@@ -391,17 +387,10 @@ implements IView
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
 		
-//		this.log_console_table
-//			= new EventLogTable(parent, "Event Log", null);
-//		this.log_console_table.setContents(
-//			Activator.getDefault().getEventLogListModel().getEventLogList()
-//		);
-		
 		this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
 		
-		ServiceRegistration<EventHandler> refresh_snapshot_event_registration
-			= this.publisher.registerPublicationListener(
+		this.publisher.registerPublicationListener(
 				this.getClass(), 
 				Publications.REFRESH_SNAPSHOT_TREE, 
 				new PublicationHandler(){
@@ -606,48 +595,17 @@ implements IView
 	setWidgetText()
 	{
 		this.active_snapshot_controller
-			.requestDeposit(
-				this, this.set_display.getName()
+			.requestReply(
+				this, SnapshotView.set_display.getName(),
+				null
 			);
 	}
 	
-	@Override
-	public void 
-	modelPropertyChange
-	( final PropertyChangeEvent evt ) 
-	{
-//		// event may be triggered by a process in a non-SWT thread
-//		Display.getDefault().asyncExec(
-//			new Runnable(){
-//				@Override
-//				public void
-//				run(){
-//					String property
-//						= evt.getPropertyName();
-//					
-//					System.out.println("modelPropertyChange(): " + property);
-//					System.out.println("New value: " + evt.getNewValue().toString());
-//					
-//					if( property.equals( SnapshotModelMessages.PATH.NAME)){
-//						SnapshotView.this.path_text.setText((String) evt.getNewValue());
-//					}
-//					else if( property.equals( SnapshotModelMessages.HOST.NAME)){
-//						SnapshotView.this.host_text.setText((String) evt.getNewValue());
-//					}				
-//					else if( property.equals( SnapshotModelMessages.NAME.NAME)){
-//						SnapshotView.this.name_text.setText( (String) evt.getNewValue());				
-//					}
-//					else if( property.equals( SnapshotModelMessages.PORT.NAME)){
-//						SnapshotView.this.port_text.setText( (String) evt.getNewValue() );
-//					}
-//					else {
-//						System.out.println("SnapshotView swallowed a message.");
-//					}
-//					
-//					SnapshotView.this.refresh();
-//				}
-//			});
-	}
+//	@Override
+//	public void 
+//	modelPropertyChange
+//	( final PropertyChangeEvent evt ) 
+//	{ }
 	
 	@Override
 	public void 
@@ -1079,11 +1037,11 @@ implements IView
 		    return newName;
 		}
 
-		@Override
-		public void 
-		modelPropertyChange
-		( PropertyChangeEvent evt ) 
-		{}
+//		@Override
+//		public void 
+//		modelPropertyChange
+//		( PropertyChangeEvent evt ) 
+//		{}
 
 		@Override
 		public void 

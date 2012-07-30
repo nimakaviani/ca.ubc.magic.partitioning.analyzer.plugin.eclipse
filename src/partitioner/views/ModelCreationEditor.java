@@ -29,7 +29,6 @@ import org.eclipse.ui.part.MultiPageEditorPart;
 
 import partitioner.models.PartitionerModel;
 import partitioner.models.PartitionerModelMessages;
-import partitioner.models.TestFrameworkModel;
 import plugin.mvc.ControllerDelegate;
 import plugin.mvc.IController;
 import plugin.mvc.IModel;
@@ -37,6 +36,7 @@ import plugin.mvc.IPublisher;
 import plugin.mvc.IView;
 import plugin.mvc.Publications;
 import plugin.mvc.PublisherDelegate;
+import plugin.mvc.adapter.AdapterDelegate;
 import snapshots.views.VirtualModelFileInput;
 
 import ca.ubc.magic.profiler.dist.model.ModulePair;
@@ -76,6 +76,7 @@ implements IView
 		this.controller 
 			= new ControllerDelegate();
 		this.controller.addView( this );
+		this.controller.registerAdapter(this, new AdapterDelegate());
 	    
 		this.controller.addModel( new PartitionerModel() );
 		
@@ -271,42 +272,6 @@ implements IView
 
 	@Override
 	public void 
-	modelPropertyChange
-	( final PropertyChangeEvent evt ) 
-	{
-		// event may be triggered by a process in a non-SWT thread
-		Display.getDefault().asyncExec( new Runnable(){
-			@Override
-			public void run() 
-			{
-				System.err.println(
-					"PropertyChange generated in ModelCreationEditor: " 
-					+ evt.getPropertyName()
-				);
-				
-				String property
-					= evt.getPropertyName();
-				
-				if(property.equals(PartitionerModelMessages.MODULE_COARSENER.NAME)){
-					ModuleCoarsenerType mc 
-						= (ModuleCoarsenerType) evt.getNewValue();
-					System.out.println(
-						"The module coarsener was modified to " + mc.getText()
-					);
-				}
-				else if( property.equals( PartitionerModelMessages.PERFORM_PARTITIONING.NAME)){
-					ModelCreationEditor.this.perform_partitioning
-						= (Boolean) evt.getNewValue();
-				}
-				else {
-					System.out.println("Swallowing message.");
-				}
-			}
-		});
-	}
-	
-	@Override
-	public void 
 	modelEvent
 	( final PropertyChangeEvent evt ) 
 	{
@@ -363,6 +328,27 @@ implements IView
 				}
 				else if( property.equals( PartitionerModelMessages.MODEL_CREATED.NAME)){
 					ModelCreationEditor.this.visualizeModuleModel();
+				}
+				else if( property.equals( PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
+					Display.getDefault().asyncExec(
+							new Runnable(){
+								@Override
+								public void run() {
+									if(ModelCreationEditor.this.perform_partitioning){
+										ModelCreationEditor.this.currentVP
+						            		.setAlgorithm( ModelCreationEditor.this.algorithm );
+										System.out.println(
+											"Algorithm: "+ ModelCreationEditor.this.algorithm 
+										);
+										ModelCreationEditor.this.currentVP
+						            		.setSolution( ModelCreationEditor.this.solution );
+										System.out.println(
+											"Solution: " + ModelCreationEditor.this.algorithm 
+										);
+									}
+								}
+							}
+						);
 				}
 				else {
 					System.out.println("Swallowing Message");
@@ -473,26 +459,6 @@ implements IView
 					} catch (Exception e) {
 						e.printStackTrace();
 					};
-					
-					Display.getDefault().asyncExec(
-						new Runnable(){
-							@Override
-							public void run() {
-								if(ModelCreationEditor.this.perform_partitioning){
-									ModelCreationEditor.this.currentVP
-					            		.setAlgorithm( ModelCreationEditor.this.algorithm );
-									System.out.println(
-										"Algorithm: "+ ModelCreationEditor.this.algorithm 
-									);
-									ModelCreationEditor.this.currentVP
-					            		.setSolution( ModelCreationEditor.this.solution );
-									System.out.println(
-										"Solution: " + ModelCreationEditor.this.algorithm 
-									);
-								}
-							}
-						}
-					);
 				}
 			}
 		});
@@ -617,5 +583,22 @@ implements IView
 		public void 
 		partInputChanged
 		( IWorkbenchPartReference partRef ) {}
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////////
+	///	Code for dealing with adapters
+	///////////////////////////////////////////////////////////////////////////////////
+	
+	private AdapterDelegate adapter_delegate;
+	
+	private static Callback 
+	private AdapterDelegate
+	getAdapterDelegate()
+	{
+		if(this.adapter_delegate == null){
+			this.adapter_delegate 
+				= new AdapterDelegate();
+			this.adapter_delegate.
+		}
 	}
 }

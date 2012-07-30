@@ -18,10 +18,12 @@ public class
 ControllerDelegate 
 implements IController
 {
-	private IModel 		model;
-	private List<IView> registered_views;
+	private IModel 						model;
+	private List<IView> 				registered_views;
 	private Map<IView, AdapterDelegate> adapter_map;
-	private Map<String, Object> buffer_map;
+	// the following is used and reused in a few functions
+	// it should always be cleared before being used
+	private Map<String, Object> 		adapter_buffer_map;
 	
 	public final static String EVENT_SENTINEL
 		= "Event";
@@ -33,7 +35,7 @@ implements IController
 			= new CopyOnWriteArrayList<IView>();
 		this.adapter_map
 			= new HashMap<IView, AdapterDelegate>();
-		this.buffer_map	
+		this.adapter_buffer_map	
 			= new HashMap<String, Object>();
 	}
 	
@@ -169,8 +171,8 @@ implements IController
 		}
 	}
 	
-	@Override
-	public Map<String, Object> 
+	//@Override
+	private Map<String, Object> 
 	requestProperties
 	( String[] property_names ) 
 	{
@@ -229,8 +231,9 @@ implements IController
 		}
 		else {
 			for(IView view : this.registered_views){
-				this.callDesignatedMethod(view, evt);
-				view.modelPropertyChange(evt);
+				System.out.println("PropertyChange: " + evt.getPropertyName());
+				this.callDesignatedMethod( view, evt );
+				//view.modelPropertyChange(evt);
 			}
 		}
 	}
@@ -238,45 +241,6 @@ implements IController
 	/////////////////////////////////////////////////////////////////////////////////
 	//	Work with adapter
 	/////////////////////////////////////////////////////////////////////////////////
-	
-	@SuppressWarnings({ "rawtypes", "unused" })
-	private void 
-	callDesignatedMethod
-	( IView view, PropertyChangeEvent evt ) 
-	{
-		AdapterDelegate adapter
-			= this.adapter_map.get(view);
-		if( adapter != null ){
-			String method_name
-				= adapter.getMethodName(evt.getPropertyName());
-			Class[] parameter_types
-				= adapter.getParameterTypes(method_name);
-			this.buffer_map.clear();
-			this.buffer_map.put(evt.getPropertyName(), evt.getNewValue());
-			Object[] parameters
-				= adapter.getPropertyMethodParameters(method_name, this.buffer_map );
-			if( !method_name.equals("") ){
-				Method method;
-				try {
-					method = view.getClass().getMethod( 
-		            	method_name,
-		            	parameter_types
-		            );
-					method.invoke(view, evt.getNewValue());
-				} catch (NoSuchMethodException e) {
-					e.printStackTrace();
-				} catch (SecurityException e) {
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-	}
 
 	@Override
 	public void
@@ -303,12 +267,27 @@ implements IController
 	@Override
 	@SuppressWarnings("rawtypes")
 	public void
-	requestDeposit
-	( IView view, String method_name )
+	requestReply
+	( IView view, String method_name, Object args )
 	{
+		if( view == null ){
+			throw new IllegalArgumentException(
+				"The view argument cannot be null"
+			);
+		}
+		if( method_name == null ){
+			throw new IllegalArgumentException(
+				"The method name cannot be null"
+			);
+		}
+		if( method_name.trim().equals("") ){
+			throw new IllegalArgumentException(
+				"The method name argument cannot be empty"
+			);
+		}
+		
 		AdapterDelegate adapter
 			= this.adapter_map.get(view);
-		
 		String[] query_keys
 			= adapter.getQueryKeys(method_name);
 		
@@ -320,7 +299,7 @@ implements IController
 		Map<String, Object> objs
 			= this.requestProperties(query_keys);
 		Object[] parameters
-			= adapter.getQueryMethodParameters(method_name, objs);
+			= adapter.getQueryMethodParameters(method_name, objs, args);
 		System.err.println("Parameters: ");
 		for(Object s: parameters){
 			System.err.println(s);
@@ -350,6 +329,54 @@ implements IController
 			e.printStackTrace();
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
+		}
+	}
+	
+
+	@SuppressWarnings({ "rawtypes" })
+	private void 
+	callDesignatedMethod
+	( IView view, PropertyChangeEvent evt ) 
+	{
+		AdapterDelegate adapter
+			= this.adapter_map.get(view);
+		if( adapter == null ){
+			throw new IllegalArgumentException(
+				"The calling view has not registered an adapter"
+			);
+		}
+		String method_name
+			= adapter.getMethodName(evt.getPropertyName());
+		if( method_name != null ){
+			Class[] parameter_types
+				= adapter.getParameterTypes(method_name);
+			this.adapter_buffer_map.clear();
+			this.adapter_buffer_map.put(evt.getPropertyName(), evt.getNewValue());
+			Object[] parameters
+				= adapter.getPropertyMethodParameters(
+					method_name, 
+					this.adapter_buffer_map 
+				);
+			if( !method_name.equals("") ){
+				Method method;
+				try {
+					method = view.getClass().getMethod( 
+		            	method_name,
+		            	parameter_types
+		            );
+					method.invoke(view, parameters);
+				} catch (NoSuchMethodException e) {
+					e.printStackTrace();
+				} catch (SecurityException e) {
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				} catch (IllegalArgumentException e) {
+					e.printStackTrace();
+				} catch (InvocationTargetException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 }

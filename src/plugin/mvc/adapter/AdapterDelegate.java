@@ -6,14 +6,17 @@ import java.util.Map;
 // the adapter is supposed to help us change
 // the model without changing the view; we still
 // have the problem of making sure we can change the view
-// without affecting the model
+// without affecting the model; because it can be initialized
+// based on the interface of a view and the messages allowed
+// by a model, the adapter can be injected as a dependency to
+// the view, and modified or substituted afterwards
 public class 
 AdapterDelegate 
 {
-	Map<String, Callback> callback_map;
-	Map<String, IAdapter> query_adapter_map;
-	private Map<String, String> property_to_method_map;
-	private Map<String, IAdapter> property_adapter_map;
+	Map<String, Callback> 			callback_map;
+	Map<String, IAdapter> 			query_adapter_map;
+	private Map<String, String> 	property_to_method_map;
+	private Map<String, IAdapter> 	property_adapter_map;
 	
 	public 
 	AdapterDelegate()
@@ -40,7 +43,7 @@ AdapterDelegate
 	unregisterDepositCallback
 	( String method_name )
 	{
-		if( !this.callback_map.containsKey(method_name)){
+		if( !this.callback_map.containsKey(method_name) ){
 			throw new IllegalArgumentException("That method is not registered as a callback.");
 		}
 		else {
@@ -100,7 +103,7 @@ AdapterDelegate
 			throw new IllegalArgumentException("That method is not registered as a callback.");
 		}
 		else {
-			return this.query_adapter_map.get(method_name).getQueryKeys();
+			return this.query_adapter_map.get(method_name).getKeys();
 		}
 	}
 	
@@ -112,22 +115,32 @@ AdapterDelegate
 			throw new IllegalArgumentException("That method is not registered as a callback");
 		}
 		else {
-			return this.property_adapter_map.get(method_name).getQueryKeys();
+			return this.property_adapter_map.get(method_name).getKeys();
 		}
 	}
 	
 	public Object[]
 	getQueryMethodParameters
-	( String method_name, Map<String, Object> objs )
+	( String method_name, Map<String, Object> objs, Object args)
 	{
-		return this.query_adapter_map.get(method_name).adapt(objs);
+		if( !this.query_adapter_map.containsKey(method_name)){
+			throw new IllegalArgumentException(
+				"Method " + method_name + " is not associated with a query adapter"
+			);
+		}
+		return this.query_adapter_map.get(method_name).adapt(objs, args);
 	}
 	
 	public Object[]
 	getPropertyMethodParameters
 	( String method_name, Map<String, Object> objs )
 	{
-		return this.property_adapter_map.get(method_name).adapt(objs);
+		if( !this.property_adapter_map.containsKey(method_name)){
+			throw new IllegalArgumentException(
+				"Method " + method_name + " is not associated with a property adapter"
+			);
+		}
+		return this.property_adapter_map.get(method_name).adapt(objs, null);
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -135,6 +148,11 @@ AdapterDelegate
 	getParameterTypes
 	( String method_name ) 
 	{
+		if( !this.callback_map.containsKey(method_name) ){
+			throw new IllegalArgumentException(
+				"Method " + method_name + " is not registered as a callback"
+			);
+		}
 		return this.callback_map.get(method_name).getParameters().toArray( new Class[0] );
 	}
 	

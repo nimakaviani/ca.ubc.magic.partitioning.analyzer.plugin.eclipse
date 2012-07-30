@@ -352,12 +352,14 @@ implements IModel
 				TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
 				TestFrameworkModel.TEST_MODULE_MODEL,
 				TestFrameworkModel.TEST_HOST_MODEL,
+				TestFrameworkMessages.UNIT_MAP.NAME,
 			};
 		Object[] properties
 			= {
 				this.mSimFramework,
 				this.mModuleModel,
-				this.mHostModel
+				this.mHostModel,
+				this.unitMap
 			};
 		
 		this.property_change_delegate.registerProperties(
