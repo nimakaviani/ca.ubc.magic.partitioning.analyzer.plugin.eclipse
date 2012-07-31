@@ -740,9 +740,9 @@ implements IFrameworkListener,
 				new IAdapter(){
 					String[] keys
 						= new String[]{
-							TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
-							TestFrameworkModel.TEST_MODULE_MODEL,
-							TestFrameworkModel.TEST_HOST_MODEL,
+							TestFrameworkMessages.TEST_SIMULATION_FRAMEWORK.NAME,
+							TestFrameworkMessages.TEST_MODULE_MODEL.NAME,
+							TestFrameworkMessages.TEST_HOST_MODEL.NAME,
 						};
 					
 					@Override
@@ -752,15 +752,15 @@ implements IFrameworkListener,
 					{
 				    	SimulationFramework simulation_framework
 				    		= (SimulationFramework) objs.get(
-				    			TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
+				    				TestFrameworkMessages.TEST_SIMULATION_FRAMEWORK.NAME
 				    		);
 				    	ModuleModel module_model
 				    		= (ModuleModel) objs.get(
-				    			TestFrameworkModel.TEST_MODULE_MODEL
+				    				TestFrameworkMessages.TEST_MODULE_MODEL.NAME
 				    		);
 				    	HostModel host_model
 				    		= (HostModel) objs.get(
-				    			TestFrameworkModel.TEST_HOST_MODEL
+				    				TestFrameworkMessages.TEST_HOST_MODEL.NAME
 				    		);
 				    	
 				    	SimulationUnitCustomizationNew simulation_unit
@@ -792,7 +792,7 @@ implements IFrameworkListener,
 					String[] keys 
 						= new String[]{
 							TestFrameworkMessages.UNIT_MAP.NAME,
-							TestFrameworkModel.TEST_SIMULATION_FRAMEWORK
+							TestFrameworkMessages.TEST_SIMULATION_FRAMEWORK.NAME
 						};
 					
 					@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -804,7 +804,9 @@ implements IFrameworkListener,
 						Integer id = (Integer) arg;
 						
 						SimulationFramework simulation_framework
-							= (SimulationFramework) objs.get(TestFrameworkModel.TEST_SIMULATION_FRAMEWORK);
+							= (SimulationFramework) objs.get(
+								TestFrameworkMessages.TEST_SIMULATION_FRAMEWORK.NAME
+							);
 						Map<String, DefaultKeyValue> unit_map
 							= (Map<String, DefaultKeyValue>) objs.get(
 								TestFrameworkMessages.UNIT_MAP.NAME
@@ -846,7 +848,9 @@ implements IFrameworkListener,
 			
 			this.adapter_delegate.registerDepositCallback(
 				initialize_simulation_framework, 
-				new DefaultAdapter(TestFrameworkModel.TEST_SIMULATION_FRAMEWORK)
+				new DefaultAdapter(
+					TestFrameworkMessages.TEST_SIMULATION_FRAMEWORK.NAME
+				)
 			);
 			
 			this.adapter_delegate.registerPropertyCallback(

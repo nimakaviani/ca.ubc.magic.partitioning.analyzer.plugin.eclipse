@@ -3,11 +3,10 @@ package plugin.mvc;
 import java.beans.PropertyChangeListener;
 import java.util.Map;
 
+import plugin.mvc.EventTypes.PropertyEvent;
+import plugin.mvc.EventTypes.ToModelEvent;
+import plugin.mvc.EventTypes.ViewsEvent;
 import plugin.mvc.adapter.AdapterDelegate;
-import plugin.mvc.messages.PropertyEvent;
-import plugin.mvc.messages.ToModelEvent;
-import plugin.mvc.messages.ViewsEvent;
-
 
 public interface
 ITranslator
@@ -21,7 +20,6 @@ extends PropertyChangeListener
 	
 	public void 				notifyPeers(ViewsEvent event, Object source, Object new_value);
 	public void 				notifyModel(ToModelEvent event);
-	
 	public void 				updateModel( PropertyEvent event, Object contribution );
 	
 	void registerAdapter(IView view, AdapterDelegate adapter);

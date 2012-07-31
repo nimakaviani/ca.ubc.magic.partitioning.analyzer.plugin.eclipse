@@ -1,17 +1,20 @@
 package partitioner.models;
 
+import java.util.Map;
+
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory.ModuleCoarsenerType;
+import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import partitioner.models.PartitionerModel.State;
-import plugin.mvc.messages.FromModelEvent;
-import plugin.mvc.messages.PropertyEvent;
-import plugin.mvc.messages.ToModelEvent;
-import plugin.mvc.messages.ViewsEvent;
+import plugin.mvc.EventTypes.FromModelEvent;
+import plugin.mvc.EventTypes.PropertyEvent;
+import plugin.mvc.EventTypes.ToModelEvent;
+import plugin.mvc.EventTypes.ViewsEvent;
 
 public class 
 PartitionerModelMessages 
@@ -69,8 +72,8 @@ PartitionerModelMessages
 	public static final PropertyEvent SIMULATION_FRAMEWORK
 		= new PropertyEvent("SimulationFramework", SimulationFramework.class);
 	
-	public static final PropertyEvent SOLUTION
-		= new PropertyEvent("Solution", String.class );
+	public static final PropertyEvent PARTITIONER
+		= new PropertyEvent("Partitioner", IPartitioner.class );
 	public static final PropertyEvent ALGORITHM
 		= new PropertyEvent("Algorithm", String.class );
 	
@@ -78,4 +81,9 @@ PartitionerModelMessages
 		= new PropertyEvent("ModelState", State.class);
 	public static final FromModelEvent MODEL_EXCEPTION 
 		= new FromModelEvent("ModelException", Exception.class);
+	
+	public static final PropertyEvent AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP 
+		= new PropertyEvent("ModuleExchangeMap", Map.class);
+	public static final PropertyEvent AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK 
+		= new PropertyEvent("AfterPartitioningCreateTestFramework", TestFrameworkModel.class);
 }

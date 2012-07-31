@@ -47,6 +47,8 @@ import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
+import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
+import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 
 public class 
@@ -63,9 +65,6 @@ implements IView
     VisualizePartitioning currentVP;
     Object current_vp_lock 
     	= new Object();
-    
-    private volatile Boolean 	perform_partitioning 
-    	= false;
     
     private Frame 				frame;
 	private ITranslator 		controller;
@@ -337,21 +336,7 @@ implements IView
 	{
 		return this.controller;
 	}
-	
-	public void 
-	setAlgorithm
-	( String algorithm ) 
-	{
-		this.algorithm = algorithm;
-	}
 
-	public void 
-	setSolution
-	( String solution ) 
-	{
-		this.solution = solution;
-	}
-	
 	public void
 	addSimulation()
 	{
@@ -439,7 +424,9 @@ implements IView
 	private static Callback model_created
 		= new Callback("modelCreated");
 	private static Callback partitioning_complete
-		= new Callback("partitioningComplete");
+		= new Callback("partitioningComplete", String.class, String.class);
+	private static Callback set_partitioner_labels
+		= new Callback("setPartitionerLabels", String.class, String.class);
 	
 	private AdapterDelegate
 	getAdapterDelegate()
@@ -448,6 +435,40 @@ implements IView
 			this.adapter_delegate 
 				= new AdapterDelegate();
 			
+			this.adapter_delegate.registerDepositCallback(
+				set_partitioner_labels, 
+				new IAdapter()
+				{
+					String[] keys = new String[]{
+						PartitionerModelMessages.PARTITIONER_TYPE.NAME,
+						PartitionerModelMessages.PARTITIONER.NAME
+					};
+
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						IPartitioner solution
+							= (IPartitioner) objs.get(
+								PartitionerModelMessages.PARTITIONER.NAME
+							);
+						PartitionerType type
+							= (PartitionerType) objs.get(
+								PartitionerModelMessages.PARTITIONER_TYPE.NAME
+							);
+						
+						return new Object[]{ solution.getSolution(), type.getText() };
+					}
+
+					@Override
+					public String[]
+					getKeys()
+					{
+						return this.keys;
+					}
+				}
+			);
 			this.adapter_delegate.registerEventCallback(
 				create_test_framework,
 				new EmptyAdapter(PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK.NAME)
@@ -458,11 +479,46 @@ implements IView
 			);
 			this.adapter_delegate.registerEventCallback(
 				partitioning_complete, 
-				new EmptyAdapter(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)
+				new IAdapter(){
+					String[] keys 
+						= new String[]{ 
+							PartitionerModelMessages.PARTITIONING_COMPLETE.NAME,
+						};
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						// this is an example of a chained request
+						// we have to supply two methods to perform this operation
+						// but we have a cleaner callback that supplies all
+						// the necessary information
+						// the problem is simply that the model cannot
+						// be expected to supply all the necessary information
+						// related to an event...this must be requested or assumed
+						// to have been already updated
+						ModelCreationEditor.this.controller.requestReply(
+							ModelCreationEditor.this, 
+							ModelCreationEditor.set_partitioner_labels.getName(), 
+							null
+						);
+						return new Object[] { 
+							ModelCreationEditor.this.algorithm,
+							ModelCreationEditor.this.solution
+						};
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return this.keys;
+					}
+				}
 			);
 			this.adapter_delegate.registerDepositCallback(
 				activate_test_page, 
-				new DefaultAdapter( PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK )
+				new DefaultAdapter( PartitionerModelMessages.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK.NAME )
 			);
 			this.adapter_delegate.registerDepositCallback(
 				create_visualize_partitioning, 
@@ -471,7 +527,7 @@ implements IView
 					
 					String[] keys
 						= new String[]{ 
-							PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP,
+							PartitionerModelMessages.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP.NAME,
 							PartitionerModelMessages.MODULE_COARSENER.NAME
 						};
 					
@@ -505,7 +561,7 @@ implements IView
 
 									vp.drawModules(
 											(Map<ModulePair, InteractionData>) objs.get(
-												PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
+												PartitionerModelMessages.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP.NAME
 											)
 										); 
 									}
@@ -662,25 +718,28 @@ implements IView
 	}
 	
 	public void
-	partitioningComplete()
+	setPartitionerLabels
+	( String solution, String algorithm )
+	{
+		this.solution = solution;
+		this.algorithm = algorithm;
+	}
+	
+	public void
+	partitioningComplete
+	( final String solution, final String algorithm )
 	{
 		System.err.println("Inside partitioningComplete");
-		Display.getDefault().asyncExec(
+		Display.getDefault().syncExec(
 				new Runnable(){
 					@Override
-					public void run() {
-						if(ModelCreationEditor.this.perform_partitioning){
-							ModelCreationEditor.this.currentVP
-			            		.setAlgorithm( ModelCreationEditor.this.algorithm );
-							System.out.println(
-								"Algorithm: "+ ModelCreationEditor.this.algorithm 
-							);
-							ModelCreationEditor.this.currentVP
-			            		.setSolution( ModelCreationEditor.this.solution );
-							System.out.println(
-								"Solution: " + ModelCreationEditor.this.algorithm 
-							);
-						}
+					public void 
+					run() 
+					{
+						ModelCreationEditor.this.currentVP
+							.setAlgorithm(algorithm);
+						ModelCreationEditor.this.currentVP
+							.setSolution(solution);
 					}
 				}
 			);

@@ -41,31 +41,37 @@ implements IModel
 				this.host
 			};
 		
-		this.property_change_delegate
-			.registerProperties( 
-				property_names, 
-				properties 
-			);
+		this.property_change_delegate.registerProperties( 
+			property_names, 
+			properties 
+		);
 	}
 
-	public void 
+	// the reason that synchronized methods are used, rather
+	// than finer per-field locks, is that chains of property
+	// updates could cause a thread to acquire multiple locks;
+	// if multiple threads do this in the wrong order, deadlock
+	// will occur;
+	//
+	// the reason we synchronize is to ensure that when multiple
+	// threads are accessing a model, we want to ensure that the
+	// last value recorded in the model is the last value seen by
+	// the view
+	synchronized public void 
 	setSnapshotPath
 	(String path) 
 	{
-		System.out.println("New path: " + path);
 		String old_path = this.path;
 		this.path = path;
 		
-		System.out.println(this.path);
-		this.property_change_delegate
-			.firePropertyChange(
-				SnapshotModelMessages.PATH, 
-				old_path,
-				this.path
-			);
+		this.property_change_delegate.firePropertyChange(
+			SnapshotModelMessages.PATH, 
+			old_path,
+			this.path
+		);
 	}
 	
-	public void
+	synchronized public void
 	setSnapshotName
 	(String name)
 	{
@@ -79,7 +85,7 @@ implements IModel
 		);
 	}
 
-	public void
+	synchronized public void
 	setSnapshotPort
 	(String port)
 	{
@@ -93,7 +99,7 @@ implements IModel
 		);
 	}
 
-	public void
+	synchronized public void
 	setSnapshotHost
 	(String host)
 	{

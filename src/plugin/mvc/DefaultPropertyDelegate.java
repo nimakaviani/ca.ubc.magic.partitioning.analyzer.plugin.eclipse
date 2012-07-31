@@ -5,8 +5,8 @@ import java.beans.PropertyChangeSupport;
 import java.util.HashMap;
 import java.util.Map;
 
-import plugin.mvc.messages.DataEvent;
-import plugin.mvc.messages.PropertyEvent;
+import plugin.mvc.EventTypes.DataEvent;
+import plugin.mvc.EventTypes.PropertyEvent;
 
 public class 
 DefaultPropertyDelegate 

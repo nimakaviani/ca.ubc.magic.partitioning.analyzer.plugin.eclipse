@@ -2,10 +2,14 @@ package partitioner.models;
 
 import java.util.Map;
 
+import plugin.mvc.EventTypes.FromModelEvent;
+import plugin.mvc.EventTypes.PropertyEvent;
+import plugin.mvc.EventTypes.ToModelEvent;
+
+import ca.ubc.magic.profiler.dist.model.HostModel;
+import ca.ubc.magic.profiler.dist.model.ModuleModel;
+import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
-import plugin.mvc.messages.FromModelEvent;
-import plugin.mvc.messages.PropertyEvent;
-import plugin.mvc.messages.ToModelEvent;
 
 public class 
 TestFrameworkMessages 
@@ -34,6 +38,13 @@ TestFrameworkMessages
 		= new PropertyEvent("UpdateSimulationReport", Object[].class);
 	public static final PropertyEvent UPDATE_BEST_SIMULATION_REPORT
 		= new PropertyEvent("UpdateBestSimulationReport", SimulationUnit.class);
+	
 	public static final PropertyEvent UNIT_MAP
 		= new PropertyEvent("UnitMap", Map.class);
+	public static final PropertyEvent TEST_SIMULATION_FRAMEWORK
+		= new PropertyEvent("SimulationFramework", SimulationFramework.class);
+	public static final PropertyEvent TEST_MODULE_MODEL
+		= new PropertyEvent("ModuleModel", ModuleModel.class);
+	public static final PropertyEvent TEST_HOST_MODEL
+		= new PropertyEvent("HostModel", HostModel.class);
 }

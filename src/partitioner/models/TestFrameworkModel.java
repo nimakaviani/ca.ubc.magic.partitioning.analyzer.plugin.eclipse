@@ -21,39 +21,25 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.parser.JipParser;
 import ca.ubc.magic.profiler.parser.JipRun;
-import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.simulator.control.ISimulator;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
 import ca.ubc.magic.profiler.simulator.control.StaticTimeSimulator;
 import ca.ubc.magic.profiler.simulator.control.TimeSimulator;
 import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
-import ca.ubc.magic.profiler.simulator.framework.SimulationFrameworkHelper;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
 import plugin.LogUtilities;
 import plugin.mvc.DefaultPropertyDelegate;
 import plugin.mvc.ITranslator.IModel;
 
-// TODO: split the model parts which track the state of the view from
-//		the model parts which are application logic
 public class 
 TestFrameworkModel 
 implements IModel
 {
-	// Queryable
-	public static final String				TEST_SIMULATION_FRAMEWORK
-		= "SimulationFramework";
-	public static final String				TEST_MODULE_MODEL
-		= "ModuleModel";
-	public static final String				TEST_HOST_MODEL
-		= "HostModel";
-		
-	private DefaultPropertyDelegate 			property_change_delegate;
-	private Map<String, DefaultKeyValue> 	unitMap;
-	private int id;
+	private DefaultPropertyDelegate 						property_change_delegate;
+	private Map<String, DefaultKeyValue<Integer, String>> 	unitMap;
 	
-	private PartitionerType 				partitioner_type;
 	private volatile ModuleModel 			mModuleModel;
 	private SimulationFramework	 			mSimFramework; 
 	private volatile HostModel   			mHostModel; 
@@ -64,10 +50,11 @@ implements IModel
 	private JipRun 							jipRun;
 	private IModuleCoarsener 				module_coarsener;
 
+	private int latest_simulation_index;
+	
 	public 
 	TestFrameworkModel
-	( 	PartitionerType partitioner_type, 
-		ModuleModel module_model, 
+	( 	ModuleModel module_model, 
 		SimulationFramework simulation_framework,
 		HostModel host_model,
 		String profiler_trace,
@@ -77,11 +64,8 @@ implements IModel
 		this.property_change_delegate
 			= new DefaultPropertyDelegate();
 		this.unitMap 
-			= new HashMap<String, DefaultKeyValue>();
+			= new HashMap<String, DefaultKeyValue<Integer, String>>();
 		
-		if(partitioner_type == null){
-			throw new NullPointerException();
-		}
 		if(module_model == null){
 			throw new NullPointerException();
 		}
@@ -100,8 +84,6 @@ implements IModel
 		
 		// the constraint model is allowed to be null
 		
-		this.partitioner_type
-			= partitioner_type;
 		this.mModuleModel
 			= module_model;
 		this.mSimFramework
@@ -131,15 +113,15 @@ implements IModel
 	///	Property Change Event Handlers
 	////////////////////////////////////////////////////////////////////////
 	
-	public void
+	synchronized public void
 	setSimulationAdded
 	( SimulationUnit unit )
 	{
 		System.out.println("Inserting " + unit.getKey());
 		this.unitMap.put(
 			unit.getKey(), 
-			new DefaultKeyValue(
-				Integer.valueOf(this.id), 
+			new DefaultKeyValue<Integer, String>(
+				Integer.valueOf(this.latest_simulation_index), 
 				unit.getSignature()
 			)
 		);
@@ -152,7 +134,7 @@ implements IModel
 		this.incrementID();
 	}
 	
-	public void
+	synchronized public void
 	setSimulationRemoved
 	( SimulationUnit unit )
 	{
@@ -162,15 +144,15 @@ implements IModel
 	private void 
 	incrementID() 
 	{
-		this.id++;
+		this.latest_simulation_index++;
 		System.err.println("Updating the id");
 		this.property_change_delegate.notifyViews(
 			TestFrameworkMessages.UPDATE_ID, 
-			Integer.valueOf(this.id)
+			Integer.valueOf(this.latest_simulation_index)
 		);
 	}
 	
-	public void
+	synchronized public void
 	setUpdateSimulationReport
 	( Object[] args )
 	{
@@ -189,7 +171,7 @@ implements IModel
 		System.out.println(
 			"Size " + this.unitMap.size() 
 		);
-		DefaultKeyValue key_value
+		DefaultKeyValue<Integer, String> key_value
 			= this.unitMap.get( key );
 		
 		assert key_value != null 
@@ -208,7 +190,7 @@ implements IModel
 		);
 	} 
 
-	public void
+	synchronized public void
 	setUpdateBestSimulationReport
 	( SimulationUnit unit )
 	{
@@ -235,7 +217,7 @@ implements IModel
 		}
 	}
 	
-	public void
+	synchronized public void
 	setSimulationType
 	( String simulation_type )
 	{
@@ -251,7 +233,7 @@ implements IModel
 	                    InputStream in 
 	                    	= new BufferedInputStream(
 	                            new ProgressMonitorInputStream(
-	                            	// TODO taking out the fileChoose...ask Nima about this
+	                            	// taking out the fileChoose...ask Nima about this
 	                            	null,
 	                                "Reading " +  this.profiler_trace,
 	                                new FileInputStream( this.profiler_trace )
@@ -273,29 +255,7 @@ implements IModel
 	        }
 	}
 
-	public SimulationUnit
-	findInSimulationUnits
-	( Integer id )
-	{
-		SimulationUnit unit
-			= null;
-		
-		for( DefaultKeyValue keyVal : unitMap.values() ){
-			System.err.println("Key: "+ (Integer) keyVal.getKey());
-			if (((Integer) keyVal.getKey()).equals(id)){
-				unit 
-					= SimulationFrameworkHelper.getUnitFromSig(
-						( String ) keyVal.getValue(), 
-						mSimFramework.getTemplate(), 
-						Boolean.TRUE
-					);
-			}
-		}
-
-		return unit;
-	}
-	
-	public void
+	synchronized public void
 	doRunSimulation()
 	{
 		try{
@@ -324,7 +284,7 @@ implements IModel
 	//////////////////////////////////////////////////////////////////////////
 	
 	@Override
-	public void 
+	synchronized public void 
 	addPropertyChangeListener
 	( PropertyChangeListener l) 
 	{
@@ -332,7 +292,7 @@ implements IModel
 	}
 	
 	@Override
-	public void 
+	synchronized public void 
 	removePropertyChangeListener
 	( PropertyChangeListener l) 
 	{
@@ -340,7 +300,7 @@ implements IModel
 	}
 	
 	@Override
-	public Map<String, Object> 
+	synchronized public Map<String, Object> 
 	request
 	( String[] property_names ) 
 	{
@@ -352,9 +312,9 @@ implements IModel
 	{
 		String[] property_names
 			= {
-				TestFrameworkModel.TEST_SIMULATION_FRAMEWORK,
-				TestFrameworkModel.TEST_MODULE_MODEL,
-				TestFrameworkModel.TEST_HOST_MODEL,
+				TestFrameworkMessages.TEST_SIMULATION_FRAMEWORK.NAME,
+				TestFrameworkMessages.TEST_MODULE_MODEL.NAME,
+				TestFrameworkMessages.TEST_HOST_MODEL.NAME,
 				TestFrameworkMessages.UNIT_MAP.NAME,
 			};
 		Object[] properties

@@ -1,7 +1,7 @@
 package snapshots.model;
 
-import plugin.mvc.messages.PropertyEvent;
-import plugin.mvc.messages.ViewsEvent;
+import plugin.mvc.EventTypes.PropertyEvent;
+import plugin.mvc.EventTypes.ViewsEvent;
 
 public class 
 SnapshotModelMessages 

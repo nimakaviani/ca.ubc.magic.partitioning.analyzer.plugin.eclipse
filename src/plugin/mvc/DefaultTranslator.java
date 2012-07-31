@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import plugin.LogUtilities;
+import plugin.mvc.EventTypes.PropertyEvent;
+import plugin.mvc.EventTypes.ToModelEvent;
+import plugin.mvc.EventTypes.ViewsEvent;
 import plugin.mvc.adapter.AdapterDelegate;
-import plugin.mvc.messages.PropertyEvent;
-import plugin.mvc.messages.ToModelEvent;
-import plugin.mvc.messages.ViewsEvent;
 
 // all views must register an adapterDelegate with the
 // controller that they are interacting with

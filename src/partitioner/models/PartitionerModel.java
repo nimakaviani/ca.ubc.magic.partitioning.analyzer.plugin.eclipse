@@ -41,9 +41,6 @@ import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.partitioning.control.filters.FilterHelper;
-import ca.ubc.magic.profiler.simulator.control.ISimulator;
-import ca.ubc.magic.profiler.simulator.control.SimulatorFactory;
-import ca.ubc.magic.profiler.simulator.control.SimulatorFactory.SimulatorType;
 import ca.ubc.magic.profiler.simulator.framework.SimulationFramework;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
@@ -52,22 +49,15 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 public class 
 PartitionerModel 
 implements IModel
-// TODO: write an adapter around the Model so were more cleanly separate
-//		the mvc interface from the program logic
 {
 	public enum State {
 		NO_MODEL, MODEL_BEFORE_PARTITION, PARTITIONED
 	}
 	
-	private State state = State.NO_MODEL;
+	private State state 
+		= State.NO_MODEL;
 	
-	public static final String AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP 
-		= "ModuleExchangeMap";
-
-	public static final String AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK 
-		= "AfterPartitioningCreateTestFramework";
-	
-	private DefaultPropertyDelegate 	property_change_delegate;
+	private DefaultPropertyDelegate property_change_delegate;
 	
 	private ModuleCoarsenerType 	mModuleType; 
 	private PartitionerType 		partitioner_type;
@@ -78,8 +68,6 @@ implements IModel
 	private volatile String 		constraint_xml_path;
 	private volatile String 		host_configuration; 
 	
-
-	
 	private ModuleModelHandler 		mmHandler;
 	private SimulationFramework	 	mSimFramework; 
 	
@@ -89,32 +77,17 @@ implements IModel
 	private volatile HostModel   			mHostModel; 
 	private volatile EntityConstraintModel	mConstraintModel;
 
-	private Map<String, IFilter> mFilterMap; 
-	 	
-	private String partitioner_solution;
+	private Map<String, IFilter> 	mFilterMap; 
+	private IPartitioner 			partitioner;
 	
-	private ISimulator mSim 
-		= SimulatorFactory.getSimulator(
-			SimulatorType.fromString(
-				"Static Time Simulator (No Trace Replay)"
-			)
-	  	);
-
-	private volatile Boolean 	enable_synthetic_node_filter 
-		= false;
-	private Boolean 			activate_host_cost_filter 
-		= false;
-	private Boolean 			activate_interaction_cost_filter 
-		= false;
-	private Boolean generate_test_framework 
-		= false;
+	private volatile Boolean 	enable_synthetic_node_filter = false;
+	private Boolean 			activate_host_cost_filter = false;
+	private Boolean 			activate_interaction_cost_filter = false;
+	private Boolean 			generate_test_framework = false;
 	// volatile due to visibility concerns
-	private volatile Boolean active_exposing_menu 
-		= false;
-	private volatile Boolean module_model_checkbox 
-		= false;
-	private volatile Boolean perform_partitioning 
-		= false;
+	private volatile Boolean 	active_exposing_menu = false;
+	private volatile Boolean	module_model_checkbox = false;
+	private volatile Boolean 	perform_partitioning = false;
 	
 	private void
 	changeState
@@ -134,8 +107,6 @@ implements IModel
 		this.profiler_trace = "";
 		this.constraint_xml_path = "";
 		this.host_configuration = "";
-		this.partitioner_solution = "";
-		
        	
 		this.mSimFramework
        		= new SimulationFramework( Boolean.FALSE );
@@ -595,7 +566,7 @@ implements IModel
 		
 		this.property_change_delegate.registerProperties(
 			new String[]{
-				PartitionerModel.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP
+				PartitionerModelMessages.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP.NAME
 			},
 			new Object[]{
 				this.mModuleModel.getModuleExchangeMap()
@@ -608,11 +579,10 @@ implements IModel
 			this.partitioner_type.getText()
 		);
 		
-		this.property_change_delegate.firePropertyChange(
-			PartitionerModelMessages.SOLUTION,
-			null,
-			this.partitioner_solution
-		);
+//		this.property_change_delegate.notifyViews(
+//			PartitionerModelMessages.SOLUTION,
+//			this.partitioner_solution
+//		);
 	}
 	
 	// called from swing worker-> obtains the reference itself
@@ -658,10 +628,21 @@ implements IModel
         
         // david - it may be better to store the entire 
         // IPartitioner instead
-        this.partitioner_solution
-        	= partitioner.getSolution();
+        this.updatePartitioner( partitioner );
+        
 	}
 	
+	private void 
+	updatePartitioner
+	( IPartitioner partitioner ) 
+	{
+		this.partitioner = partitioner;
+		this.property_change_delegate.update_property(
+	    	PartitionerModelMessages.PARTITIONER.NAME, 
+	    	this.partitioner
+	    );
+	}
+
 	public void
 	doModelGeneration()
 	{
@@ -874,11 +855,10 @@ implements IModel
 					PartitionerModel.this.property_change_delegate
 						.registerProperties(
 							new String[]{ 
-								PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK
+								PartitionerModelMessages.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK.NAME
 							},
 							new Object[]{
 								new TestFrameworkModel(
-									PartitionerModel.this.partitioner_type,
 									PartitionerModel.this.mModuleModel,
 									PartitionerModel.this.mSimFramework,
 									PartitionerModel.this.mHostModel,
@@ -950,7 +930,9 @@ implements IModel
 				PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
 				PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
 				PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
-				PartitionerModelMessages.MODEL_STATE.NAME
+				PartitionerModelMessages.MODEL_STATE.NAME,
+				
+				PartitionerModelMessages.PARTITIONER.NAME
 			};
 		
 		Object[] properties
@@ -976,7 +958,9 @@ implements IModel
 			this.activate_interaction_cost_filter,
 			this.generate_test_framework,
 			
-			this.state
+			this.state,
+			
+			this.partitioner
 		};
 		
 		this.property_change_delegate.registerProperties(
