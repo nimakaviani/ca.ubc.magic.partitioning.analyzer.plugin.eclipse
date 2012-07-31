@@ -3,15 +3,13 @@ package snapshots.model;
 import java.beans.PropertyChangeListener;
 import java.util.Map;
 
-import plugin.mvc.PropertyChangeDelegate;
+import plugin.mvc.DefaultPropertyDelegate;
+import plugin.mvc.ITranslator.IModel;
 
 public class
 ActiveSnapshotModel 
-implements ISnapshotInfoModel
-// if you intend to use the request function, or to use
-// the more convenient form of the firePropertyChange function,
-// you must register any visible fields with the property
-// change delegate
+// implements ISnapshotInfoModel
+implements IModel
 {
 	private String path 
 		= "";
@@ -22,8 +20,8 @@ implements ISnapshotInfoModel
 	private String host 
 		= "localhost";
 	
-	private PropertyChangeDelegate property_change_delegate
-		= new PropertyChangeDelegate();
+	private DefaultPropertyDelegate property_change_delegate
+		= new DefaultPropertyDelegate();
 	
 	public 
 	ActiveSnapshotModel()
@@ -50,7 +48,6 @@ implements ISnapshotInfoModel
 			);
 	}
 
-	@Override
 	public void 
 	setSnapshotPath
 	(String path) 
@@ -68,7 +65,6 @@ implements ISnapshotInfoModel
 			);
 	}
 	
-	@Override
 	public void
 	setSnapshotName
 	(String name)
@@ -83,7 +79,6 @@ implements ISnapshotInfoModel
 		);
 	}
 
-	@Override
 	public void
 	setSnapshotPort
 	(String port)
@@ -98,7 +93,6 @@ implements ISnapshotInfoModel
 		);
 	}
 
-	@Override
 	public void
 	setSnapshotHost
 	(String host)
@@ -117,7 +111,7 @@ implements ISnapshotInfoModel
 	@Override
 	public void 
 	addPropertyChangeListener
-	( PropertyChangeListener l) 
+	( PropertyChangeListener l ) 
 	{
 		this.property_change_delegate.addPropertyChangeListener(l);
 	}

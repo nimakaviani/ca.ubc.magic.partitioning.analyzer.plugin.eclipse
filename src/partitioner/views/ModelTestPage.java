@@ -37,10 +37,10 @@ import org.eclipse.ui.forms.widgets.TableWrapLayout;
 
 import partitioner.models.TestFrameworkMessages;
 import partitioner.models.TestFrameworkModel;
-import plugin.mvc.ControllerDelegate;
-import plugin.mvc.IController;
-import plugin.mvc.IModel;
-import plugin.mvc.IView;
+import plugin.mvc.DefaultTranslator;
+import plugin.mvc.ITranslator;
+import plugin.mvc.ITranslator.IModel;
+import plugin.mvc.ITranslator.IView;
 import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.adapter.Callback;
 import plugin.mvc.adapter.DefaultAdapter;
@@ -81,7 +81,7 @@ implements IFrameworkListener,
 	
 	private Table 					table;
 	private String[] 				column_names;
-	private IController				test_framework_controller;
+	private ITranslator				test_framework_controller;
 	
 	// any method beginning with the term initialize are called
 	// only from the constructor and may be assumed to executed on
@@ -95,7 +95,7 @@ implements IFrameworkListener,
 		super( parent );
 		
 		this.test_framework_controller
-			= new ControllerDelegate();
+			= new DefaultTranslator();
 		this.test_framework_controller.addModel(
 			test_framework_model
 		);
@@ -152,12 +152,12 @@ implements IFrameworkListener,
 		this.initialize_context_menu(model_creation_editor);
 	}
 	
-	/// for now we call an activate function
+	// for now we call an activate function
 	// later we may simply wait to create the page until later
 	// and have everything happen in the constructor
 	private void
 	activate
-	( IController controller )
+	( ITranslator controller )
 	{
 		this.test_framework_controller
 			= controller;
@@ -235,7 +235,6 @@ implements IFrameworkListener,
 				widgetSelected
 				( SelectionEvent e )
 				{
-					///
 					ModelTestPage.this.test_framework_controller.updateModel(
 						TestFrameworkMessages.SIMULATION_TYPE,
 						simulation_type_combo.getText()
@@ -422,75 +421,6 @@ implements IFrameworkListener,
 		); 
 	}
 	
-	@Override
-	public void 
-	modelEvent
-	( final PropertyChangeEvent evt ) 
-	{
-		// event may be triggered by a process in a non-SWT thread
-		Display.getDefault().asyncExec(
-			new Runnable(){
-				@Override
-				public void 
-				run()
-				{
-					System.err.println("Received event: " + evt.getPropertyName());
-					
-					String property
-						= evt.getPropertyName();
-					
-					if(property.equals(TestFrameworkMessages.UPDATE_BEST_RUN_NAME.NAME) ){
-						String best_run_name
-							= (String) evt.getNewValue();
-						System.out.println("Best run name: " + best_run_name);
-						ModelTestPage.this.best_run_name_label.setText(best_run_name);
-					}
-					else if( property.equals(TestFrameworkMessages.UPDATE_BEST_RUN_ALGORITHM.NAME)){
-						String best_run_algorithm
-							= (String) evt.getNewValue();
-						System.out.println("Best run algorithm: " + best_run_algorithm);
-						ModelTestPage.this.best_run_algorithm_label.setText(
-							best_run_algorithm
-						);
-					}
-					else if( property.equals(TestFrameworkMessages.UPDATE_BEST_RUN_COST.NAME)){
-						String best_run_cost
-							= (String) evt.getNewValue();
-						System.out.println("Best run cost: " + best_run_cost);
-						ModelTestPage.this.best_run_cost_label.setText(
-							best_run_cost
-						);
-					}
-					else if( property.equals(TestFrameworkMessages.SIMULATION_TABLE_RUN_UPDATE.NAME)){
-						// use the index to find the right table entry
-						Object[] obj
-							= (Object[]) evt.getNewValue();
-						for( int i = 0; i < ModelTestPage.this.table_input.size(); ++i){
-							Object[] array
-								= (Object[]) ModelTestPage.this.table_input.get(i);
-							if(array[0].equals((Integer) obj[0])){
-								Object[] modifiable_array
-									= (Object[]) ModelTestPage.this.table_input.get(i);
-								modifiable_array[3] = (Double) obj[1];
-								modifiable_array[4] = (Double) obj[2];
-							}
-							ModelTestPage.this.simulations_table_viewer.refresh();
-						}
-
-					}
-					else if( property.equals( TestFrameworkMessages.UPDATE_ID.NAME)){
-						Integer id 
-							= (Integer) evt.getNewValue();
-						ModelTestPage.this.current_id
-							= id;
-					}
-					else {
-						System.out.println("Model Test Page swallowed event: " + evt.getPropertyName());
-					}
-				}
-			});
-	}
-	
 	//////////////////////////////////////////////////////////////////////////////////
 	///	Logic for populating the table
 	///		1) First: functionality for adding a new entry
@@ -668,18 +598,115 @@ implements IFrameworkListener,
 	private static final Callback create_simulation_unit
 		= new Callback("createSimulationUnit", SimulationUnitCustomizationNew.class);
 	
+
+	private static final Callback update_best_run_name
+		= new Callback( "updateBestRunName", String.class);
+	private static final Callback update_best_run_algorithm_name
+		= new Callback("updateBestRunAlgorithmName", String.class);
+	private static final Callback update_best_run_cost
+		= new Callback("updateBestRunCost", String.class);
+	private static final Callback update_simulation_table
+		= new Callback( "updateSimulationTable", Object[].class);
+	private static final Callback update_id
+		= new Callback( "updateID", Integer.class);
+	
 	public void
-	createSimulationUnit
-	(SimulationUnitCustomizationNew simulation_unit)
+	updateBestRunName
+	( final String best_run_name )
 	{
-    	this.mSimUnitCustomization
-    		= simulation_unit;
-    	
-    	this.mSimUnitCustomization.create();
-    	if( this.mSimUnitCustomization.open() == Window.OK ){
-    		System.err.println("Returned ok");
-    	} 
+		System.out.println("Inside best run name");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					System.out.println("Best run name: " + best_run_name);
+					ModelTestPage.this.best_run_name_label.setText(best_run_name);
+				}
+			}
+		);
+	
 	}
+	
+	public void
+	updateBestRunAlgorithmName
+	( final String best_run_algorithm )
+	{
+		System.out.println("Inside best run algorithm name");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					System.out.println("Best run algorithm: " + best_run_algorithm);
+					ModelTestPage.this.best_run_algorithm_label.setText(
+						best_run_algorithm
+					);
+				}
+			}
+		);
+	}
+	
+	public void
+	updateBestRunCost
+	( final String  best_run_cost )
+	{
+		System.out.println("Inside best run cost");
+		Display.getDefault().asyncExec( 
+				new Runnable(){
+					@Override
+					public void 
+					run() 
+					{
+						System.out.println("Best run cost: " + best_run_cost);
+						ModelTestPage.this.best_run_cost_label.setText(
+							best_run_cost
+						);
+					}
+				}
+			);
+	}
+	
+	public void
+	updateSimulationTable
+	( final Object[] obj )
+	{
+		System.out.println("Inside update simulation table");
+		Display.getDefault().asyncExec( 
+				new Runnable(){
+					@Override
+					public void 
+					run() 
+					{
+						// use the index to find the right table entry
+						for( int i = 0; i < ModelTestPage.this.table_input.size(); ++i){
+							Object[] array
+								= (Object[]) ModelTestPage.this.table_input.get(i);
+							if(array[0].equals((Integer) obj[0])){
+								Object[] modifiable_array
+									= (Object[]) ModelTestPage.this.table_input.get(i);
+								modifiable_array[3] = (Double) obj[1];
+								modifiable_array[4] = (Double) obj[2];
+							}
+							ModelTestPage.this.simulations_table_viewer.refresh();
+						}
+					}
+				}
+			);
+		
+	}
+	
+	public void
+	updateID
+	( Integer id )
+	{
+		System.out.println("Inside update id");
+		ModelTestPage.this.current_id
+			= id;
+	}
+	
 	
 	public AdapterDelegate
 	getAdapterDelegate()
@@ -688,6 +715,26 @@ implements IFrameworkListener,
 			this.adapter_delegate
 				= new AdapterDelegate();
 
+			this.adapter_delegate.registerEventCallback(
+				update_best_run_name,
+				new DefaultAdapter(TestFrameworkMessages.UPDATE_BEST_RUN_NAME.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				update_best_run_algorithm_name,
+				new DefaultAdapter( TestFrameworkMessages.UPDATE_BEST_RUN_ALGORITHM.NAME )
+			);
+			this.adapter_delegate.registerEventCallback(
+				update_best_run_cost,
+				new DefaultAdapter(TestFrameworkMessages.UPDATE_BEST_RUN_COST.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				update_simulation_table,
+				new DefaultAdapter(	TestFrameworkMessages.SIMULATION_TABLE_RUN_UPDATE.NAME )
+			);
+			this.adapter_delegate.registerEventCallback(
+				update_id, 
+				new DefaultAdapter(TestFrameworkMessages.UPDATE_ID.NAME)
+			);
 			this.adapter_delegate.registerDepositCallback(
 				create_simulation_unit,
 				new IAdapter(){
@@ -889,5 +936,18 @@ implements IFrameworkListener,
 	( SimulationFramework sim )
 	{
 		sim.addFrameworkListener( this );
+	}
+	
+	public void
+	createSimulationUnit
+	(SimulationUnitCustomizationNew simulation_unit)
+	{
+    	this.mSimUnitCustomization
+    		= simulation_unit;
+    	
+    	this.mSimUnitCustomization.create();
+    	if( this.mSimUnitCustomization.open() == Window.OK ){
+    		System.err.println("Returned ok");
+    	} 
 	}
 }

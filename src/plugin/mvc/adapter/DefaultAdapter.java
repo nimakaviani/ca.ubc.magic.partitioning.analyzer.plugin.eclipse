@@ -8,7 +8,7 @@ public class
 DefaultAdapter 
 implements IAdapter
 {
-	private String[] keys;
+	protected String[] keys;
 
 	public
 	DefaultAdapter

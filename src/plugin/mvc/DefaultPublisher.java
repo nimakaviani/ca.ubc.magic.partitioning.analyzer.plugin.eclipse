@@ -17,7 +17,7 @@ import org.osgi.service.event.EventHandler;
 import plugin.Activator;
 
 public class 
-PublisherDelegate
+DefaultPublisher
 implements IPublisher
 {
 	private static final BundleContext CONTEXT
@@ -39,9 +39,9 @@ implements IPublisher
 		}
 		
 	    ServiceReference<EventAdmin> ref 
-	    	= PublisherDelegate.CONTEXT.getServiceReference(EventAdmin.class);
+	    	= DefaultPublisher.CONTEXT.getServiceReference(EventAdmin.class);
 	    EventAdmin eventAdmin 
-	    	= PublisherDelegate.CONTEXT.getService( ref );
+	    	= DefaultPublisher.CONTEXT.getService( ref );
 	    Map<String,Object> properties 
 	    	= new HashMap<String, Object>();
 	    
@@ -91,7 +91,7 @@ implements IPublisher
 			= new Hashtable<String, String>();
 		properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
 		ServiceRegistration<EventHandler> s
-			= PublisherDelegate.CONTEXT.registerService(EventHandler.class, handler, properties);
+			= DefaultPublisher.CONTEXT.registerService(EventHandler.class, handler, properties);
 		
 		return s;
 	}
@@ -102,7 +102,7 @@ implements IPublisher
 	( Publications publication, ServiceRegistration<EventHandler> service )
 	{
 		Boolean result 
-			= PublisherDelegate.CONTEXT
+			= DefaultPublisher.CONTEXT
 				.ungetService(service.getReference());
 		
 		System.err.println("Unregistering attempts resulted in " + result.toString());

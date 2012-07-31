@@ -1,6 +1,5 @@
 package partitioner.views;
 
-import java.beans.PropertyChangeEvent;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -38,15 +37,16 @@ import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.Partiti
 
 import partitioner.models.PartitionerModel.State;
 import partitioner.models.PartitionerModelMessages;
-import plugin.mvc.IController;
+import plugin.mvc.IPublisher.PublicationHandler;
+import plugin.mvc.IPublisher.Publications;
+import plugin.mvc.ITranslator;
 import plugin.mvc.IPublisher;
-import plugin.mvc.IView;
-import plugin.mvc.PublicationHandler;
-import plugin.mvc.Publications;
-import plugin.mvc.PublisherDelegate;
+import plugin.mvc.DefaultPublisher;
+import plugin.mvc.ITranslator.IView;
 import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.adapter.Callback;
 import plugin.mvc.adapter.DefaultAdapter;
+import plugin.mvc.adapter.EmptyAdapter;
 import plugin.mvc.adapter.IAdapter;
 
 import snapshots.views.VirtualModelFileInput;
@@ -73,7 +73,7 @@ implements IView
 	
 	private Button 		exposure_button;
 	
-	private IController controller;
+	private ITranslator controller;
 	private Combo 		set_coarsener_combo;
 	private Object 		controller_switch_lock = new Object();
 
@@ -94,7 +94,7 @@ implements IView
 	( Composite parent ) 
 	{
 		this.publisher_delegate
-			= new PublisherDelegate();
+			= new DefaultPublisher();
 		
 		this.publisher_delegate.registerPublicationListener(
 				this.getClass(),
@@ -106,8 +106,8 @@ implements IView
 					( Object obj )
 					{
 						System.out.println("Handling");
-						IController controller 
-							= (IController) obj;
+						ITranslator controller 
+							= (ITranslator) obj;
 						PartitionerConfigurationView.this.setDisplayValues(controller);
 					}
 				}
@@ -241,17 +241,19 @@ implements IView
 
 	protected void 
 	setDisplayValues
-	( IController controller ) 
+	( ITranslator controller ) 
 	{
 		synchronized(this.controller_switch_lock){
 			assert controller != null : "The controller argument should not be null";
 			
-			if(this.controller != null){
-				this.controller.removeView(this);
-				this.controller.removeView(this.partitioner_widgets);
-				this.controller.unregisterAdapter(this);
-				// this will need to be controlled by a lock
+			if(this.controller == controller){
+				return;
 			}
+			if(this.controller != null){
+				this.controller.removeViewAndAdapter(this);
+				this.controller.removeViewAndAdapter(this.partitioner_widgets);
+			}
+			
 			this.controller = controller;
 			this.controller.addView(this);
 			this.controller.registerAdapter(this, getAdapterDelegate());
@@ -599,90 +601,6 @@ implements IView
 		this.partition_model_button.setVisible(false);
 	}
 	
-	@Override
-	public void 
-	modelEvent
-	( final PropertyChangeEvent evt ) 
-	{
-		Display display = Display.getCurrent();
-		
-		if(display == null){
-			System.err.println("Uh oh null display");
-			display = Display.getDefault();
-		}
-		
-		display.syncExec( 
-			new Runnable()
-			{
-				@Override
-				public void
-				run()
-				{
-					System.err.println("Event received by PartitionerConfigurationView: " + evt.getPropertyName());
-					String property
-						= evt.getPropertyName();
-					
-					if( property.equals(PartitionerModelMessages.EDITOR_CLOSED.NAME)){
-						PartitionerConfigurationView.this
-							.clear_all_entries();
-						PartitionerConfigurationView.this
-							.set_configuration_widgets_enabled( false );
-						PartitionerConfigurationView.this
-							.generate_model_button.setVisible(true);
-						PartitionerConfigurationView.this
-							.partitioner_widgets.set_partitioning_trigger_enabled( false );
-						if( PartitionerConfigurationView.this.partitioner_widgets != null ){
-							PartitionerConfigurationView.this
-								.partitioner_widgets
-								.set_partitioning_controls_enabled( false );
-						}
-					}
-					else if( property.equals(PartitionerModelMessages.MODEL_CREATED.NAME)){
-						PartitionerConfigurationView.this
-							.set_configuration_widgets_enabled( false );
-						
-						PartitionerConfigurationView.this
-							.partitioning_composite.setVisible( true );
-						PartitionerConfigurationView
-							.this.partition_model_button.setVisible( true );
-						PartitionerConfigurationView.this
-							.generate_model_button.setVisible(false);
-						PartitionerConfigurationView.this
-							.partitioner_widgets.set_partitioning_trigger_enabled(true);
-						PartitionerConfigurationView.this
-							.partitioner_widgets.set_partitioning_controls_enabled(false);
-						PartitionerConfigurationView.this
-							.updateModelName();
-					}
-					else if( property.equals(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
-						PartitionerConfigurationView.this
-							.partitioner_widgets
-							.set_partitioning_trigger_enabled(false);
-						PartitionerConfigurationView.this
-							.actions_composite.setVisible(false);
-						PartitionerConfigurationView.this
-							.partitioner_widgets
-							.set_partitioning_trigger_enabled( false );
-						PartitionerConfigurationView.this
-							.partitioner_widgets
-							.set_partitioning_controls_enabled(false);
-					}
-					else if (property.equals(PartitionerModelMessages.MODEL_EXCEPTION.NAME)){
-						Exception ex = (Exception) evt.getNewValue();
-						MessageDialog.openError(
-							PartitionerConfigurationView.this.getViewSite().getShell(), 
-							"Model Exception", 
-							ex.getMessage() 
-						);
-					}
-					else {
-						System.out.println("PartitionerConfigurationView swallowed model event");
-					}
-				}
-			});
-				
-	}
-
 	private void 
 	clear_all_entries() 
 	{
@@ -691,9 +609,11 @@ implements IView
 		System.err.println("Clearing all entries");
 		
 		synchronized(this.controller_switch_lock){
-				this.controller.removeView(this);
-				this.controller 
-					= null;
+				if(this.controller != null){
+					this.controller.removeViewAndAdapter(this);
+					this.controller 
+						= null;
+				}
 			}
 		
 		this.profiler_trace_text.setText("  ");
@@ -1218,14 +1138,6 @@ implements IView
 		{
 			this.perform_partitioning_button.setEnabled(enabled);
 		}
-
-		@Override
-		public void 
-		modelEvent
-		( PropertyChangeEvent evt ) 
-		{
-			
-		}
 	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1254,6 +1166,297 @@ implements IView
 		= new Callback("updateState", State.class);
 	private static final Callback update_partitioning_panel
 		= new Callback("updatePartitioningPanel", Map.class);
+	
+	private static final Callback editor_closed
+		= new Callback("editorClosed");
+	private static final Callback model_created
+		= new Callback("modelCreated");
+	private static final Callback partitioning_complete
+		= new Callback("partitioningComplete");
+	private static final Callback model_exception
+		= new Callback("modelException", Exception.class);
+	
+	public void
+	editorClosed()
+	{
+		System.err.println("Inside editor closed");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					PartitionerConfigurationView.this
+						.clear_all_entries();
+					PartitionerConfigurationView.this
+						.set_configuration_widgets_enabled( false );
+					PartitionerConfigurationView.this
+						.generate_model_button.setVisible(true);
+					PartitionerConfigurationView.this
+						.partitioner_widgets.set_partitioning_trigger_enabled( false );
+					if( PartitionerConfigurationView.this.partitioner_widgets != null ){
+						PartitionerConfigurationView.this
+							.partitioner_widgets
+							.set_partitioning_controls_enabled( false );
+					}
+					if(PartitionerConfigurationView.this.controller != null ){
+						PartitionerConfigurationView.this
+							.controller.unregisterAdapter(PartitionerConfigurationView.this);
+					}
+				}
+			}
+		);
+	}
+	
+	public void
+	modelCreated()
+	{
+		System.err.println("Inside model created");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					PartitionerConfigurationView.this
+						.set_configuration_widgets_enabled( false );
+					
+					PartitionerConfigurationView.this
+						.partitioning_composite.setVisible( true );
+					PartitionerConfigurationView
+						.this.partition_model_button.setVisible( true );
+					PartitionerConfigurationView.this
+						.generate_model_button.setVisible(false);
+					PartitionerConfigurationView.this
+						.partitioner_widgets.set_partitioning_trigger_enabled(true);
+					PartitionerConfigurationView.this
+						.partitioner_widgets.set_partitioning_controls_enabled(false);
+					PartitionerConfigurationView.this
+						.updateModelName();
+				}
+			}
+		);
+	}
+	
+	public void
+	partitioningComplete()
+	{
+		System.err.println("Inside partitioning complete");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					PartitionerConfigurationView.this
+						.partitioner_widgets
+						.set_partitioning_trigger_enabled(false);
+					PartitionerConfigurationView.this
+						.actions_composite.setVisible(false);
+					PartitionerConfigurationView.this
+						.partitioner_widgets
+						.set_partitioning_trigger_enabled( false );
+					PartitionerConfigurationView.this
+						.partitioner_widgets
+						.set_partitioning_controls_enabled(false);
+				}
+			}
+		);
+	}
+	
+	public void
+	modelException
+	( final Exception ex )
+	{
+		System.out.println("Inside model exception");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					MessageDialog.openError(
+						PartitionerConfigurationView.this.getViewSite().getShell(), 
+						"Model Exception", 
+						ex.getMessage() 
+					);
+				}
+			}
+		);
+	}
+	
+	public AdapterDelegate
+	getAdapterDelegate()
+	{
+		if(this.adapter_delegate == null ){
+			this.adapter_delegate
+				= new AdapterDelegate();
+			this.adapter_delegate.registerDepositCallback(
+				update_state, 
+				new DefaultAdapter(
+					PartitionerModelMessages.MODEL_STATE.NAME
+				)
+			);
+			
+			this.adapter_delegate.registerEventCallback(
+				editor_closed,
+				new EmptyAdapter(PartitionerModelMessages.EDITOR_CLOSED.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				model_created, 
+				new EmptyAdapter(PartitionerModelMessages.MODEL_CREATED.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				partitioning_complete, 
+				new EmptyAdapter(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				model_exception, 
+				new DefaultAdapter( PartitionerModelMessages.MODEL_EXCEPTION.NAME)
+			);
+			this.adapter_delegate.registerDepositCallback(
+				update_partitioning_panel,
+				new IAdapter(){
+					String[] keys
+						= new String[]{
+							PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME,
+							PartitionerModelMessages.PERFORM_PARTITIONING.NAME,
+							PartitionerModelMessages.EXECUTION_COST.NAME,
+							PartitionerModelMessages.INTERACTION_COST.NAME,
+							PartitionerModelMessages.PARTITIONER_TYPE.NAME,
+							PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
+							PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
+							PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
+						};
+
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						return new Object[]{ objs };
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return this.keys;
+					}
+				}
+			);
+			this.adapter_delegate.registerDepositCallback(
+				set_file_paths, 
+				new IAdapter(){
+					String[] keys 
+						= new String[]{
+							PartitionerModelMessages.PROFILER_TRACE.NAME,
+							PartitionerModelMessages.MODULE_EXPOSER.NAME,
+							PartitionerModelMessages.HOST_CONFIGURATION.NAME,
+						};
+					
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						return new Object[]{
+							objs.get(PartitionerModelMessages.PROFILER_TRACE.NAME),
+							objs.get(PartitionerModelMessages.MODULE_EXPOSER.NAME),
+							objs.get(PartitionerModelMessages.HOST_CONFIGURATION.NAME)
+						};
+					}
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return this.keys;
+					}
+				}
+			);
+			this.adapter_delegate.registerDepositCallback(
+				set_configuration_panel,
+				new IAdapter(){
+					String[] keys
+						= new String[]{
+							PartitionerModelMessages.MODULE_COARSENER.NAME,
+							PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME
+						};
+					PartitionerConfigurationView view
+						= PartitionerConfigurationView.this;
+					
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						ModuleCoarsenerType coarsener_type
+							= (ModuleCoarsenerType) objs.get( 
+								PartitionerModelMessages.MODULE_COARSENER.NAME 
+							);
+						Integer index
+							= view.findIndex(
+								view.set_coarsener_combo, 
+								coarsener_type.getText()
+							);
+						
+						Boolean selection
+							= (Boolean) objs.get( 
+								PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME
+							);
+						
+						return new Object[]{ index, selection };
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return this.keys;
+					}
+					
+				}
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				PartitionerConfigurationView.set_perform_partitioning, 
+				new DefaultAdapter(
+					PartitionerModelMessages.PERFORM_PARTITIONING.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				PartitionerConfigurationView.set_activate_host_filter, 
+				new DefaultAdapter(
+					PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				PartitionerConfigurationView.set_activate_interaction_cost_filter, 
+				new DefaultAdapter(
+					PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				PartitionerConfigurationView.set_host_configuration, 
+				new DefaultAdapter(
+					PartitionerModelMessages.HOST_CONFIGURATION.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				PartitionerConfigurationView.set_module_exposer, 
+				new DefaultAdapter(
+					PartitionerModelMessages.MODULE_EXPOSER.NAME
+				)
+			);
+			this.adapter_delegate.registerPropertyCallback(
+				PartitionerConfigurationView.set_profiler_trace, 
+				new DefaultAdapter(
+					PartitionerModelMessages.PROFILER_TRACE.NAME
+				)
+			);
+		}
+		
+		return adapter_delegate;
+	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void
@@ -1520,161 +1723,5 @@ implements IView
 			);
 		PartitionerConfigurationView.this
 			.actions_composite.setVisible(actions_composite_visible);
-	}
-	
-	public AdapterDelegate
-	getAdapterDelegate()
-	{
-		if(this.adapter_delegate == null ){
-			this.adapter_delegate
-				= new AdapterDelegate();
-			this.adapter_delegate.registerDepositCallback(
-				update_state, 
-				new DefaultAdapter(
-					PartitionerModelMessages.MODEL_STATE.NAME
-				)
-			);
-			this.adapter_delegate.registerDepositCallback(
-				update_partitioning_panel,
-				new IAdapter(){
-					String[] keys
-						= new String[]{
-							PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME,
-							PartitionerModelMessages.PERFORM_PARTITIONING.NAME,
-							PartitionerModelMessages.EXECUTION_COST.NAME,
-							PartitionerModelMessages.INTERACTION_COST.NAME,
-							PartitionerModelMessages.PARTITIONER_TYPE.NAME,
-							PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
-							PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
-							PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
-						};
-
-					@Override
-					public Object[] 
-					adapt
-					( Map<String, Object> objs, Object arg ) 
-					{
-						return new Object[]{ objs };
-					}
-
-					@Override
-					public String[] 
-					getKeys() 
-					{
-						return this.keys;
-					}
-				}
-			);
-			this.adapter_delegate.registerDepositCallback(
-				set_file_paths, 
-				new IAdapter(){
-					String[] keys 
-						= new String[]{
-							PartitionerModelMessages.PROFILER_TRACE.NAME,
-							PartitionerModelMessages.MODULE_EXPOSER.NAME,
-							PartitionerModelMessages.HOST_CONFIGURATION.NAME,
-						};
-					
-					@Override
-					public Object[] 
-					adapt
-					( Map<String, Object> objs, Object arg ) 
-					{
-						return new Object[]{
-							objs.get(PartitionerModelMessages.PROFILER_TRACE.NAME),
-							objs.get(PartitionerModelMessages.MODULE_EXPOSER.NAME),
-							objs.get(PartitionerModelMessages.HOST_CONFIGURATION.NAME)
-						};
-					}
-					@Override
-					public String[] 
-					getKeys() 
-					{
-						return this.keys;
-					}
-				}
-			);
-			this.adapter_delegate.registerDepositCallback(
-				set_configuration_panel,
-				new IAdapter(){
-					String[] keys
-						= new String[]{
-							PartitionerModelMessages.MODULE_COARSENER.NAME,
-							PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME
-						};
-					PartitionerConfigurationView view
-						= PartitionerConfigurationView.this;
-					
-					@Override
-					public Object[] 
-					adapt
-					( Map<String, Object> objs, Object arg ) 
-					{
-						ModuleCoarsenerType coarsener_type
-							= (ModuleCoarsenerType) objs.get( 
-								PartitionerModelMessages.MODULE_COARSENER.NAME 
-							);
-						Integer index
-							= view.findIndex(
-								view.set_coarsener_combo, 
-								coarsener_type.getText()
-							);
-						
-						Boolean selection
-							= (Boolean) objs.get( 
-								PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME
-							);
-						
-						return new Object[]{ index, selection };
-					}
-
-					@Override
-					public String[] 
-					getKeys() 
-					{
-						return this.keys;
-					}
-					
-				}
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_perform_partitioning, 
-				new DefaultAdapter(
-					PartitionerModelMessages.PERFORM_PARTITIONING.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_activate_host_filter, 
-				new DefaultAdapter(
-					PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_activate_interaction_cost_filter, 
-				new DefaultAdapter(
-					PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_host_configuration, 
-				new DefaultAdapter(
-					PartitionerModelMessages.HOST_CONFIGURATION.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_module_exposer, 
-				new DefaultAdapter(
-					PartitionerModelMessages.MODULE_EXPOSER.NAME
-				)
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_profiler_trace, 
-				new DefaultAdapter(
-					PartitionerModelMessages.PROFILER_TRACE.NAME
-				)
-			);
-		}
-		
-		return adapter_delegate;
 	}
 }

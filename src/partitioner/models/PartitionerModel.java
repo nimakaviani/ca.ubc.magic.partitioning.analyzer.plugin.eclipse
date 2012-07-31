@@ -15,8 +15,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
 import plugin.LogUtilities;
-import plugin.mvc.IModel;
-import plugin.mvc.PropertyChangeDelegate;
+import plugin.mvc.DefaultPropertyDelegate;
+import plugin.mvc.ITranslator.IModel;
 
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.HostModel;
@@ -67,7 +67,7 @@ implements IModel
 	public static final String AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK 
 		= "AfterPartitioningCreateTestFramework";
 	
-	private PropertyChangeDelegate 	property_change_delegate;
+	private DefaultPropertyDelegate 	property_change_delegate;
 	
 	private ModuleCoarsenerType 	mModuleType; 
 	private PartitionerType 		partitioner_type;
@@ -150,7 +150,7 @@ implements IModel
 			= PartitionerType.MIN_MAX_PREFLOW_PUSH;
 		
 		this.property_change_delegate
-			= new PropertyChangeDelegate();		
+			= new DefaultPropertyDelegate();		
 		
 		this.mFilterMap
 	 		= new HashMap<String, IFilter>();

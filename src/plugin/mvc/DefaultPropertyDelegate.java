@@ -9,9 +9,7 @@ import plugin.mvc.messages.DataEvent;
 import plugin.mvc.messages.PropertyEvent;
 
 public class 
-PropertyChangeDelegate 
-// any model which wishes to make use of the getAll() functionality must
-// register the available properties with the delegate
+DefaultPropertyDelegate 
 {
 	protected transient PropertyChangeSupport listeners 
 		= new PropertyChangeSupport(this);
@@ -144,7 +142,7 @@ PropertyChangeDelegate
 		
 		this.firePropertyChange( 
 			event_name, 
-			ControllerDelegate.EVENT_SENTINEL, 
+			DefaultTranslator.EVENT_SENTINEL, 
 			data_package
 		);
 	}

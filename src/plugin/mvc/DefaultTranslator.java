@@ -14,11 +14,16 @@ import plugin.mvc.messages.PropertyEvent;
 import plugin.mvc.messages.ToModelEvent;
 import plugin.mvc.messages.ViewsEvent;
 
-// all view must register an adapterDelegate with the
+// all views must register an adapterDelegate with the
 // controller that they are interacting with
+//
+// a view cannot register a callback with the same
+// method name as another callback registered by the
+// same view (no adding overloaded methods)
+// ( this means unique method names across all registered callbacks)
 public class 
-ControllerDelegate 
-implements IController
+DefaultTranslator 
+implements ITranslator
 {
 	private IModel 						model;
 	private List<IView> 				registered_views;
@@ -31,7 +36,7 @@ implements IController
 		= "Event";
 		
 	public 
-	ControllerDelegate()
+	DefaultTranslator()
 	{
 		this.registered_views
 			= new CopyOnWriteArrayList<IView>();
@@ -81,10 +86,13 @@ implements IController
 
 	@Override
 	public void 
-	removeView
+	removeViewAndAdapter
 	(IView view)
 	{
 		this.registered_views.remove(view);
+		if( this.adapter_map.containsKey(view)){
+			this.adapter_map.remove(view);
+		}
 	}
 	
 	///////////////////////////////////////////////////////////////////////
@@ -142,7 +150,7 @@ implements IController
 			= new PropertyChangeEvent(
 				source, 
 				property_name, 
-				ControllerDelegate.EVENT_SENTINEL, 
+				DefaultTranslator.EVENT_SENTINEL, 
 				new_value
 			);
 		this.propertyChange(evt);
@@ -180,7 +188,6 @@ implements IController
 		}
 	}
 	
-	//@Override
 	private Map<String, Object> 
 	requestProperties
 	( String[] property_names ) 
@@ -199,9 +206,10 @@ implements IController
 	{
 		// we use the event sentinel to indicate that an event is being 
 		// generated
-		if( evt.getOldValue() != null && evt.getOldValue().equals( ControllerDelegate.EVENT_SENTINEL) ){
+		if( isEvent(evt) ){
 			for(IView view : this.registered_views){
-				view.modelEvent(evt);
+				this.callDesignatedMethod(view, evt);
+				// view.modelEvent(evt);
 			}
 		}
 		else {
@@ -212,6 +220,12 @@ implements IController
 		}
 	}
 	
+	private boolean
+	isEvent
+	( PropertyChangeEvent evt )
+	{
+		return evt.getOldValue() != null && evt.getOldValue().equals( DefaultTranslator.EVENT_SENTINEL);
+	}
 	/////////////////////////////////////////////////////////////////////////////////
 	//	Work with adapter
 	/////////////////////////////////////////////////////////////////////////////////
@@ -222,7 +236,8 @@ implements IController
 	( IView view, AdapterDelegate adapter )
 	{
 		if( this.adapter_map.containsKey(view)){
-			throw new IllegalArgumentException("That view is already contained in this map");
+			throw new IllegalArgumentException(
+				"That view is already contained in this map.");
 		}
 		this.adapter_map.put(view, adapter);
 	}
@@ -239,7 +254,6 @@ implements IController
 	}
 	
 	@Override
-	@SuppressWarnings("rawtypes")
 	public void
 	requestReply
 	( IView view, String method_name, Object args )
@@ -263,7 +277,7 @@ implements IController
 		AdapterDelegate adapter
 			= this.adapter_map.get(view);
 		String[] query_keys
-			= adapter.getQueryKeys(method_name);
+			= adapter.getKeys(method_name);
 		
 		System.err.println("Query Keys: ");
 		for(String s: query_keys){
@@ -273,13 +287,13 @@ implements IController
 		Map<String, Object> objs
 			= this.requestProperties(query_keys);
 		Object[] parameters
-			= adapter.getQueryMethodParameters(method_name, objs, args);
+			= adapter.getMethodParameters(method_name, objs, args);
 		System.err.println("Parameters: ");
 		for(Object s: parameters){
 			System.err.println(s);
 		}
 		
-		Class[] parameter_types
+		Class<?>[] parameter_types
 			= adapter.getParameterTypes(method_name);
 		System.err.println("Types: ");
 		for(Object s: parameter_types){
@@ -312,7 +326,6 @@ implements IController
 	}
 	
 
-	@SuppressWarnings({ "rawtypes" })
 	private void 
 	callDesignatedMethod
 	( IView view, PropertyChangeEvent evt ) 
@@ -327,16 +340,19 @@ implements IController
 			);
 		}
 		String method_name
-			= adapter.getMethodName(evt.getPropertyName());
+			= isEvent(evt)
+			? adapter.getEventMethodName(evt.getPropertyName())
+			: adapter.getPropertyMethodName(evt.getPropertyName());
+			
 		if( method_name != null ){
-			Class[] parameter_types
+			Class<?>[] parameter_types
 				= adapter.getParameterTypes(method_name);
 			this.adapter_buffer_map.clear();
 			this.adapter_buffer_map.put(evt.getPropertyName(), evt.getNewValue());
 			Object[] parameters
-				= adapter.getPropertyMethodParameters(
-					method_name, 
-					this.adapter_buffer_map 
+				= adapter.getMethodParameters(
+					method_name,
+					this.adapter_buffer_map
 				);
 			if( !method_name.equals("") ){
 				Method method;

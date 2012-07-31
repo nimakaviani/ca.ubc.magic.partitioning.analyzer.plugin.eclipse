@@ -14,22 +14,81 @@ import java.util.Map;
 public class 
 AdapterDelegate 
 {
-	Map<String, Callback> 			callback_map;
-	Map<String, IAdapter> 			query_adapter_map;
+	private Map<String, Callback> 	callback_map;
+	private Map<String, IAdapter> 	method_to_adapter_map;
+	
 	private Map<String, String> 	property_to_method_map;
-	private Map<String, IAdapter> 	property_adapter_map;
+	private Map<String, String> 	event_to_method_map;
 	
 	public 
 	AdapterDelegate()
 	{
 		this.callback_map
 			= new HashMap<String, Callback>();
-		this.query_adapter_map
+		this.method_to_adapter_map
 			= new HashMap<String, IAdapter>();
 		this.property_to_method_map
 			= new HashMap<String, String>();
-		this.property_adapter_map
-			= new HashMap<String, IAdapter>();
+		
+		this.event_to_method_map
+			= new HashMap<String, String>();
+	}
+	
+	public String[] 
+	getKeys
+	( String method_name ) 
+	{
+		if( !this.callback_map.containsKey(method_name)){
+			throw new IllegalArgumentException("That method is not registered as a callback.");
+		}
+		else {
+			return this.method_to_adapter_map.get(method_name).getKeys();
+		}
+	}
+
+	public void
+	unregisterDepositCallback
+	( String method_name )
+	{
+		unregisterCallback( method_name );
+	}
+	
+	public void
+	unregisterPropertyCallback
+	( String method_name )
+	{
+		unregisterCallback( method_name );
+		
+		String[] keys
+			= this.getKeys( method_name);
+		for( String s : keys ){
+			this.property_to_method_map.remove(s);
+		}
+	}
+	
+	public void
+	unregisterEventCallback
+	( String method_name )
+	{
+		unregisterCallback( method_name );
+		
+		String[] keys
+			= this.getKeys( method_name );
+		for( String s : keys ){
+			this.event_to_method_map.remove(s);
+		}
+	}
+	
+	private void
+	unregisterCallback
+	( 	String method_name )
+	{
+		if( !this.callback_map.containsKey(method_name)){
+			throw new IllegalArgumentException("That method is not registered as a callback");
+		}
+		else {
+			this.method_to_adapter_map.remove(method_name);
+		}
 	}
 	
 	public void
@@ -37,23 +96,7 @@ AdapterDelegate
 	( Callback callback, IAdapter adapter )
 	{
 		this.callback_map.put(callback.getName(), callback);
-		this.query_adapter_map.put(callback.getName(), adapter );
-	}
-	
-	public void
-	unregisterDepositCallback
-	( String method_name )
-	{
-		if( !this.callback_map.containsKey(method_name) ){
-			throw new IllegalArgumentException("That method is not registered as a callback.");
-		}
-		else {
-			this.query_adapter_map.remove(method_name);
-		}
-		
-		if( !this.property_adapter_map.containsKey(method_name)){
-			this.callback_map.remove(method_name);
-		}
+		this.method_to_adapter_map.put(callback.getName(), adapter );
 	}
 	
 	public void
@@ -65,9 +108,9 @@ AdapterDelegate
 		}
 		else {
 			this.callback_map.put(callback.getName(), callback);
-			this.property_adapter_map.put( callback.getName(), adapter);
+			this.method_to_adapter_map.put( callback.getName(), adapter);
 			String[] keys 
-				= this.getPropertyKeys( callback.getName() );
+				= this.getKeys( callback.getName() );
 			for( String s : keys ){
 				this.property_to_method_map.put(s, callback.getName());
 			}
@@ -75,77 +118,43 @@ AdapterDelegate
 	}
 	
 	public void
-	unregisterPropertyCallback
-	( String method_name )
+	registerEventCallback
+	( Callback callback, IAdapter adapter)
 	{
-		if( !this.callback_map.containsKey(method_name)){
-			throw new IllegalArgumentException("That method is not registered as a callback");
+		if( this.callback_map.containsKey(callback.getName())){
+			System.err.println("Callback for " + callback.getName() + " is already contained");
 		}
 		else {
+			this.callback_map.put( callback.getName(), callback);
+			this.method_to_adapter_map.put( callback.getName(), adapter);
 			String[] keys
-				= this.getPropertyKeys(method_name);
+				= this.getKeys( callback.getName());
 			for( String s : keys ){
-				this.property_to_method_map.remove(s);
+				this.event_to_method_map.put(s, callback.getName());
 			}
-			this.property_adapter_map.remove(method_name);
-		}
-		
-		if( !this.query_adapter_map.containsKey(method_name)){
-			// only remove callback if it is missing from both maps
-			this.callback_map.remove(method_name);
-		}
-	}
-	
-	public String[]
-	getQueryKeys
-	( String method_name )
-	{
-		if( !this.callback_map.containsKey(method_name)){
-			throw new IllegalArgumentException("That method is not registered as a callback.");
-		}
-		else {
-			return this.query_adapter_map.get(method_name).getKeys();
-		}
-	}
-	
-	private String[] 
-	getPropertyKeys
-	( String method_name ) 
-	{
-		if( !this.callback_map.containsKey(method_name)){
-			throw new IllegalArgumentException("That method is not registered as a callback");
-		}
-		else {
-			return this.property_adapter_map.get(method_name).getKeys();
 		}
 	}
 	
 	public Object[]
-	getQueryMethodParameters
-	( String method_name, Map<String, Object> objs, Object args)
-	{
-		if( !this.query_adapter_map.containsKey(method_name)){
-			throw new IllegalArgumentException(
-				"Method " + method_name + " is not associated with a query adapter"
-			);
-		}
-		return this.query_adapter_map.get(method_name).adapt(objs, args);
-	}
-	
-	public Object[]
-	getPropertyMethodParameters
+	getMethodParameters
 	( String method_name, Map<String, Object> objs )
 	{
-		if( !this.property_adapter_map.containsKey(method_name)){
+		return this.getMethodParameters(method_name, objs, null);
+	}
+	
+	public Object[]
+	getMethodParameters
+	( String method_name, Map<String, Object> objs, Object args )
+	{
+		if( !this.method_to_adapter_map.containsKey(method_name)){
 			throw new IllegalArgumentException(
 				"Method " + method_name + " is not associated with a property adapter"
 			);
 		}
-		return this.property_adapter_map.get(method_name).adapt(objs, null);
+		return this.method_to_adapter_map.get(method_name).adapt(objs, args);
 	}
 
-	@SuppressWarnings("rawtypes")
-	public Class[] 
+	public Class<?>[] 
 	getParameterTypes
 	( String method_name ) 
 	{
@@ -154,17 +163,32 @@ AdapterDelegate
 				"Method " + method_name + " is not registered as a callback"
 			);
 		}
-		List<Class> parameters 
+		List<Class<?>> parameters 
 			= this.callback_map.get(method_name).getParameters();
-		return parameters.toArray( new Class[parameters.size()] );
+		return parameters.toArray( new Class<?>[parameters.size()] );
 	}
 	
 	public String
-	getMethodName
+	getPropertyMethodName
 	( String property )
 	{
-		if( this.property_to_method_map.containsKey(property)){
-			return this.property_to_method_map.get(property);
+		return getMethodName(property, this.property_to_method_map );
+		
+	}
+	
+	public String
+	getEventMethodName
+	( String property )
+	{
+		return getMethodName(property, this.event_to_method_map);
+	}
+	
+	private String 
+	getMethodName
+	( String property, Map<String, String> map ) 
+	{
+		if( map.containsKey(property)){
+			return map.get(property);
 		}
 		else {
 			System.out.println("This adapter does not contain property " + property);

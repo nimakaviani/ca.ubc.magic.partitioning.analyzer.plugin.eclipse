@@ -1,6 +1,5 @@
 package snapshots.views;
 
-import java.beans.PropertyChangeEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -41,16 +40,18 @@ import org.eclipse.swt.SWT;
 
 import plugin.Activator;
 import plugin.LogUtilities;
-import plugin.mvc.ControllerDelegate;
-import plugin.mvc.IController;
+import plugin.mvc.DefaultTranslator;
+import plugin.mvc.IPublisher.PublicationHandler;
+import plugin.mvc.IPublisher.Publications;
+import plugin.mvc.ITranslator;
 import plugin.mvc.IPublisher;
-import plugin.mvc.IView;
-import plugin.mvc.PublicationHandler;
-import plugin.mvc.Publications;
-import plugin.mvc.PublisherDelegate;
+import plugin.mvc.DefaultPublisher;
+import plugin.mvc.ITranslator.IModel;
+import plugin.mvc.ITranslator.IView;
 import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.adapter.Callback;
 import plugin.mvc.adapter.DefaultAdapter;
+import plugin.mvc.adapter.EmptyAdapter;
 
 import snapshots.com.mentorgen.tools.util.profile.Finish;
 import snapshots.com.mentorgen.tools.util.profile.Start;
@@ -71,10 +72,10 @@ implements IView
 	Text							port_text;
 	Text 							host_text;
 	
-	private IController 			active_snapshot_controller 
-		= new ControllerDelegate();
+	private ITranslator 			active_snapshot_controller 
+		= new DefaultTranslator();
 	private IPublisher				publisher
-		= new PublisherDelegate();
+		= new DefaultPublisher();
 	private	TreeViewer				snapshot_tree_viewer;
 	private FileTreeContentProvider file_tree_content_provider;
 
@@ -97,7 +98,7 @@ implements IView
 	createPartControl
 	( Composite parent ) 
 	{
-		ActiveSnapshotModel active_snapshot_model
+		IModel active_snapshot_model
 			= new ActiveSnapshotModel();
 		this.active_snapshot_controller.addView(this);
 		this.active_snapshot_controller.addModel( active_snapshot_model );
@@ -233,7 +234,6 @@ implements IView
 			
 		this.initializeDropDownMenu(actionBars.getMenuManager());
 		
-	//	this.initializeEventLogActionHandler();
 		this.initializeContextMenu();
 		
 		this.publisher.registerPublicationListener(
@@ -446,33 +446,6 @@ implements IView
 			);
 	}
 	
-	@Override
-	public void 
-	modelEvent
-	( final PropertyChangeEvent evt ) 
-	{
-		// event may be triggered by a process in a non-SWT thread
-		Display.getDefault().asyncExec(
-			new Runnable(){
-				@Override
-				public void
-				run(){
-					String property
-						= evt.getPropertyName();
-					
-					System.out.println("modelEvent():" + property);
-					
-					if( property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME)){
-						SnapshotView.this.snapshot_tree_viewer.setInput("hello");
-						SnapshotView.this.snapshot_tree_viewer.refresh();
-					}
-					else {
-						System.out.println("SnapshotView swallowed event");
-					}
-				}
-			});
-	}
-	
 	public void
 	refresh()
 	// the following code is from:
@@ -537,23 +510,23 @@ implements IView
 		this.refresh();
 	}
 	
-	private static class 
+	public static class 
 	FinishAction 
 	extends Action 
 	implements IView
 	{
 		private Snapshot 					current_snapshot;
-		private IController 				active_snapshot_controller;
+		private ITranslator 				active_snapshot_controller;
 		
 		public
 		FinishAction
-		( IController active_snapshot_controller )
+		( ITranslator active_snapshot_controller )
 		{
 			this.active_snapshot_controller
 				= active_snapshot_controller;
 			
 			this.active_snapshot_controller.addView( this );
-			this.active_snapshot_controller.registerAdapter(this, new AdapterDelegate());
+			this.active_snapshot_controller.registerAdapter(this, getAdapterDelegate());
 			
 			this.setToolTipText
 			("Disconnect from application to produce snapshot.");
@@ -633,38 +606,50 @@ implements IView
 		    this.setEnabled(false);
 		}
 
-		@Override
-		public void 
-		modelEvent
-		( PropertyChangeEvent evt ) 
+		
+		private AdapterDelegate adapter_delegate;
+		private final static Callback snapshot_started
+			= new Callback("snapshotStarted", Snapshot.class);
+		
+		private AdapterDelegate
+		getAdapterDelegate()
 		{
-			String property
-				= evt.getPropertyName();
-			
-			if( property.equals(SnapshotModelMessages.SNAPSHOT_STARTED.NAME)){
-				this.setEnabled(true);
-			      this.current_snapshot 
-			      	= (Snapshot) evt.getNewValue();
-			}
-			else {
-				System.out.println(
-					"FinishAction swallowing event: " 
-					+ evt.getPropertyName()
+			if(this.adapter_delegate == null){
+				this.adapter_delegate
+					= new AdapterDelegate();
+				
+				this.adapter_delegate.registerEventCallback(
+					snapshot_started,
+					new DefaultAdapter(
+						SnapshotModelMessages.SNAPSHOT_STARTED.NAME
+					)
 				);
 			}
+			
+			return this.adapter_delegate;
+		}
+		
+		public void 
+		snapshotStarted
+		( Snapshot snapshot )
+		{
+			System.out.println("FinishAction: Inside snapshotStarted");
+			this.setEnabled(true);
+		    this.current_snapshot 
+		    	= snapshot;
 		}
 	}
 
-	private class 
+	public class 
 	StartAction 
 	extends Action 
 	implements IView
 	{
-		private IController 				controller;
+		private ITranslator 				controller;
 		
 		public 
 		StartAction
-		(	IController controller )
+		(	ITranslator controller )
 		{
 			this.controller
 				= controller;
@@ -673,7 +658,7 @@ implements IView
 			("Record a profile snapshot.");
 			this.setEnabled(true);
 			this.controller.addView(this);
-			this.controller.registerAdapter(this, new AdapterDelegate());
+			this.controller.registerAdapter(this, getAdapterDelegate());
 		}
 		
 		@Override
@@ -950,24 +935,43 @@ implements IView
 		    return newName;
 		}
 
-		@Override
-		public void 
-		modelEvent
-		( PropertyChangeEvent evt ) 
+		private AdapterDelegate adapter_delegate;
+		private final Callback snapshot_capture_failed
+			= new Callback("snapshotCaptureFailed");
+		private final Callback snapshot_captured
+			= new Callback("snapshotCaptured");
+		
+		private AdapterDelegate
+		getAdapterDelegate()
 		{
-			// TODO may need to add a thread here
-			String property
-				= evt.getPropertyName();
+			if(this.adapter_delegate == null ){
+				this.adapter_delegate
+					= new AdapterDelegate();
+				
+				this.adapter_delegate.registerEventCallback(
+					snapshot_capture_failed,
+					new EmptyAdapter(SnapshotModelMessages.SNAPSHOT_CAPTURE_FAILED.NAME)
+				);
+				this.adapter_delegate.registerEventCallback(
+					snapshot_captured, 
+					new EmptyAdapter(SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME)
+				);
+			}
 			
-			if( property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURE_FAILED.NAME)){
-				this.setEnabled(true);
-			}
-			else if(property.equals(SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME)){
-				this.setEnabled(true);
-			}
-			else {
-				System.out.println("StartAction swallowed message.");
-			}
+			return this.adapter_delegate;
+		}
+		
+		public void
+		snapshotCaptureFailed()
+		{
+			this.setEnabled(true);
+		}
+		
+		public void
+		snapshotCaptured()
+		{
+			System.out.println("Inside StartAction: snapshotCaptured");
+			this.setEnabled(true);
 		}
 	}
 	
@@ -1232,6 +1236,8 @@ implements IView
 		= new Callback("setHost", String.class );
 	private static final Callback set_port	
 		= new Callback("setPort", String.class );
+	private static final Callback capture_snapshot
+		= new Callback("captureSnapshot");
 	
 	private AdapterDelegate 
 	getAdapterDelegate() 
@@ -1271,6 +1277,14 @@ implements IView
 				set_host,
 				new DefaultAdapter(
 					SnapshotModelMessages.HOST.NAME
+				)
+			);
+			
+			// model events
+			this.adapter_delegate.registerEventCallback(
+				capture_snapshot,
+				new EmptyAdapter(
+					SnapshotModelMessages.SNAPSHOT_CAPTURED.NAME
 				)
 			);
 		}
@@ -1359,6 +1373,14 @@ implements IView
 				}
 			}
 		);
+	}
+	
+	public void
+	captureSnapshot()
+	{
+		System.out.println("Inside captured snapshot");
+		SnapshotView.this.snapshot_tree_viewer.setInput("hello");
+		SnapshotView.this.snapshot_tree_viewer.refresh();
 	}
 }
 

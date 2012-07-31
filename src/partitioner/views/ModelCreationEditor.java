@@ -3,7 +3,6 @@ package partitioner.views;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Frame;
-import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
@@ -30,16 +29,17 @@ import org.eclipse.ui.part.MultiPageEditorPart;
 import partitioner.models.PartitionerModel;
 import partitioner.models.PartitionerModelMessages;
 import plugin.LogUtilities;
-import plugin.mvc.ControllerDelegate;
-import plugin.mvc.IController;
-import plugin.mvc.IModel;
+import plugin.mvc.DefaultTranslator;
+import plugin.mvc.IPublisher.Publications;
+import plugin.mvc.ITranslator;
 import plugin.mvc.IPublisher;
-import plugin.mvc.IView;
-import plugin.mvc.Publications;
-import plugin.mvc.PublisherDelegate;
+import plugin.mvc.DefaultPublisher;
+import plugin.mvc.ITranslator.IModel;
+import plugin.mvc.ITranslator.IView;
 import plugin.mvc.adapter.AdapterDelegate;
 import plugin.mvc.adapter.Callback;
 import plugin.mvc.adapter.DefaultAdapter;
+import plugin.mvc.adapter.EmptyAdapter;
 import plugin.mvc.adapter.IAdapter;
 import snapshots.views.VirtualModelFileInput;
 
@@ -50,7 +50,8 @@ import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 
 public class 
-ModelCreationEditor 
+ 
+ModelCreationEditor
 extends MultiPageEditorPart 
 implements IView
 {
@@ -67,7 +68,7 @@ implements IView
     	= false;
     
     private Frame 				frame;
-	private IController 		controller;
+	private ITranslator 		controller;
 	private IPublisher			publisher;
 	
 	private String 				algorithm;
@@ -78,14 +79,14 @@ implements IView
 	ModelCreationEditor() 
 	{
 		this.controller 
-			= new ControllerDelegate();
+			= new DefaultTranslator();
 		this.controller.addView( this );
 		this.controller.registerAdapter(this, getAdapterDelegate() );
 	    
 		this.controller.addModel( new PartitionerModel() );
 		
 		this.publisher	
-			= new PublisherDelegate();
+			= new DefaultPublisher();
 	}
 	
 	private void 
@@ -278,86 +279,6 @@ implements IView
 		return return_value;
 	}
 
-	@Override
-	public void 
-	modelEvent
-	( final PropertyChangeEvent evt ) 
-	{
-		// event may be triggered by a process in a non-SWT thread
-		Display.getDefault().asyncExec( new Runnable(){
-			@Override
-			public void run() 
-			{
-				System.err.println(
-					"Event generated in ModelCreationEditor: " 
-					+ evt.getPropertyName()
-				);
-				
-				String property
-					= evt.getPropertyName();
-				if( property.equals(PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK.NAME)){
-					// this is when the initialization must occur
-					//
-					// the most important thing is to know that the requested
-					// object will not be created until after the partitioning is
-					// performed; we can assume by the property name that the object
-					// will only be non-null after this event fires
-					ModelCreationEditor.this.controller.requestReply(
-						ModelCreationEditor.this, 
-						activate_test_page.getName(), 
-						null
-					);
-					try {
-						SwingUtilities.invokeAndWait( 
-							// the following does not work if we try to pack or make visible
-							new Runnable(){
-								@Override
-								public void run() {
-									SwingUtilities.updateComponentTreeUI(frame);	
-								}
-								
-							}
-						);
-					} catch (InvocationTargetException ex) {
-						ex.printStackTrace();
-						LogUtilities.logError(ex);
-					} catch (InterruptedException ex) {
-						ex.printStackTrace();
-						LogUtilities.logError(ex);
-					}
-					
-				}
-				else if( property.equals( PartitionerModelMessages.MODEL_CREATED.NAME)){
-					ModelCreationEditor.this.visualizeModuleModel();
-				}
-				else if( property.equals( PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)){
-					Display.getDefault().asyncExec(
-							new Runnable(){
-								@Override
-								public void run() {
-									if(ModelCreationEditor.this.perform_partitioning){
-										ModelCreationEditor.this.currentVP
-						            		.setAlgorithm( ModelCreationEditor.this.algorithm );
-										System.out.println(
-											"Algorithm: "+ ModelCreationEditor.this.algorithm 
-										);
-										ModelCreationEditor.this.currentVP
-						            		.setSolution( ModelCreationEditor.this.solution );
-										System.out.println(
-											"Solution: " + ModelCreationEditor.this.algorithm 
-										);
-									}
-								}
-							}
-						);
-				}
-				else {
-					System.out.println("Swallowing Message");
-				}
-			}
-		});
-	}
-	
 	void 
 	visualizeModuleModel() 
 	{
@@ -406,9 +327,11 @@ implements IView
 			Publications.MODEL_EDITOR_CLOSED, 
 			input
 		);
+		
+		this.controller.removeViewAndAdapter(this);
 	}
 
-	public IController 
+	public ITranslator 
 	getController() 
 	// this is going to create problems when we switch references
 	{
@@ -511,6 +434,12 @@ implements IView
 		= new Callback("createVisualizePartitioning", VisualizePartitioning.class);
 	private static Callback activate_test_page
 		= new Callback("activateTestPage", IModel.class);
+	private static Callback create_test_framework
+		= new Callback("createTestFramework");
+	private static Callback model_created
+		= new Callback("modelCreated");
+	private static Callback partitioning_complete
+		= new Callback("partitioningComplete");
 	
 	private AdapterDelegate
 	getAdapterDelegate()
@@ -519,6 +448,18 @@ implements IView
 			this.adapter_delegate 
 				= new AdapterDelegate();
 			
+			this.adapter_delegate.registerEventCallback(
+				create_test_framework,
+				new EmptyAdapter(PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				model_created,
+				new EmptyAdapter(PartitionerModelMessages.MODEL_CREATED.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				partitioning_complete, 
+				new EmptyAdapter(PartitionerModelMessages.PARTITIONING_COMPLETE.NAME)
+			);
 			this.adapter_delegate.registerDepositCallback(
 				activate_test_page, 
 				new DefaultAdapter( PartitionerModel.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK )
@@ -637,25 +578,111 @@ implements IView
 	
 	public void 
 	activateTestPage
-	( IModel test_framework_model ) 
+	( final IModel test_framework_model ) 
 	{
-		Composite parent 
-			= super.getContainer();
-			
-		this.test_page
-			= new ModelTestPage(
-				this.toolkit, 
-				parent,
-				this,
-				test_framework_model
-			);
-		this.toolkit.adapt( this.test_page );
-			
-		int index
-			= super.addPage( this.test_page );
-		super.setPageText( 
-			index, 
-			"Simulate and Test" 
+		Display.getDefault().asyncExec( 
+			new Runnable()
+			{
+				@Override
+				public void 
+				run() 
+				{
+					Composite parent 
+						= ModelCreationEditor.super.getContainer();
+					
+					ModelCreationEditor.this.test_page
+						= new ModelTestPage(
+							ModelCreationEditor.this.toolkit, 
+							parent,
+							ModelCreationEditor.this,
+							test_framework_model
+						);
+					ModelCreationEditor.this.toolkit.adapt( ModelCreationEditor.this.test_page );
+					
+					int index
+						= ModelCreationEditor.super.addPage( ModelCreationEditor.this.test_page );
+					ModelCreationEditor.super.setPageText( 
+						index, 
+						"Simulate and Test" 
+					);
+				}
+			}
 		);
+	}
+	
+	public void
+	createTestFramework()
+	{
+		System.err.println("Inside createTestFramework");
+		// this is when the initialization must occur
+		//
+		// the most important thing is to know that the requested
+		// object will not be created until after the partitioning is
+		// performed; we can assume by the property name that the object
+		// will only be non-null after this event fires
+		ModelCreationEditor.this.controller.requestReply(
+			ModelCreationEditor.this, 
+			activate_test_page.getName(), 
+			null
+		);
+		try {
+			SwingUtilities.invokeAndWait( 
+				// the following does not work if we try to pack or make visible
+				new Runnable(){
+					@Override
+					public void run() {
+						SwingUtilities.updateComponentTreeUI(frame);	
+					}
+					
+				}
+			);
+		} catch (InvocationTargetException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		}
+	}
+	
+	public void
+	modelCreated()
+	{
+		System.err.println("Inside ModelCreated");
+		Display.getDefault().asyncExec( 
+			new Runnable()
+			{
+				@Override
+				public void 
+				run() 
+				{
+					ModelCreationEditor.this.visualizeModuleModel();
+				}
+			});
+	}
+	
+	public void
+	partitioningComplete()
+	{
+		System.err.println("Inside partitioningComplete");
+		Display.getDefault().asyncExec(
+				new Runnable(){
+					@Override
+					public void run() {
+						if(ModelCreationEditor.this.perform_partitioning){
+							ModelCreationEditor.this.currentVP
+			            		.setAlgorithm( ModelCreationEditor.this.algorithm );
+							System.out.println(
+								"Algorithm: "+ ModelCreationEditor.this.algorithm 
+							);
+							ModelCreationEditor.this.currentVP
+			            		.setSolution( ModelCreationEditor.this.solution );
+							System.out.println(
+								"Solution: " + ModelCreationEditor.this.algorithm 
+							);
+						}
+					}
+				}
+			);
 	}
 }

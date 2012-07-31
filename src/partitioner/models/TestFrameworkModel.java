@@ -32,8 +32,8 @@ import ca.ubc.magic.profiler.simulator.framework.SimulationFrameworkHelper;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 
 import plugin.LogUtilities;
-import plugin.mvc.IModel;
-import plugin.mvc.PropertyChangeDelegate;
+import plugin.mvc.DefaultPropertyDelegate;
+import plugin.mvc.ITranslator.IModel;
 
 // TODO: split the model parts which track the state of the view from
 //		the model parts which are application logic
@@ -49,7 +49,7 @@ implements IModel
 	public static final String				TEST_HOST_MODEL
 		= "HostModel";
 		
-	private PropertyChangeDelegate 			property_change_delegate;
+	private DefaultPropertyDelegate 			property_change_delegate;
 	private Map<String, DefaultKeyValue> 	unitMap;
 	private int id;
 	
@@ -75,7 +75,7 @@ implements IModel
 		EntityConstraintModel constraint_model )
 	{
 		this.property_change_delegate
-			= new PropertyChangeDelegate();
+			= new DefaultPropertyDelegate();
 		this.unitMap 
 			= new HashMap<String, DefaultKeyValue>();
 		
