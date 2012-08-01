@@ -31,7 +31,9 @@ extends AbstractHandler
 		{
 			SnapshotView snapshot_view 
 				= (SnapshotView) HandlerUtil.getActivePart(event);
-			snapshot_view.addFolder(path);
+			if(path != null){
+				snapshot_view.addFolder(path);
+			}
 		}
 		else {
 			throw new ExecutionException(

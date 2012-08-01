@@ -8,13 +8,10 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IPersistableElement;
 import org.eclipse.ui.IStorageEditorInput;
 
-public class 
+final public class 
 VirtualModelFileInput 
 extends File
 implements IStorageEditorInput 
-// TODO: concerns about threading: all methods dealing with names
-// must be synchronized, since they are updated by the editor
-// and then must be visible to the snapshot view
 {
 	private static final long serialVersionUID 
 		= 6830081047819279737L;
@@ -107,5 +104,15 @@ implements IStorageEditorInput
 	isFile()
 	{
 		return false;
+	}
+	
+	// this must be overriden as below in order for the
+	// application to work
+	@Override
+	public boolean
+	equals
+	( Object file )
+	{
+		return file == this;
 	}
 }

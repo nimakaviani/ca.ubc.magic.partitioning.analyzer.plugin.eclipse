@@ -14,6 +14,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
+import partitioner.models.PartitionerModel.State;
 import plugin.LogUtilities;
 import plugin.mvc.DefaultPropertyDelegate;
 import plugin.mvc.ITranslator.IModel;
@@ -72,34 +73,20 @@ implements IModel
 	private SimulationFramework	 	mSimFramework; 
 	
 	// the following is set once in the SwingWorker thread
-	private volatile ModuleModel 			mModuleModel;
+	private volatile ModuleModel 	mModuleModel;
 	// the following is set once in the SwingWorker thread
-	private volatile HostModel   			mHostModel; 
+	private volatile HostModel   	mHostModel; 
 	private volatile EntityConstraintModel	mConstraintModel;
 
 	private Map<String, IFilter> 	mFilterMap; 
 	private IPartitioner 			partitioner;
 	
-	private volatile Boolean 	enable_synthetic_node_filter = false;
-	private Boolean 			activate_host_cost_filter = false;
-	private Boolean 			activate_interaction_cost_filter = false;
+	private volatile Boolean 	use_synthetic_node_filters = false;
+	private Boolean 			use_host_cost_filter = false;
+	private Boolean 			use_interaction_cost_filter = false;
 	private Boolean 			generate_test_framework = false;
-	// volatile due to visibility concerns
-	private volatile Boolean 	active_exposing_menu = false;
-	private volatile Boolean	module_model_checkbox = false;
-	private volatile Boolean 	perform_partitioning = false;
-	
-	private void
-	changeState
-	( State state )
-	{
-		this.state = state;
-		
-		this.property_change_delegate.update_property(
-			PartitionerModelMessages.MODEL_STATE.NAME, 
-			this.state
-		);
-	}
+	private volatile Boolean 	activate_module_exposure = false;
+	private volatile Boolean	use_module_model_parser = false;
 	
 	public
 	PartitionerModel()
@@ -126,10 +113,63 @@ implements IModel
 		this.mFilterMap
 	 		= new HashMap<String, IFilter>();
 		
-		this.registerProperties();
+		String[] property_names 
+			= {
+				PartitionerModelMessages.MODULE_COARSENER.NAME,
+				PartitionerModelMessages.PROFILER_TRACE.NAME,
+				PartitionerModelMessages.MODULE_EXPOSER.NAME,
+				PartitionerModelMessages.HOST_CONFIGURATION.NAME,
+				PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME,
+				PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME,
+				PartitionerModelMessages.SET_PRESET_MODULE_GRAPH.NAME,
+				PartitionerModelMessages.PARTITIONER_TYPE.NAME,
+				PartitionerModelMessages.INTERACTION_COST.NAME,
+				PartitionerModelMessages.EXECUTION_COST.NAME,
+				PartitionerModelMessages.SIMULATION_FRAMEWORK.NAME,
+				PartitionerModelMessages.MODULE_MODEL.NAME,
+				PartitionerModelMessages.HOST_MODEL.NAME,
+				PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
+				PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
+				PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
+				PartitionerModelMessages.MODEL_STATE.NAME,
+				
+				PartitionerModelMessages.PARTITIONER.NAME
+			};
+		
+		Object[] properties
+			= {
+			this.mModuleType,
+			this.profiler_trace,
+			this.constraint_xml_path,
+			this.host_configuration,
+			this.activate_module_exposure,
+			this.use_synthetic_node_filters,
+			this.use_module_model_parser,
+			this.partitioner_type,
+			this.interaction_cost_type,
+			this.execution_cost_type,
+			// does not need to be a member field, since now
+			// it is in the map
+			this.mSimFramework,
+			null, //this.mModuleModel,
+			null, //this.mHostModel,
+			
+			this.use_host_cost_filter,
+			this.use_interaction_cost_filter,
+			this.generate_test_framework,
+			
+			this.state,
+			
+			null // this.partitioner
+		};
+		
+		this.property_change_delegate.registerProperties(
+			property_names,
+			properties
+		);
 	}
 
-	public void
+	synchronized public void
 	setModuleCoarsener
 	( ModuleCoarsenerType model_coarsener )
 	{
@@ -146,7 +186,7 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setProfilerTracePath
 	( String profiler_trace )
 	{
@@ -166,8 +206,8 @@ implements IModel
 			this.profiler_trace
 		);
 	}
-	
-	public void
+
+	synchronized public void
 	setModuleExposer
 	( String module_exposer )
 	{
@@ -181,7 +221,7 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setHostConfiguration
 	( String host_configuration )
 	{
@@ -195,13 +235,13 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setModuleExposure
 	( Boolean expose )
 	{
 		boolean old_expose 
-			= this.active_exposing_menu;
-		this.active_exposing_menu 
+			= this.activate_module_exposure;
+		this.activate_module_exposure 
 			= expose;
 		
 		this.property_change_delegate.firePropertyChange(
@@ -211,35 +251,19 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setPresetModuleGraph
 	( Boolean preset_module_graph )
 	{
 		boolean old_preset
-			= this.module_model_checkbox;
-		this.module_model_checkbox
+			= this.use_module_model_parser;
+		this.use_module_model_parser
 			= preset_module_graph;
 		
 		this.property_change_delegate.firePropertyChange(
 			PartitionerModelMessages.SET_PRESET_MODULE_GRAPH,
 			old_preset,
 			preset_module_graph
-		);
-	}
-	
-	public void
-	setPerformPartitioning
-	( Boolean perform_partitioning )
-	{
-		boolean old_perform
-			= this.perform_partitioning;
-		this.perform_partitioning
-			= perform_partitioning;
-		
-		this.property_change_delegate.firePropertyChange(
-			PartitionerModelMessages.PERFORM_PARTITIONING,
-			old_perform,
-			perform_partitioning
 		);
 	}
 	
@@ -275,7 +299,7 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setPartitionerType
 	( PartitionerType partitioner_type )
 	{
@@ -291,7 +315,7 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setInteractionCost
 	( InteractionCostType interaction_cost )
 	{
@@ -307,7 +331,7 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setExecutionCost
 	( ExecutionCostType execution_cost )
 	{
@@ -323,7 +347,7 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setGenerateTestFramework
 	( Boolean generate )
 	{
@@ -339,56 +363,56 @@ implements IModel
 		);
 	}
 	
-	public void
+	synchronized public void
 	setSyntheticNode
 	( Boolean synthetic )
 	{
 		boolean old_synthetic
-			= this.enable_synthetic_node_filter;
-		this.enable_synthetic_node_filter
+			= this.use_synthetic_node_filters;
+		this.use_synthetic_node_filters
 			= synthetic;
 		
 		this.property_change_delegate.firePropertyChange(
 			PartitionerModelMessages.SET_SYNTHETIC_NODE,
 			old_synthetic,
-			this.enable_synthetic_node_filter
+			this.use_synthetic_node_filters
 		);
 	}
 	
-	public void
+	synchronized public void
 	setActivateHostFilter
 	( Boolean activate )
 	{
 		Boolean old_activate
-			= this.activate_host_cost_filter;
-		this.activate_host_cost_filter
+			= this.use_host_cost_filter;
+		this.use_host_cost_filter
 			= activate;
 		
 		this.property_change_delegate.firePropertyChange(
 			PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER,
 			old_activate,
-			this.activate_host_cost_filter
+			this.use_host_cost_filter
 		);
 	}
 	
-	public void
+	synchronized public void
 	setActivateInteractionCostFilter
 	( Boolean activate )
 	{
 		Boolean old_activate
-			= this.activate_interaction_cost_filter;
-		this.activate_interaction_cost_filter
+			= this.use_interaction_cost_filter;
+		this.use_interaction_cost_filter
 			= activate;
 		
 		this.property_change_delegate.firePropertyChange(
 			PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER,
 			old_activate,
-			this.activate_interaction_cost_filter
+			this.use_interaction_cost_filter
 		);
 	}
 	
     @Override
-	public void 
+    synchronized public void 
 	addPropertyChangeListener
 	( PropertyChangeListener l ) 
 	{
@@ -397,14 +421,14 @@ implements IModel
 	}
 
 	@Override
-	public void 
+	synchronized public void 
 	removePropertyChangeListener
 	( PropertyChangeListener l ) 
 	{
 		this.property_change_delegate.removePropertyChangeListener(l);
 	}
 	
-	public void 
+	synchronized public void 
 	initializeHostModel() 
 	{
 	 	// parsing the configuration for hosts involved in the system
@@ -432,6 +456,20 @@ implements IModel
 			e.printStackTrace();
 		}
 	}
+	
+	synchronized public void
+	changeState
+	( State state )
+	{
+		State old_state = this.state;
+		this.state = state;
+		
+		this.property_change_delegate.firePropertyChange(
+			PartitionerModelMessages.MODEL_STATE, 
+			old_state,
+			this.state
+		);
+	}
 
 	////////////////////////////////////////////////////////////////////////////////////
 	///	The following functions are called from a swing worker
@@ -446,7 +484,7 @@ implements IModel
 	/// recover from when it fails. This is an interesting problem.
 	////////////////////////////////////////////////////////////////////////////////////
 	
-	public void 
+	synchronized public void 
 	createModuleModel
 	( InputStream in ) 
 	throws Exception 
@@ -463,9 +501,9 @@ implements IModel
 		// If the Profile XML file belongs to a real trace of the application
         // (i.e., the "Preset Module Placement" checkbox is checked),
         // create the ModuleModel from the collected traces.
-        if ( !this.module_model_checkbox ){  
+        if ( !this.use_module_model_parser ){  
         	
-            if( this.active_exposing_menu ){
+            if( this.activate_module_exposure ){
                 // parsing the entity constraints to be 
             	// exposed in the dependency graph
                 EntityConstraintParser ccParser 
@@ -484,7 +522,7 @@ implements IModel
             if (  new_constraint_model != null ){
             	new_constraint_model
             	 	.getConstraintSwitches().setSyntheticNodeActivated(
-            	 		this.enable_synthetic_node_filter   
+            	 		this.use_synthetic_node_filters   
             	 	);
             }
             else {
@@ -540,7 +578,7 @@ implements IModel
         	= module_handler;
 	}
 
-	public void 
+	synchronized public void 
 	finished() 
 	{
 		final ModuleModel module_model 
@@ -578,24 +616,18 @@ implements IModel
 			null,
 			this.partitioner_type.getText()
 		);
-		
-//		this.property_change_delegate.notifyViews(
-//			PartitionerModelMessages.SOLUTION,
-//			this.partitioner_solution
-//		);
 	}
 	
 	// called from swing worker-> obtains the reference itself
 	// big problem
-	public ModuleModel
+	synchronized public ModuleModel
 	getModuleModel()
 	{
 		return this.mModuleModel;
 	}
 
 	// called from swing worker 
-	// TODO: thread safety concerns have been reintroduced in full force
-	private void 
+	synchronized public void 
 	runPartitioningAlgorithm() 
 	{
         if (this.mHostModel.getInteractionCostModel() == null)
@@ -643,7 +675,7 @@ implements IModel
 	    );
 	}
 
-	public void
+	synchronized public void
 	doModelGeneration()
 	{
 		System.out.println("Generating Model");
@@ -666,10 +698,11 @@ implements IModel
            
            	// reading the input stream for the profiling XML document 
            	// provided to the tool.
-           	PartitionerModel.GenerateModelJob job 
-           		= new PartitionerModel.GenerateModelJob(
+           	GenerateModelJob job 
+           		= new GenerateModelJob(
            			profiler_trace_path,
-           			this
+           			this,
+           			this.property_change_delegate
            		);
            	
            	job.setUser(true);
@@ -680,7 +713,7 @@ implements IModel
         }
 	}
 	
-	private void 
+	synchronized public void 
 	initializeFilters() 
 	{
 		// we clear in case we are trying the operation a second time
@@ -688,7 +721,7 @@ implements IModel
 		this.mFilterMap.clear();
 		
 		Map<String, IFilter> map = null;
-		if( this.enable_synthetic_node_filter ){
+		if( this.use_synthetic_node_filters ){
 			
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
@@ -702,7 +735,7 @@ implements IModel
 			System.err.println("Number of synthetic filters: " + map.size());
 		}
 		
-		if( this.activate_host_cost_filter ){
+		if( this.use_host_cost_filter ){
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
@@ -715,7 +748,7 @@ implements IModel
 			System.err.println("Number of host filters: " + map.size());
 		}
 		
-		if( this.activate_interaction_cost_filter ){
+		if( this.use_interaction_cost_filter ){
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
@@ -729,243 +762,193 @@ implements IModel
 		}
 	}
 
-	public void
+	synchronized public void
 	doPartitionGeneration()
 	{
-		PartitionerModel.GeneratePartitionJob job 
-   			= new PartitionerModel.GeneratePartitionJob();
+		GeneratePartitionJob job 
+   			= new GeneratePartitionJob(this, this.property_change_delegate);
 	   	job.setUser(true);
 	   	job.setPriority(GenerateModelJob.SHORT);
 	   	job.schedule();
 	}
 	
-	///////////////////////////////////////////////////////////////////
-	///
-	///////////////////////////////////////////////////////////////////
 	
-	class 
-	GenerateModelJob 
-	extends Job
-	{
-		private String profiler_trace_path;
-		private PartitionerModel gui_state_model;
-
-		GenerateModelJob
-		( String profiler_trace_path, PartitionerModel gui_state_model )
-		{
-			super("Create Model");
-			
-			this.profiler_trace_path
-				= profiler_trace_path;
-			this.gui_state_model
-				= gui_state_model;
-		}
-		
-		@Override
-		public IStatus 
-		run
-		( IProgressMonitor monitor ) 
-		{
-			
-			InputStream in = null; 
-			try {
-					in =  new BufferedInputStream(
-						new FileInputStream(
-							this.profiler_trace_path
-						)
-					);
-				if( monitor.isCanceled()){
-				 	return Status.CANCEL_STATUS;
-				}
-				assert in != null : "The input stream should have been generated correctly";
-				this.gui_state_model.createModuleModel( in );
-				in.close();
-				this.gui_state_model.finished();
-				
-				PartitionerModel.this.changeState(State.MODEL_BEFORE_PARTITION);
-				PartitionerModel.this
-					.property_change_delegate.notifyViews(
-						PartitionerModelMessages.MODEL_CREATED, 
-						null
-					);
-				
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (PartitionerModelExceptions.ModuleExposureException e){
-				e.printStackTrace();
-				PartitionerModel.this
-					.property_change_delegate.notifyViews(
-						PartitionerModelMessages.MODEL_EXCEPTION, 
-						e
-					);
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			finally {
-				try {
-					if( in != null ){
-						in.close();
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			
-			return Status.OK_STATUS;
-		}
-	}
-	
-	class 
-	GeneratePartitionJob
-	extends org.eclipse.core.runtime.jobs.Job
-	{
-		public 
-		GeneratePartitionJob() 
-		{
-			super("Perform Model Partition");
-		}
-
-		@Override
-		protected IStatus 
-		run
-		( IProgressMonitor monitor ) 
-		{
-			System.out.println("Partitioning the model");
-			
-			try { 
-				// I am doing this as late as possible
-				PartitionerModel.this.initializeFilters();
-				
-				/// during finished
-				System.out.println( 
-					PartitionerModel.this
-						.perform_partitioning.toString() 
-					);
-				if( PartitionerModel.this.perform_partitioning ){
-					System.out.println("Performing partition");
-					PartitionerModel.this.runPartitioningAlgorithm();
-				}
-				
-				/// after finished
-				// load the test framework if partitioning was set
-				// I wonder what this was originally for
-				if( PartitionerModel.this.generate_test_framework ){
-					PartitionerModel.this.property_change_delegate
-						.registerProperties(
-							new String[]{ 
-								PartitionerModelMessages.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK.NAME
-							},
-							new Object[]{
-								new TestFrameworkModel(
-									PartitionerModel.this.mModuleModel,
-									PartitionerModel.this.mSimFramework,
-									PartitionerModel.this.mHostModel,
-									PartitionerModel.this.profiler_trace,
-									PartitionerModel.this.mModuleType,
-									PartitionerModel.this.mConstraintModel
-								)
-							}
-						);
-					PartitionerModel.this
-						.property_change_delegate.notifyViews(
-							PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK, 
-							null
-						);
-				}
-				PartitionerModel.this
-					.property_change_delegate.notifyViews(
-						PartitionerModelMessages.PARTITIONING_COMPLETE, 
-						null
-					);
-				PartitionerModel.this
-					.changeState(State.PARTITIONED);
-				
-			}
-			catch( PartitionerModelExceptions.FilterHostColocationException ex){
-				ex.printStackTrace();
-				PartitionerModel.this
-					.property_change_delegate
-					.notifyViews(
-						PartitionerModelMessages.MODEL_EXCEPTION, ex
-				);
-			}
-			catch(Exception ex){
-				ex.printStackTrace();
-			}
-
-			return Status.OK_STATUS;
-		}
-		
-	}
 	
 	@Override
-	public Map<String, Object> 
+	synchronized public Map<String, Object> 
 	request
 	( String[] property_names ) 
 	{
 		return this.property_change_delegate.getAll(property_names);
 	}
 	
-	private void 
-	registerProperties() 
+	synchronized public void 
+	createTestFrameworkModel()
 	{
-		String[] property_names 
-			= {
-				PartitionerModelMessages.MODULE_COARSENER.NAME,
-				PartitionerModelMessages.PROFILER_TRACE.NAME,
-				PartitionerModelMessages.MODULE_EXPOSER.NAME,
-				PartitionerModelMessages.HOST_CONFIGURATION.NAME,
-				PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME,
-				PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME,
-				PartitionerModelMessages.SET_PRESET_MODULE_GRAPH.NAME,
-				PartitionerModelMessages.PERFORM_PARTITIONING.NAME,
-				PartitionerModelMessages.PARTITIONER_TYPE.NAME,
-				PartitionerModelMessages.INTERACTION_COST.NAME,
-				PartitionerModelMessages.EXECUTION_COST.NAME,
-				PartitionerModelMessages.SIMULATION_FRAMEWORK.NAME,
-				PartitionerModelMessages.MODULE_MODEL.NAME,
-				PartitionerModelMessages.HOST_MODEL.NAME,
-				PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME,
-				PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME,
-				PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME,
-				PartitionerModelMessages.MODEL_STATE.NAME,
-				
-				PartitionerModelMessages.PARTITIONER.NAME
-			};
-		
-		Object[] properties
-			= {
-			this.mModuleType,
-			this.profiler_trace,
-			this.constraint_xml_path,
-			this.host_configuration,
-			this.active_exposing_menu,
-			this.enable_synthetic_node_filter,
-			this.module_model_checkbox,
-			this.perform_partitioning,
-			this.partitioner_type,
-			this.interaction_cost_type,
-			this.execution_cost_type,
-			// does not need to be a member field, since now
-			// it is in the map
-			this.mSimFramework,
-			this.mModuleModel,
-			this.mHostModel,
-			
-			this.activate_host_cost_filter,
-			this.activate_interaction_cost_filter,
-			this.generate_test_framework,
-			
-			this.state,
-			
-			this.partitioner
-		};
-		
 		this.property_change_delegate.registerProperties(
-			property_names,
-			properties
+			new String[]{ 
+				PartitionerModelMessages.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK.NAME
+			},
+			new Object[]{
+				new TestFrameworkModel(
+					PartitionerModel.this.mModuleModel,
+					PartitionerModel.this.mSimFramework,
+					PartitionerModel.this.mHostModel,
+					PartitionerModel.this.profiler_trace,
+					PartitionerModel.this.mModuleType,
+					PartitionerModel.this.mConstraintModel
+				)
+			}
 		);
+		this.property_change_delegate.notifyViews(
+			PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK, 
+			null
+		);
+	}
+
+	synchronized public boolean 
+	generateTestFramework() 
+	{
+		return this.generate_test_framework;
+	}
+}
+
+///////////////////////////////////////////////////////////////////
+///
+///////////////////////////////////////////////////////////////////
+
+class 
+GenerateModelJob 
+extends Job
+{
+	private String profiler_trace_path;
+	private PartitionerModel gui_state_model;
+	private DefaultPropertyDelegate property_change_delegate;
+	
+	GenerateModelJob
+	( 	String profiler_trace_path, 
+		PartitionerModel gui_state_model, 
+		DefaultPropertyDelegate property_change_delegate )
+	{
+		super("Create Model");
+		
+		this.profiler_trace_path
+			= profiler_trace_path;
+		this.gui_state_model
+			= gui_state_model;
+		this.property_change_delegate
+			= property_change_delegate;
+	}
+	
+	@Override
+	public IStatus 
+	run
+	( IProgressMonitor monitor ) 
+	{
+		InputStream in = null; 
+		try {
+			in =  new BufferedInputStream(
+					new FileInputStream(
+						this.profiler_trace_path
+					)
+			);
+			if( monitor.isCanceled()){
+				return Status.CANCEL_STATUS;
+			}
+			assert in != null : "The input stream should have been generated correctly";
+			this.gui_state_model.createModuleModel( in );
+			in.close();
+			this.gui_state_model.finished();
+			
+			this.gui_state_model.changeState(State.MODEL_BEFORE_PARTITION);
+			this.property_change_delegate.notifyViews(
+					PartitionerModelMessages.MODEL_CREATED, 
+					null
+			);
+		
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (PartitionerModelExceptions.ModuleExposureException e){
+			e.printStackTrace();
+			this.property_change_delegate.notifyViews(
+					PartitionerModelMessages.MODEL_EXCEPTION, 
+					e
+				);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		finally {
+			try {
+				if( in != null ){
+					in.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	
+		return Status.OK_STATUS;
+	}
+}
+
+class 
+GeneratePartitionJob
+extends org.eclipse.core.runtime.jobs.Job
+{
+	PartitionerModel gui_state_model;
+	private DefaultPropertyDelegate property_change_delegate;
+	
+	public 
+	GeneratePartitionJob
+	(PartitionerModel model, DefaultPropertyDelegate property_change_delegate ) 
+	{
+		super("Perform Model Partition");
+		this.gui_state_model = model;
+		this.property_change_delegate
+			= property_change_delegate;
+	}
+	
+	@Override
+	protected IStatus 
+	run
+	( IProgressMonitor monitor ) 
+	{
+		System.out.println("Partitioning the model");
+		
+		try { 
+			// I am doing this as late as possible
+			this.gui_state_model.initializeFilters();
+		
+		System.out.println("Performing partition");
+		this.gui_state_model.runPartitioningAlgorithm();
+		
+		/// after finished
+		// load the test framework if partitioning was set
+		// I wonder what this was originally for
+		if( this.gui_state_model.generateTestFramework() ){
+			this.gui_state_model.createTestFrameworkModel();
+		}
+		
+		this.property_change_delegate.notifyViews(
+			PartitionerModelMessages.PARTITIONING_COMPLETE, 
+			null
+		);
+		this.gui_state_model
+			.changeState(State.PARTITIONED);
+		
+		}
+		catch( PartitionerModelExceptions.FilterHostColocationException ex){
+			ex.printStackTrace();
+			this.property_change_delegate.notifyViews(
+					PartitionerModelMessages.MODEL_EXCEPTION, ex
+				);
+		}
+		catch(Exception ex){
+			ex.printStackTrace();
+		}
+		
+		return Status.OK_STATUS;
 	}
 }

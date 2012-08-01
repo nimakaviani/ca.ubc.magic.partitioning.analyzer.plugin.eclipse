@@ -203,9 +203,9 @@ implements IView
 		
 		this.set_configuration_widgets_enabled( false );
 		this.generate_model_button.setVisible(false);
-		this.partitioner_widgets.set_partitioning_trigger_enabled( true );
+	//	this.partitioner_widgets.set_partitioning_trigger_enabled( true );
 		this.partitioner_widgets
-			.set_partitioning_controls_enabled( false ); 
+			.set_partitioning_controls_enabled( true ); 
 	}
 	
 	private void 
@@ -609,25 +609,29 @@ implements IView
 		System.err.println("Clearing all entries");
 		
 		synchronized(this.controller_switch_lock){
-				if(this.controller != null){
-					this.controller.removeViewAndAdapter(this);
-					this.controller 
-						= null;
-				}
+			if(this.controller != null){
+				this.controller.removeViewAndAdapter(this);
+				this.controller 
+					= null;
 			}
-		
-		this.profiler_trace_text.setText("  ");
-		this.module_exposer_text.setText("");
-		this.host_config_text.setText("");
-		
-		this.exposure_button.setSelection(false);
-		if( this.partitioner_widgets != null ){
-			this.partitioner_widgets.clear_selections();
 		}
 		
-		Display.getDefault().update();
-		this.getViewSite().getShell().layout();
-		this.getViewSite().getShell().update();
+		// this method may be called in response to the application
+		// closing; check if one widget is disposed for now
+		if(!this.profiler_trace_text.isDisposed()){
+			this.profiler_trace_text.setText("  ");
+			this.module_exposer_text.setText("");
+			this.host_config_text.setText("");
+			
+			this.exposure_button.setSelection(false);
+			if( this.partitioner_widgets != null ){
+				this.partitioner_widgets.clear_selections();
+			}
+			
+			Display.getDefault().update();
+			this.getViewSite().getShell().layout();
+			this.getViewSite().getShell().update();
+		}
 	}
 
 	public void 
@@ -649,32 +653,35 @@ implements IView
 			new Runnable(){
 				@Override
 				public void 
-				run(){
-					String name_suffix
-						= new SimpleDateFormat("HH:mm:ss")
-							.format( new Date() );
-					String coarsener
-						= PartitionerConfigurationView.this.set_coarsener_combo.getText();
-					String new_name
-						= coarsener + "_" + name_suffix;
-					
-					ModelCreationEditor page 
-						= (ModelCreationEditor) 
-							PartitionerConfigurationView.this
-								.getSite().getPage().getActiveEditor();
-					VirtualModelFileInput input
-						= (VirtualModelFileInput) page.getEditorInput();
+				run()
+				{
+					Object editor 
+						= PartitionerConfigurationView.this
+							.getSite().getPage().getActiveEditor();
+					if( editor instanceof ModelCreationEditor ){
+						ModelCreationEditor page 
+						= (ModelCreationEditor) editor;
+						VirtualModelFileInput input
+							= (VirtualModelFileInput) page.getEditorInput();
 						
-					
-					input.setSecondaryName(new_name);
-					
-					PartitionerConfigurationView.this.publisher_delegate.publish(
-						this.getClass(), 
-						Publications.REFRESH_SNAPSHOT_TREE,
-						Boolean.valueOf(true)
-					);
-			        
-			        page.updateTitle();
+						String name_suffix
+							= new SimpleDateFormat("HH:mm:ss")
+								.format( new Date() );
+						String coarsener
+							= PartitionerConfigurationView.this.set_coarsener_combo.getText();
+						String new_name
+							= coarsener + "_" + name_suffix;
+						
+						input.setSecondaryName(new_name);
+						
+						PartitionerConfigurationView.this.publisher_delegate.publish(
+							this.getClass(), 
+							Publications.REFRESH_SNAPSHOT_TREE,
+							Boolean.valueOf(true)
+						);
+				        
+				        page.updateTitle();
+					}
 				}
 			}
 		);
@@ -701,7 +708,7 @@ implements IView
 	// partitioner functionality; this should make it easier to tell
 	// where to make change and additions whenever new widgets are added
 	{
-		private Button		perform_partitioning_button;
+		//private Button		perform_partitioning_button;
 		private Combo 		partitioning_algorithm_combo;
 		private Combo 		interaction_model_combo;
 		private Combo 		execution_model_combo;
@@ -720,47 +727,13 @@ implements IView
 		// setDisplay function above; there should also be a callback
 		// in the switch statement in case its state changes
 		{
-			this.perform_partitioning_button
-				= toolkit.createButton(
-					parent, 
-					"Perform Partitioning", 
-					SWT.CHECK
-				);
-			GridData grid_data 
-				= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
-			grid_data.horizontalSpan 
-				= 1;
-			this.perform_partitioning_button.setLayoutData(grid_data);
-			
-			this.perform_partitioning_button.addSelectionListener(
-				new SelectionAdapter()
-				{
-					@Override
-					public void
-					widgetSelected
-					( SelectionEvent e )
-					{
-						PartitionerConfigurationView.this.controller.updateModel(
-							PartitionerModelMessages.PERFORM_PARTITIONING, 
-							Boolean.valueOf(
-								PartitionerWidgets.this
-									.perform_partitioning_button.getSelection()
-							)
-						);
-					}
-				}
-			);
-			
-			PartitionerConfigurationView.this
-				.createDummyLabel(parent, toolkit);
-			
 			this.generate_test_framework_button
 				= toolkit.createButton(
 					parent, 
 					"Generate Test Framework Page", 
 					SWT.CHECK
 				);
-			grid_data 
+			GridData grid_data 
 				= new GridData(
 					SWT.BEGINNING, 
 					SWT.FILL, 
@@ -934,10 +907,6 @@ implements IView
 					public void 
 					run() 
 					{
-						boolean perform_partitioning
-							= (Boolean) map.get(
-								PartitionerModelMessages.PERFORM_PARTITIONING.NAME
-							);
 						boolean generate_test_framework
 							= (Boolean) map.get(
 								PartitionerModelMessages.GENERATE_TEST_FRAMEWORK.NAME
@@ -969,8 +938,6 @@ implements IView
 						
 						int index;
 						
-						PartitionerWidgets.this.perform_partitioning_button
-							.setSelection( perform_partitioning );
 						PartitionerWidgets.this.generate_test_framework_button.setSelection( 
 							generate_test_framework
 						);
@@ -1015,7 +982,6 @@ implements IView
 			this.generate_test_framework_button.setSelection(false);
 			this.activate_host_filter_button.setSelection(false);
 			this.activate_interaction_filter_button.setSelection(false);
-			this.perform_partitioning_button.setSelection(false);
 			this.synthetic_node_button.setSelection(false);
 		}
 
@@ -1131,13 +1097,6 @@ implements IView
 				partitioning_control.setEnabled(enabled);
 			}
 		}
-		
-		void 
-		set_partitioning_trigger_enabled
-		( boolean enabled )
-		{
-			this.perform_partitioning_button.setEnabled(enabled);
-		}
 	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1152,8 +1111,6 @@ implements IView
 		= new Callback("setModuleExposer", String.class);
 	private static final Callback set_host_configuration
 		= new Callback("setHostConfiguration", String.class);
-	private static final Callback set_perform_partitioning
-		= new Callback("setPerformPartitioning", Boolean.class);
 	private static final Callback set_activate_host_filter
 		= new Callback("setActivateHostFilter", Boolean.class);
 	private static final Callback set_activate_interaction_cost_filter
@@ -1169,121 +1126,10 @@ implements IView
 	
 	private static final Callback editor_closed
 		= new Callback("editorClosed");
-	private static final Callback model_created
-		= new Callback("modelCreated");
 	private static final Callback partitioning_complete
 		= new Callback("partitioningComplete");
 	private static final Callback model_exception
 		= new Callback("modelException", Exception.class);
-	
-	public void
-	editorClosed()
-	{
-		System.err.println("Inside editor closed");
-		Display.getDefault().asyncExec( 
-			new Runnable(){
-				@Override
-				public void 
-				run() 
-				{
-					PartitionerConfigurationView.this
-						.clear_all_entries();
-					PartitionerConfigurationView.this
-						.set_configuration_widgets_enabled( false );
-					PartitionerConfigurationView.this
-						.generate_model_button.setVisible(true);
-					PartitionerConfigurationView.this
-						.partitioner_widgets.set_partitioning_trigger_enabled( false );
-					if( PartitionerConfigurationView.this.partitioner_widgets != null ){
-						PartitionerConfigurationView.this
-							.partitioner_widgets
-							.set_partitioning_controls_enabled( false );
-					}
-					if(PartitionerConfigurationView.this.controller != null ){
-						PartitionerConfigurationView.this
-							.controller.unregisterAdapter(PartitionerConfigurationView.this);
-					}
-				}
-			}
-		);
-	}
-	
-	public void
-	modelCreated()
-	{
-		System.err.println("Inside model created");
-		Display.getDefault().asyncExec( 
-			new Runnable(){
-				@Override
-				public void 
-				run() 
-				{
-					PartitionerConfigurationView.this
-						.set_configuration_widgets_enabled( false );
-					
-					PartitionerConfigurationView.this
-						.partitioning_composite.setVisible( true );
-					PartitionerConfigurationView
-						.this.partition_model_button.setVisible( true );
-					PartitionerConfigurationView.this
-						.generate_model_button.setVisible(false);
-					PartitionerConfigurationView.this
-						.partitioner_widgets.set_partitioning_trigger_enabled(true);
-					PartitionerConfigurationView.this
-						.partitioner_widgets.set_partitioning_controls_enabled(false);
-					PartitionerConfigurationView.this
-						.updateModelName();
-				}
-			}
-		);
-	}
-	
-	public void
-	partitioningComplete()
-	{
-		System.err.println("Inside partitioning complete");
-		Display.getDefault().asyncExec( 
-			new Runnable(){
-				@Override
-				public void 
-				run() 
-				{
-					PartitionerConfigurationView.this
-						.partitioner_widgets
-						.set_partitioning_trigger_enabled(false);
-					PartitionerConfigurationView.this
-						.actions_composite.setVisible(false);
-					PartitionerConfigurationView.this
-						.partitioner_widgets
-						.set_partitioning_trigger_enabled( false );
-					PartitionerConfigurationView.this
-						.partitioner_widgets
-						.set_partitioning_controls_enabled(false);
-				}
-			}
-		);
-	}
-	
-	public void
-	modelException
-	( final Exception ex )
-	{
-		System.out.println("Inside model exception");
-		Display.getDefault().asyncExec( 
-			new Runnable(){
-				@Override
-				public void 
-				run() 
-				{
-					MessageDialog.openError(
-						PartitionerConfigurationView.this.getViewSite().getShell(), 
-						"Model Exception", 
-						ex.getMessage() 
-					);
-				}
-			}
-		);
-	}
 	
 	public AdapterDelegate
 	getAdapterDelegate()
@@ -1298,13 +1144,15 @@ implements IView
 				)
 			);
 			
+			this.adapter_delegate.registerPropertyCallback(
+				update_state,
+				new DefaultAdapter(
+					PartitionerModelMessages.MODEL_STATE.NAME
+				)
+			);
 			this.adapter_delegate.registerEventCallback(
 				editor_closed,
 				new EmptyAdapter(PartitionerModelMessages.EDITOR_CLOSED.NAME)
-			);
-			this.adapter_delegate.registerEventCallback(
-				model_created, 
-				new EmptyAdapter(PartitionerModelMessages.MODEL_CREATED.NAME)
 			);
 			this.adapter_delegate.registerEventCallback(
 				partitioning_complete, 
@@ -1320,7 +1168,6 @@ implements IView
 					String[] keys
 						= new String[]{
 							PartitionerModelMessages.SET_SYNTHETIC_NODE.NAME,
-							PartitionerModelMessages.PERFORM_PARTITIONING.NAME,
 							PartitionerModelMessages.EXECUTION_COST.NAME,
 							PartitionerModelMessages.INTERACTION_COST.NAME,
 							PartitionerModelMessages.PARTITIONER_TYPE.NAME,
@@ -1416,12 +1263,6 @@ implements IView
 					}
 					
 				}
-			);
-			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_perform_partitioning, 
-				new DefaultAdapter(
-					PartitionerModelMessages.PERFORM_PARTITIONING.NAME
-				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
 				PartitionerConfigurationView.set_activate_host_filter, 
@@ -1642,86 +1483,170 @@ implements IView
 	
 	public void 
 	updateState
-	( State model_state ) 
+	( final State model_state ) 
 	{
-		boolean configuration_widgets_enabled;
-		boolean partitioning_composite_visible;
-		boolean partition_model_button_visible;
-		boolean partitioner_widgets_enabled;
-		boolean partitioner_switch_enabled;
-		boolean actions_composite_visible;
+		System.out.println("Inside update state");
+		System.out.println("		" + model_state);
 		
-		switch(model_state){
-		case NO_MODEL:
-			configuration_widgets_enabled
-				= true;
-			partitioning_composite_visible
-				= false;
-			partition_model_button_visible
-				= false;
-			partitioner_widgets_enabled
-				= false;
-			actions_composite_visible
-				= true;
-			partitioner_switch_enabled 
-				= true;
-			break;
-		case MODEL_BEFORE_PARTITION:
-			configuration_widgets_enabled
-				= false;
-			partitioning_composite_visible
-				= true;
-			partition_model_button_visible
-				= true;
-			partitioner_switch_enabled
-				= true;
-			partitioner_widgets_enabled
-				= PartitionerConfigurationView.this
-					.partitioner_widgets.perform_partitioning_button.getSelection();
-			actions_composite_visible
-				= true;
-			break;
-		case PARTITIONED:
-			configuration_widgets_enabled
-				= false;
-			partitioning_composite_visible
-				= true;
-			partition_model_button_visible
-				= false;
-			partitioner_switch_enabled
-				= false;
-			partitioner_widgets_enabled
-				= false;
-			actions_composite_visible
-				= false;
-			break;
-		default:
-			throw new RuntimeException("This is an impossible case for Partitioner model state");
-		}
-		
-		PartitionerConfigurationView.this
-			.set_configuration_widgets_enabled(
-				configuration_widgets_enabled
-			);
-		PartitionerConfigurationView.this
-			.generate_model_button.setVisible(
-				configuration_widgets_enabled
-			);
-		PartitionerConfigurationView.this
-			.partitioning_composite.setVisible( 
-				partitioning_composite_visible
-			);
-		PartitionerConfigurationView.this	
-			.partition_model_button.setVisible(partition_model_button_visible);
-		PartitionerConfigurationView.this
-			.partitioner_widgets.set_partitioning_trigger_enabled(
-				partitioner_switch_enabled
-			);
-		PartitionerConfigurationView.this
-			.partitioner_widgets.set_partitioning_controls_enabled(
-				partitioner_widgets_enabled
-			);
-		PartitionerConfigurationView.this
-			.actions_composite.setVisible(actions_composite_visible);
+		Display.getDefault().asyncExec( 
+			new Runnable()
+			{
+				@Override
+				public void 
+				run() 
+				{
+					boolean configuration_widgets_enabled;
+					boolean partitioning_composite_visible;
+					boolean partition_model_button_visible;
+					boolean partitioner_widgets_enabled;
+					boolean actions_composite_visible;
+					
+					switch(model_state){
+					case NO_MODEL:
+						configuration_widgets_enabled
+							= true;
+						partitioning_composite_visible
+							= false;
+						partition_model_button_visible
+							= false;
+						partitioner_widgets_enabled
+							= false;
+						actions_composite_visible
+							= true;
+						break;
+					case MODEL_BEFORE_PARTITION:
+						configuration_widgets_enabled
+							= false;
+						partitioning_composite_visible
+							= true;
+						partition_model_button_visible
+							= true;
+						partitioner_widgets_enabled
+							= true;
+						actions_composite_visible
+							= true;
+						PartitionerConfigurationView.this
+							.updateModelName();
+						break;
+					case PARTITIONED:
+						configuration_widgets_enabled
+							= false;
+						partitioning_composite_visible
+							= true;
+						partition_model_button_visible
+							= false;
+						partitioner_widgets_enabled
+							= false;
+						actions_composite_visible
+							= false;
+						break;
+					default:
+						throw new RuntimeException("This is an impossible case for Partitioner model state");
+					}
+					
+					PartitionerConfigurationView.this
+						.set_configuration_widgets_enabled(
+							configuration_widgets_enabled
+						);
+					PartitionerConfigurationView.this
+						.generate_model_button.setVisible(
+							configuration_widgets_enabled
+						);
+					PartitionerConfigurationView.this
+						.partitioning_composite.setVisible( 
+							partitioning_composite_visible
+						);
+					PartitionerConfigurationView.this	
+						.partition_model_button.setVisible(partition_model_button_visible);
+					PartitionerConfigurationView.this
+						.partitioner_widgets.set_partitioning_controls_enabled(
+							partitioner_widgets_enabled
+						);
+					PartitionerConfigurationView.this
+						.actions_composite.setVisible(actions_composite_visible);
+				}
+			}
+		);
+	}
+	
+	public void
+	editorClosed()
+	{
+		System.err.println("\t\tInside editor closed");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					// we assume that if the exposure button is disposed all the
+					// the entire view has been disposed; among the virtues of this
+					// method is that in trying to acquire a control we won't need
+					// to check for a nullpointerexception
+					if( !PartitionerConfigurationView.this.exposure_button.isDisposed() ){
+						PartitionerConfigurationView.this
+							.clear_all_entries();
+						PartitionerConfigurationView.this
+							.set_configuration_widgets_enabled( false );
+						PartitionerConfigurationView.this
+							.generate_model_button.setVisible(false);
+						if( PartitionerConfigurationView.this.partitioner_widgets != null ){
+							PartitionerConfigurationView.this
+								.partitioner_widgets
+								.set_partitioning_controls_enabled( false );
+							PartitionerConfigurationView.this
+								.partitioning_composite.setVisible(false);
+							PartitionerConfigurationView.this
+								.actions_composite.setVisible(false);
+						}
+						if(PartitionerConfigurationView.this.controller != null ){
+							PartitionerConfigurationView.this
+								.controller.unregisterAdapter(PartitionerConfigurationView.this);
+						}
+					}
+				}
+			}
+		);
+	}
+	
+	public void
+	partitioningComplete()
+	{
+		System.err.println("Inside partitioning complete");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					PartitionerConfigurationView.this
+						.actions_composite.setVisible(false);
+					PartitionerConfigurationView.this
+						.partitioner_widgets
+						.set_partitioning_controls_enabled(false);
+				}
+			}
+		);
+	}
+	
+	public void
+	modelException
+	( final Exception ex )
+	{
+		System.out.println("Inside model exception");
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					MessageDialog.openError(
+						PartitionerConfigurationView.this.getViewSite().getShell(), 
+						"Model Exception", 
+						ex.getMessage() 
+					);
+				}
+			}
+		);
 	}
 }

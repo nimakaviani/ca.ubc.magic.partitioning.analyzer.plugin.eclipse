@@ -611,16 +611,18 @@ implements IView
 								ModelCreationEditor.this.frame
 							);
 							
-							Display.getDefault().syncExec( new Runnable(){
-								@Override
-								public void run() {
-									ModelCreationEditor.this
-										.getControl(ModelCreationEditor.MODEL_ANALYSIS_PAGE)
-										.pack(true);
-									ModelCreationEditor.this.getContainer().layout();
+							Display.getDefault().asyncExec( 
+								new Runnable(){
+									@Override
+									public void run() {
+										ModelCreationEditor.this
+											.getControl(ModelCreationEditor.MODEL_ANALYSIS_PAGE)
+											.pack(true);
+										ModelCreationEditor.this.getContainer().layout();
+									}
+									
 								}
-								
-							});
+							);
 						
 						} catch (Exception ex) {
 							ex.printStackTrace();
@@ -704,17 +706,17 @@ implements IView
 	public void
 	modelCreated()
 	{
-		System.err.println("Inside ModelCreated");
 		Display.getDefault().asyncExec( 
-			new Runnable()
-			{
+			new Runnable(){
 				@Override
 				public void 
 				run() 
 				{
+					System.err.println("Inside ModelCreated");
 					ModelCreationEditor.this.visualizeModuleModel();
 				}
-			});
+			}
+		);
 	}
 	
 	public void

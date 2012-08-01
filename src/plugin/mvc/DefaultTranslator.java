@@ -209,7 +209,6 @@ implements ITranslator
 		if( isEvent(evt) ){
 			for(IView view : this.registered_views){
 				this.callDesignatedMethod(view, evt);
-				// view.modelEvent(evt);
 			}
 		}
 		else {
@@ -277,7 +276,7 @@ implements ITranslator
 		AdapterDelegate adapter
 			= this.adapter_map.get(view);
 		String[] query_keys
-			= adapter.getKeys(method_name);
+			= adapter.getQueryKeys(method_name);
 		
 		System.err.println("Query Keys: ");
 		for(String s: query_keys){
@@ -287,7 +286,7 @@ implements ITranslator
 		Map<String, Object> objs
 			= this.requestProperties(query_keys);
 		Object[] parameters
-			= adapter.getMethodParameters(method_name, objs, args);
+			= adapter.getQueryMethodParameters(method_name, objs, args);
 		System.err.println("Parameters: ");
 		for(Object s: parameters){
 			System.err.println(s);
@@ -324,7 +323,6 @@ implements ITranslator
 			LogUtilities.logError(ex);
 		}
 	}
-	
 
 	private void 
 	callDesignatedMethod
@@ -350,7 +348,12 @@ implements ITranslator
 			this.adapter_buffer_map.clear();
 			this.adapter_buffer_map.put(evt.getPropertyName(), evt.getNewValue());
 			Object[] parameters
-				= adapter.getMethodParameters(
+				= isEvent(evt)
+				? adapter.getEventMethodParameters(
+					method_name,
+					this.adapter_buffer_map
+				)
+				: adapter.getPropertyMethodParameters(
 					method_name,
 					this.adapter_buffer_map
 				);

@@ -44,8 +44,8 @@ PartitionerModelMessages
 		= new PropertyEvent("SyntheticNode", Boolean.class);
 	public static final PropertyEvent MODULE_COARSENER
 		= new PropertyEvent("ModuleCoarsener", ModuleCoarsenerType.class);
-	public static final PropertyEvent PERFORM_PARTITIONING
-		= new PropertyEvent("PerformPartitioning", Boolean.class );
+//	public static final PropertyEvent PERFORM_PARTITIONING
+//		= new PropertyEvent("PerformPartitioning", Boolean.class );
 	public static final PropertyEvent GENERATE_TEST_FRAMEWORK
 		= new PropertyEvent("GenerateTestFramework", Boolean.class);
 	public static final PropertyEvent ACTIVATE_HOST_COST_FILTER
