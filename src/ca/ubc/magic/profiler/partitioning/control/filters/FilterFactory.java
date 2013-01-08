@@ -6,24 +6,26 @@ import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraint;
 import ca.ubc.magic.profiler.dist.model.granularity.InteractionFilterConstraint;
 import ca.ubc.magic.profiler.dist.model.granularity.HostFilterConstraint;
 import ca.ubc.magic.profiler.dist.model.granularity.ColocationFilterConstraint;
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 
 public class FilterFactory {
 	
-	public static IFilter getFilter( 
+	public static IFilter getFilter(FilterType type, 
 			ModuleModel moduleModel, 
     		HostModel hostModel, 
 			FilterConstraint filter){
-		
-		if (filter instanceof HostFilterConstraint)
+		switch (type){
+		case HOST_CUT:
 			return new ConstrainedInfeasibleHostFilter(
 					moduleModel, hostModel, (HostFilterConstraint) filter);
-		else if (filter instanceof InteractionFilterConstraint)
+		case INTERACTION_CUT:
 			return new ConstrainedInfeasibleEdgeCutFilter(moduleModel, (InteractionFilterConstraint) filter);
-		else if (filter instanceof ColocationFilterConstraint)
+		case COLOCATION_CUT:
 			return new ConstrainedColocationFilter(moduleModel, (ColocationFilterConstraint) filter);
-		else
-			throw new RuntimeException("Filter type not found");
+		default:
+				throw new RuntimeException("Filter type not found");
+		}
 	}
 
 }

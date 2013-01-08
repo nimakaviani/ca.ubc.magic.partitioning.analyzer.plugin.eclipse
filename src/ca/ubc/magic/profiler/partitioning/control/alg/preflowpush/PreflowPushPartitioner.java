@@ -12,6 +12,7 @@ import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.ModulePairHostPair;
 import ca.ubc.magic.profiler.dist.model.TwoHostHelper;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionCost;
 import ca.ubc.magic.profiler.dist.transform.IColocationFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
@@ -25,8 +26,6 @@ import ca.ubc.magic.profiler.partitioning.control.alg.preflowpush.networkflow.Ve
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import partitioner.models.PartitionerModelExceptions;
 
 /**
  *
@@ -197,9 +196,17 @@ public class PreflowPushPartitioner extends AbstractPartitioner {
     }
     @Override
 	protected void filterHostColocation(IColocationFilter filter, ModuleHost mh) {
-		throw new PartitionerModelExceptions
-			.FilterHostColocationException(
-				"Synthetic node filtering is not implemented yet"
-			);
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	protected void filterModifyVertexCost(IModuleFilter filter, ModuleHost mh) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	protected void filterModifyEdgeCost(IInteractionFilter filter,
+			ModulePairHostPair mhp, InteractionCost cost) {
+		throw new UnsupportedOperationException();
 	}
 }

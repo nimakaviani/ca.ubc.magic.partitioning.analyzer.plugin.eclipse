@@ -13,10 +13,10 @@ import ca.ubc.magic.profiler.dist.control.Constants;
 public class LinearCostConversion implements ICostConversion {
 
     public double interactionConvert(double value, double count) {
-        return Constants.LINEAR_COST_CONVERSION_FACTOR * value * count;
+        return Constants.INTR_LINEAR_COST_CONVERSION_FACTOR * value * count;
     }
     
     public double executionConvert(double value, double count) {
-        return Constants.LINEAR_COST_CONVERSION_FACTOR * value * count;
+        return Constants.EXEC_LINEAR_COST_CONVERSION_FACTOR * value * count;
     }
 }

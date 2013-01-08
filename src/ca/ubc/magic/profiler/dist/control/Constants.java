@@ -19,9 +19,9 @@ public class Constants {
     /**
      * Constants for the default profiler module path and the default host path
      */
-    public static final String DEFAULT_PROFILE_XML_PATH = "/home/nima/tmp/20120604-160134.xml";
+    public static final String DEFAULT_PROFILE_XML_PATH = "resources/dist-model/20120604-160134.xml";
     public static final String DEFAULT_HOST_XML_PATH = "resources/dist-model/host-magic2.xml";
-    public static final String DEFAULT_CONSTRAINT_XML_PATH = "resources/dist-model/moduleconstraints-aries5.xml";
+    public static final String DEFAULT_CONSTRAINT_XML_PATH = "resources/dist-model/moduleconstraints-aries6.xml";
     
     /**
      * These are the set of constants used for METIS
@@ -49,7 +49,14 @@ public class Constants {
     /**
      * Factors for cost conversion when doing variable deployments
      */
-    public static final double LINEAR_COST_CONVERSION_FACTOR = 1.0;//0.0667;//8640.0;
+    public static final double EXEC_LINEAR_COST_CONVERSION_FACTOR = 0.60;//0.0667;//8640.0;
+    public static final double INTR_LINEAR_COST_CONVERSION_FACTOR = 1.0;//0.0667;//8640.0;
+    
+    /**
+     * Factors for cost conversion when cutting through database queries
+     */
+    public static final double DB_EDGE_WEIGHT_INCREASE_FACTOR = 2.3;
+    public static final double DB_VERTEX_WEIGHT_INCREASE_FACTOR = 1.0;
     
     /**
      * 

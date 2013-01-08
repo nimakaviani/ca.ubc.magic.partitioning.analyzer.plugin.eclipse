@@ -25,6 +25,7 @@ import ca.ubc.magic.profiler.dist.transform.IColocationFilter;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
+import ca.ubc.magic.profiler.partitioning.control.filters.DistributedQueryDbFilter;
 import ca.ubc.magic.profiler.simulator.control.CostAnalyzerHelper;
 
 /**
@@ -55,7 +56,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
             throw new RuntimeException("The partitioner is not properly initialized.");                        
         
         if (!mModuleModel.isSimulation())                       
-            initCostMap(); 
+            initCostMap();        
     }               
     
     public void init(ModuleModel mModel, final HostModel hModel, final List predefinedModuleHostPlacement){
@@ -161,11 +162,10 @@ public abstract class AbstractPartitioner implements IPartitioner {
     public void applyFilters(){
     	
     	// apply singleton filters which do not need internal elements. 
-    	if( mFilterList != null){
-	    	for (IFilter f : mFilterList){
-	            applyFilter(f, null);
-	        }
-    	}
+    	if (mFilterList != null)
+			for (IFilter f : mFilterList){
+		        applyFilter(f, null, null);
+		    }
     	
     	// apply filters that work on modules
         for (ModuleHost mh : mExecutionCostMap.keySet()){
@@ -173,7 +173,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
                 break;
             for (IFilter f : mFilterList){
                 if (f.isFilterable(mh))
-                    applyFilter(f, mh);
+                    applyFilter(f, mh, mExecutionCostMap.get(mh));
             }
         }
         
@@ -183,7 +183,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
                 break;
             for (IFilter f : mFilterList){
                 if (f.isFilterable(mhp))
-                    applyFilter(f, mhp);
+                    applyFilter(f, mhp, mInteractionCostMap.get(mhp));
             }
         }
     }
@@ -209,6 +209,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
     	applyFilters();
         initNodes();
         initEdges();
+        
 //      printInteractions();
         mSetup = Boolean.TRUE;
     }
@@ -264,7 +265,7 @@ public abstract class AbstractPartitioner implements IPartitioner {
         }
     }
     
-    protected void applyFilter(IFilter filter, Object moduleObject){
+    protected void applyFilter(IFilter filter, Object moduleObject, Object cost){
     	// filters that don't work on any module objects
     	if (moduleObject == null){
     		if (filter instanceof IColocationFilter)
@@ -274,17 +275,23 @@ public abstract class AbstractPartitioner implements IPartitioner {
     	else{
 	    	if (filter instanceof IModuleFilter && moduleObject instanceof ModuleHost)
 	    		filterHostExecution((IModuleFilter) filter, (ModuleHost) moduleObject);
-	    	else if (filter instanceof IInteractionFilter && moduleObject instanceof ModulePairHostPair)
-	    		filterHostInteraction((IInteractionFilter) filter, (ModulePairHostPair) moduleObject);
+	    	else if (filter instanceof IInteractionFilter && moduleObject instanceof ModulePairHostPair){
+	    	
+	    		if (!(filter instanceof DistributedQueryDbFilter))
+	    			filterHostInteraction((IInteractionFilter) filter, (ModulePairHostPair) moduleObject);
+	    		
+	    		else if (filter instanceof DistributedQueryDbFilter && moduleObject instanceof ModulePairHostPair)
+	    			filterModifyEdgeCost((IInteractionFilter) filter, (ModulePairHostPair) moduleObject, (InteractionCost) cost);
+	    	}
     	}
     }
-    
-      
     
     protected abstract void initNodes();
     protected abstract void initEdges();   
     protected abstract void filterHostExecution(IModuleFilter filter, ModuleHost mh);
     protected abstract void filterHostColocation(IColocationFilter filter, ModuleHost mh);
     protected abstract void filterHostInteraction(IInteractionFilter filter, ModulePairHostPair mhp);
+    protected abstract void filterModifyVertexCost(IModuleFilter filter, ModuleHost mh);
+    protected abstract void filterModifyEdgeCost(IInteractionFilter filter, ModulePairHostPair mhp, InteractionCost cost);
     protected abstract void doPartition();    
 }

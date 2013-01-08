@@ -4,6 +4,14 @@
  */
 package ca.ubc.magic.profiler.partitioning.control.alg.metis;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import ca.ubc.magic.profiler.dist.control.Constants;
 import ca.ubc.magic.profiler.dist.model.Host;
 import ca.ubc.magic.profiler.dist.model.HostModel;
@@ -13,17 +21,11 @@ import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.ModulePairHostPair;
 import ca.ubc.magic.profiler.dist.model.TwoHostHelper;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionCost;
 import ca.ubc.magic.profiler.dist.transform.IColocationFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
 import ca.ubc.magic.profiler.partitioning.control.alg.AbstractPartitioner;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  *
@@ -150,6 +152,17 @@ public class MetisPartitioner extends AbstractPartitioner {
 
 	@Override
 	protected void filterHostColocation(IColocationFilter filter, ModuleHost mh) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	protected void filterModifyVertexCost(IModuleFilter filter, ModuleHost mh) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	protected void filterModifyEdgeCost(IInteractionFilter filter,
+			ModulePairHostPair mhp, InteractionCost cost) {
 		throw new UnsupportedOperationException();
 	}
 }

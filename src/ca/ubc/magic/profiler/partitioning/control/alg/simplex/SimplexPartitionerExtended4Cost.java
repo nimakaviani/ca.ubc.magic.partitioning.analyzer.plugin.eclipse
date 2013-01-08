@@ -26,6 +26,9 @@ public class SimplexPartitionerExtended4Cost extends SimplexPartitionerExtended 
         if (mHostModel.getNumberOfHosts() != 2)
             throw new RuntimeException("Simplex partitioner can be applied to 2 hosts only");
         mSimplexModel = new SimplexModelExtended4Cost(mSize);
+//        applyFilters();
+//        initNodes();
+//        initEdges();
     }
     
     @Override

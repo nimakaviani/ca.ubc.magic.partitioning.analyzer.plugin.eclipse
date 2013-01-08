@@ -6,13 +6,16 @@ package ca.ubc.magic.profiler.partitioning.control.filters;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import ca.ubc.magic.profiler.dist.control.Constants;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
+import ca.ubc.magic.profiler.dist.model.granularity.ColocationFilterConstraint;
 import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraint;
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel;
 import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
+import ca.ubc.magic.profiler.dist.model.granularity.HostFilterConstraint;
+import ca.ubc.magic.profiler.dist.model.granularity.InteractionFilterConstraint;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
@@ -31,17 +34,18 @@ public class FilterHelper {
     public static final String INFEASIBLE_SPLIT = "Infeasible Split Filter";
     public static final String INFEASIBLE_SPLIT_THREAD = "Infeasible Split Filter Threaded";
     public static final String INFEASIBLE_SYNTHETIC = "Infeasible Synthetic Node";
+    public static final String DB_EDGE_FILTER = "Database Edge Filter";
     
-    public static Map<String, IFilter> 
-    setFilter
-    ( 		ModuleModel moduleModel, 
+    public static Map<String, IFilter> setFilter(
+    		ModuleModel moduleModel, 
     		HostModel hostModel,
-    		Set<FilterConstraint> filterSet)
-    {
-    	Map<String, IFilter> filterMap = new HashMap<String, IFilter>();
+    		FilterConstraintModel filterModel,
+    		FilterType type){
     	
-    	for (FilterConstraint constraint : filterSet){
-    		IFilter filter = FilterFactory.getFilter(moduleModel,	hostModel, constraint);
+    	Map<String, IFilter> filterMap= new HashMap<String, IFilter>();
+    	
+    	for (FilterConstraint constraint : filterModel.getFilterSet(type)){
+    		IFilter filter = FilterFactory.getFilter(type, moduleModel,	hostModel, constraint);
     		if (filter.getFilterSet() == null || filter.getFilterSet().isEmpty())
     			continue;
     		if (filterMap.containsKey(constraint.getName()))
@@ -51,6 +55,10 @@ public class FilterHelper {
     	}
     	
     	return filterMap;
+    }
+    
+    public static IInteractionFilter setDBFilter(ModuleModel moduleModel, HostModel hostModel){
+    	return new DistributedQueryDbFilter(moduleModel, FilterHelper.DB_EDGE_FILTER);
     }
     
     public static IModuleFilter setModuleFilterThread(ModuleModel moduleModel, HostModel hostModel){
@@ -66,23 +74,23 @@ public class FilterHelper {
 //                "org.apache.aries.samples.ariestrader.beans:HoldingDataBeanImpl",
                 
                 // The following are for filtering ariestrader deployed on tomcat
-//                "DBBundle:MySQL_holdingejb",
-//                "DBBundle:MySQL_quoteejb",
-//                "DBBundle:MySQL_orderejb",
-//                "DBBundle:MySQL_accountejb",
-//                "DBBundle:MySQL_accountprofileejb",
-//                "DBBundle:MySQL_"
+                "DBBundle:MySQL_holdingejb",
+                "DBBundle:MySQL_quoteejb",
+                "DBBundle:MySQL_orderejb",
+                "DBBundle:MySQL_accountejb",
+                "DBBundle:MySQL_accountprofileejb",
+                "DBBundle:MySQL_"
         		
         		// The following are for filtering jforum deployed on tomcat
-        		"DBBundle:MySQL_jforum_forums", 
-        		"DBBundle:MySQL_jforum_groups", 
-        		"DBBundle:MySQL_jforum_posts",
-        		"DBBundle:MySQL_jforum_users", 
-        		"DBBundle:MySQL_jforum_topics",
-        		"DBBundle:MySQL_jforum_posts_text", 
-        		"DBBundle:MySQL_jforum_roles", 
-        		"DBBundle:MySQL_jforum_user_groups",
-        		"DBBundle:MySQL_jforum_words"
+//        		"DBBundle:MySQL_jforum_forums", 
+//        		"DBBundle:MySQL_jforum_groups", 
+//        		"DBBundle:MySQL_jforum_posts",
+//        		"DBBundle:MySQL_jforum_users", 
+//        		"DBBundle:MySQL_jforum_topics",
+//        		"DBBundle:MySQL_jforum_posts_text", 
+//        		"DBBundle:MySQL_jforum_roles", 
+//        		"DBBundle:MySQL_jforum_user_groups",
+//        		"DBBundle:MySQL_jforum_words"
         		
         };
         return new InfeasibleHostFilterRegEx(moduleModel, hostModel, 

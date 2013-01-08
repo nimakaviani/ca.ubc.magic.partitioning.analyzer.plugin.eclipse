@@ -726,9 +726,8 @@ implements IModel
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel
-						.getFilterConstraintModel()
-						.getFilterSet( FilterType.COLOCATION_CUT )
+					this.mConstraintModel.getFilterConstraintModel(),
+					FilterType.COLOCATION_CUT
 				);
 				
 			this.mFilterMap.putAll(map);
@@ -739,9 +738,8 @@ implements IModel
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel
-						.getFilterConstraintModel()
-						.getFilterSet( FilterType.HOST_CUT )
+					this.mConstraintModel.getFilterConstraintModel(),
+					FilterType.HOST_CUT
 				);
 				
 			this.mFilterMap.putAll(map);
@@ -752,9 +750,8 @@ implements IModel
 				map = FilterHelper.setFilter(
 					this.mModuleModel, 
 					this.mHostModel, 
-					this.mConstraintModel
-						.getFilterConstraintModel()
-						.getFilterSet(FilterType.INTERACTION_CUT)
+					this.mConstraintModel.getFilterConstraintModel(),
+					FilterType.INTERACTION_CUT
 				);
 				
 			this.mFilterMap.putAll(map);

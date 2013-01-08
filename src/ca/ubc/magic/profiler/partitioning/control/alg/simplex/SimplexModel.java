@@ -11,14 +11,18 @@ package ca.ubc.magic.profiler.partitioning.control.alg.simplex;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math.optimization.linear.LinearConstraint;
 import org.apache.commons.math.optimization.linear.LinearObjectiveFunction;
 import org.apache.commons.math.optimization.linear.Relationship;
+
+import ca.ubc.magic.profiler.dist.control.Constants;
 
 public class SimplexModel {
 	
@@ -42,7 +46,7 @@ public class SimplexModel {
     
 	//Pinned together
 	Set<String[]> pairSet;
-                	
+	
 	public SimplexModel(int size){
             this.size = size;
             nodeIndexMap  = new ArrayList<String>(size);
@@ -58,11 +62,30 @@ public class SimplexModel {
 	
 	public void addNode(String nodeId, double sourceWeight, double targetWeight){
             if (nodeIndexMap.contains(nodeId))
-                throw new IllegalArgumentException ("node id exists");
+                throw new IllegalArgumentException ("node id exists: " + nodeId);
             nodeIndexMap.add(nodeId);
             int index = nodeIndexMap.indexOf(nodeId);
             nodeWeight[index][0] = sourceWeight;
             nodeWeight[index][1] = targetWeight;
+	}
+	
+	public final double[] getNodeWeights(String nodeId){
+		if (nodeIndexMap.contains(nodeId))
+            throw new IllegalArgumentException ("node id exists: " + nodeId);
+        nodeIndexMap.add(nodeId);
+        int index = nodeIndexMap.indexOf(nodeId);
+        double[] weights = new double[2];
+        weights[0] = nodeWeight[index][0];
+        weights[1] = nodeWeight[index][1];
+        return weights;
+	}
+	
+	public void updateNodeWeight(String nodeId, double sourceWeight, double targetWeight){
+        if (nodeIndexMap.contains(nodeId))
+            throw new IllegalArgumentException ("node id exists: " + nodeId);
+        int index = nodeIndexMap.indexOf(nodeId);
+        nodeWeight[index][0] = sourceWeight;
+        nodeWeight[index][1] = targetWeight;
 	}
 	
 	public void addEdge(String sourceNodeId, String targetNodeId, Double weight){
@@ -71,6 +94,25 @@ public class SimplexModel {
             if (sourceindex == null || targetindex == null)
                     throw new RuntimeException("source or target index is null");
             adjacencyMatrix[sourceindex][targetindex] = weight;            
+	}
+	
+	public final Double getEdgeWeight(String sourceNodeId, String targetNodeId){
+		 Integer sourceindex = nodeIndexMap.indexOf(sourceNodeId);
+         Integer targetindex = nodeIndexMap.indexOf(targetNodeId);
+         if (sourceindex == null || targetindex == null)
+                 throw new RuntimeException("source or target index is null");
+         return adjacencyMatrix[sourceindex][targetindex];
+	}
+	
+	public void updateEdgeWeight(String sourceNodeId, String targetNodeId, Double weight){
+        Integer sourceindex = nodeIndexMap.indexOf(sourceNodeId);
+        Integer targetindex = nodeIndexMap.indexOf(targetNodeId);
+        if (sourceindex == null || targetindex == null)
+                throw new RuntimeException("source or target index is null");
+        System.out.println("Updating " + sourceNodeId + "->" + targetNodeId + 
+        		"from: " + adjacencyMatrix[sourceindex][targetindex] + " to: " + weight + " -- " + 
+        		"Expected: " + (Constants.DB_EDGE_WEIGHT_INCREASE_FACTOR * adjacencyMatrix[sourceindex][targetindex]));
+        adjacencyMatrix[sourceindex][targetindex] = weight;            
 	}
 	
 	public Collection<LinearConstraint> getConstraints(){
@@ -197,6 +239,5 @@ public class SimplexModel {
 		 List<String> list = matchModuleNames(pattern);
 		 pinAdjacentPairs(list);
 	 }
-    
 }
 

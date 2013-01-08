@@ -4,8 +4,6 @@
  */
 package ca.ubc.magic.profiler.partitioning.control.alg.simplex;
 
-import java.util.List;
-
 import org.apache.commons.math.optimization.GoalType;
 import org.apache.commons.math.optimization.RealPointValuePair;
 import org.apache.commons.math.optimization.linear.SimplexSolver;
@@ -25,6 +23,7 @@ import ca.ubc.magic.profiler.dist.transform.IColocationFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
 import ca.ubc.magic.profiler.partitioning.control.alg.AbstractPartitioner;
+import ca.ubc.magic.profiler.partitioning.control.alg.helper.CutFinderHelper;
 
 /**
  *
@@ -62,6 +61,13 @@ public class SimplexPartitioner extends AbstractPartitioner {
                 Module m = mModuleModel.getModuleMap().get(mSimplexModel.getNode(i++));
                 m.setPartitionId(2 - (new Double(d)).intValue());                    
             }
+            
+            try {
+            	CutFinderHelper.findCuts(mModuleModel);
+            }catch (Exception e){
+            	System.err.println("Finding cut faied in the model: " + e.getMessage());
+            }
+            
             System.out.println("Solution: (" + solution.getValue() + ")");
         }catch(Exception e){
             throw new RuntimeException(e.getMessage());
@@ -144,5 +150,26 @@ public class SimplexPartitioner extends AbstractPartitioner {
 			for (ModulePair mp : filter.getFilterSet())
 				mSimplexModel.pinTogether(mp.getModules()[0].getName(), 
 						mp.getModules()[1].getName());
+	}
+
+	@Override
+	protected void filterModifyVertexCost(IModuleFilter filter, ModuleHost mh) {
+		String nodeName = mh.getModule().getName();
+		mSimplexModel.updateNodeWeight(nodeName, 
+				filter.filter(mh) * mSimplexModel.getNodeWeights(nodeName)[0], 
+				filter.filter(mh) * mSimplexModel.getNodeWeights(nodeName)[1]);
+	}
+
+	@Override
+	protected void filterModifyEdgeCost(IInteractionFilter filter, ModulePairHostPair mhp, InteractionCost cost) {
+
+		if(filter.isFilterable(mhp)){
+			InteractionCost newCost = new InteractionCost(cost.getHostPair(),
+					cost.getH1toH2Cost() * filter.filter(mhp), 
+					cost.getH2toH1Cost() * filter.filter(mhp), 
+					Boolean.FALSE);
+			mhp.setCost(newCost);
+			mInteractionCostMap.put(mhp, newCost);
+		}
 	}
 }
