@@ -7,7 +7,9 @@ package ca.ubc.magic.profiler.simulator.control;
 import ca.ubc.magic.profiler.dist.model.DistributionModel;
 import ca.ubc.magic.profiler.dist.model.execution.ExecutionRate;
 import ca.ubc.magic.profiler.dist.model.Host;
+import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.HostPair;
+import ca.ubc.magic.profiler.dist.model.Module;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.transform.IModuleCoarsener;
 import ca.ubc.magic.profiler.dist.model.report.ReportModel;
@@ -15,6 +17,7 @@ import ca.ubc.magic.profiler.parser.JipFrame;
 import ca.ubc.magic.profiler.parser.JipRun;
 import ca.ubc.magic.profiler.simulator.framework.SimulationUnit;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  *
@@ -36,7 +39,12 @@ public class TimeSimulator extends AbstractSimulator implements Runnable {
         mCoarsener = coarsener;        
     }
     
-    public void run() throws RuntimeException {
+    public void 
+    run() 
+    throws RuntimeException 
+    {
+    	System.err.println("Inside Time Simulator");
+    	
         if (mDistModel == null)
             throw new RuntimeException("The simulation unit or the distrbution model"
                     + "are not properly set");
@@ -66,26 +74,55 @@ public class TimeSimulator extends AbstractSimulator implements Runnable {
         report = new ReportModel(mDistModel.getHostModel().getHostMap().values());
     }   
     
-    private void simulate(JipFrame f) throws RuntimeException {        
-        report.getUnitModel().setFrom(mCoarsener.getFrameModuleName(f));        
+    private void 
+    simulate
+    ( JipFrame f ) 
+    throws RuntimeException 
+    {        
+        this.report.getUnitModel().setFrom(
+        	this.mCoarsener.getFrameModuleName(f)
+        );        
         calculateExecutionTime(f);
         for (JipFrame child: f.getChildren()) {                        
-            report.getUnitModel().setTo(mCoarsener.getFrameModuleName(child));
+            this.report.getUnitModel().setTo(
+            	this.mCoarsener.getFrameModuleName(child)
+            );
             calculateCommunicationTime(f, child);
             simulate (child);
         }        
     }
     
-    private void calculateExecutionTime(JipFrame f) throws RuntimeException {
-        String moduleName = mCoarsener.getFrameModuleName(f);
-        int    hostId = mDistModel.getModuleMap().get(moduleName).getPartitionId();
-        Host   host = mDistModel.getHostModel().getHostMap().get(hostId);       
-        if (host.getDefault())
-            report.getCostModel().addExecutionCost(f.getNetTime());
-        else{
-            report.getCostModel().addExecutionCost(
+    private void 
+    calculateExecutionTime
+    ( JipFrame f ) 
+    throws RuntimeException 
+    {
+        String moduleName 
+        	= this.mCoarsener.getFrameModuleName(f);
+        // the following throws a null pointer exception
+        Map<String, Module> module_map 
+        	= this.mDistModel.getModuleMap();
+ 
+        //System.err.println("Module Name: " + moduleName);
+        Module module 
+        	= module_map.get(moduleName);
+        Integer hostId
+        	= module.getPartitionId();
+        
+        HostModel host_model
+        	= this.mDistModel.getHostModel();
+        Map<Integer, Host> host_map
+        	= host_model.getHostMap();
+        Host host
+        	= host_map.get(hostId);       
+        
+        if (host.getDefault()) {
+            this.report.getCostModel().addExecutionCost(f.getNetTime());
+        }
+        else {
+            this.report.getCostModel().addExecutionCost(
                     ExecutionRate.getExecutionTime(
-                        host, mDistModel.getHostModel().getDefaultHost(), f.getNetTime()));
+                        host, this.mDistModel.getHostModel().getDefaultHost(), f.getNetTime()));
         }
     }
     

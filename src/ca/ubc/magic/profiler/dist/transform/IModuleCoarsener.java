@@ -21,6 +21,4 @@ public interface IModuleCoarsener {
     public String getFrameModuleName(JipFrame frame);        
     
     public ModuleModel getModuleModelFromParser(JipRun jipRun);
-    
-    public void setModuleIgnoreSet(Set<CodeEntity> moduleNameSet);
 }

@@ -4,6 +4,12 @@
  */
 package ca.ubc.magic.profiler.partitioning.control.alg.simplex;
 
+import java.util.List;
+
+import org.apache.commons.math.optimization.GoalType;
+import org.apache.commons.math.optimization.RealPointValuePair;
+import org.apache.commons.math.optimization.linear.SimplexSolver;
+
 import ca.ubc.magic.profiler.dist.model.Host;
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.HostPair;
@@ -15,12 +21,10 @@ import ca.ubc.magic.profiler.dist.model.ModulePairHostPair;
 import ca.ubc.magic.profiler.dist.model.TwoHostHelper;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionCost;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionCostHelper;
+import ca.ubc.magic.profiler.dist.transform.IColocationFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
 import ca.ubc.magic.profiler.partitioning.control.alg.AbstractPartitioner;
-import org.apache.commons.math.optimization.GoalType;
-import org.apache.commons.math.optimization.RealPointValuePair;
-import org.apache.commons.math.optimization.linear.SimplexSolver;
 
 /**
  *
@@ -58,7 +62,7 @@ public class SimplexPartitioner extends AbstractPartitioner {
                 Module m = mModuleModel.getModuleMap().get(mSimplexModel.getNode(i++));
                 m.setPartitionId(2 - (new Double(d)).intValue());                    
             }
-            System.out.println("Solution: " + solution.getValue());
+            System.out.println("Solution: (" + solution.getValue() + ")");
         }catch(Exception e){
             throw new RuntimeException(e.getMessage());
         }
@@ -126,4 +130,19 @@ public class SimplexPartitioner extends AbstractPartitioner {
            mSimplexModel.pinTogether(mhp.getModulePair().getModules()[0].getName(), 
                    mhp.getModulePair().getModules()[1].getName());
     }
+
+    /**
+     * The filterHostColocation filter chooses to have modules colocated on the same host.
+     */
+	@Override
+	protected void filterHostColocation(IColocationFilter filter, ModuleHost mh) {
+		// if the set of filters in the filter is not null, there are 
+		// module pairs to be filtered.
+		if (filter.isFilterable(null))
+			// retrieves the list of to-be-colocated filters and pins them
+			// together.
+			for (ModulePair mp : filter.getFilterSet())
+				mSimplexModel.pinTogether(mp.getModules()[0].getName(), 
+						mp.getModules()[1].getName());
+	}
 }

@@ -31,6 +31,9 @@ public class BundleModuleCoarsener implements IModuleCoarsener {
     }
     
     public ModuleModel getModuleModelFromParser(JipRun jipRun) {
+    	
+    	// TODO tell Nima about this problem
+    	// mIgnoreSet = mConstraintModel.getIgnoreSet();
         
         mModuleModel.setName("Profile " + jipRun.getDate());
         for(Long threadId: jipRun.threads()) {
@@ -44,22 +47,37 @@ public class BundleModuleCoarsener implements IModuleCoarsener {
     public void visitFrameForModuling(JipFrame frame){
         
         Module pModule = getFrameModule(frame);
-        pModule.addExecutionCost(new Double(frame.getNetTime()));
-        pModule.addExecutionCount(frame.getCount());
+        
+        // if the module is not ignored by the system.
+        if (pModule != null){
+	        pModule.addExecutionCost(new Double(frame.getNetTime()));
+	        pModule.addExecutionCount(frame.getCount());
+        }
         
         // add info for this frame's children
         for (JipFrame childFrame: frame.getChildren()) {            
             String cmName = getFrameModuleName(childFrame);
-            if (!pModule.getName().equals(cmName))
+            if (pModule == null || !pModule.getName().equals(cmName))
             {   
                 Module cModule = getFrameModule(childFrame);
-
-                ModulePair mp = new ModulePair(pModule, cModule);
-                addDataExchange(mp, getFrameModuleDataFromParent(childFrame),
-                        getFrameModuleDataToParent(childFrame),                      
-                        childFrame.getCountFromParent(),
-                        childFrame.getCountToParent());                               
+                
+                // cModule or pModule might be null if they are
+                // said to be ignored by the constrains model fed
+                // to the model.
+                if (pModule != null && cModule != null){
+                	
+                	// create the module pair representing the edge
+                	ModulePair mp = new ModulePair(pModule, cModule);
+                	
+                	// add edge to the module model
+	                addDataExchange(mp, getFrameModuleDataFromParent(childFrame),
+	                        getFrameModuleDataToParent(childFrame),                      
+	                        childFrame.getCountFromParent(),
+	                        childFrame.getCountToParent());
+	                
+                }
             }
+            // recursive moduling on the ancestors of the childFrame
             visitFrameForModuling(childFrame);
         }        
     }
@@ -95,9 +113,14 @@ public class BundleModuleCoarsener implements IModuleCoarsener {
         }
     }
     
-    protected Module getFrameModule(JipFrame frame){
+    private Module getFrameModule(JipFrame frame){
         String mName = getFrameModuleName(frame);
         CodeUnitType type  = getFrameModuleType(frame);
+        
+        // if the module needs to be ignored as specified in the constraint model.
+        // it returns null as the module for the frame.
+        if (shouldIgnore(frame))
+        	return null;
         
         if (mModuleModel.getModuleMap().get(mName) == null){
             mModuleModel.getModuleMap().put(mName, new Module(mName, type));
@@ -109,7 +132,21 @@ public class BundleModuleCoarsener implements IModuleCoarsener {
        return mModuleModel;
     }
     
-    public void setModuleIgnoreSet(Set<CodeEntity> moduleNameSet) {
-        mIgnoreSet = moduleNameSet;
-    }
+    /**
+     * determines whether or not the frame should be ignored when building the module model. 
+     * 
+     * @param frame
+     * @return
+     */
+    private boolean shouldIgnore(JipFrame frame){
+    	//TODO nimak - hacked code to deal with jdbc wrapper and execute query. it should stay in the model.
+    	if (getFrameModuleName(frame).contains("jdbcwrapper") && getFrameModuleName(frame).contains("executeQuery"))
+ 		   return false;
+    	
+        if (mIgnoreSet != null)
+               for(CodeEntity entity : mIgnoreSet)
+                   if (entity.getEntityPattern().matches(getFrameModuleName(frame), null, null))
+                       return true;
+        return false;
+   }
 }

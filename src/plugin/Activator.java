@@ -4,24 +4,15 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import snapshots.events.logging.EventLogActionHandler;
-import snapshots.model.ActiveSnapshotModel;
-import snapshots.model.EventLogListModel;
-import snapshots.model.SnapshotsListModel;
-
 public class 
 Activator 
 extends AbstractUIPlugin 
-// TODO: get rid of the global models
 {
 	public static final String PLUGIN_ID 
 		= "plugin";
 	private static Activator plugin;
 	
-	private ActiveSnapshotModel active_snapshot_model;
-	private EventLogActionHandler action_handler;
-	private EventLogListModel event_log_list_model;
-	private SnapshotsListModel snapshots_list_model;
+	private Object 					file_tree_content_provider;
 	
 	public 
 	Activator() 
@@ -34,15 +25,6 @@ extends AbstractUIPlugin
 	{
 		super.start(context);
 		plugin = this;
-		
-		this.active_snapshot_model 
-			= new ActiveSnapshotModel();
-		this.action_handler 
-			= new EventLogActionHandler();
-		this.event_log_list_model
-			= new EventLogListModel();
-		this.snapshots_list_model
-			= new SnapshotsListModel();
 	}
 
 	public void 
@@ -68,27 +50,17 @@ extends AbstractUIPlugin
 		return imageDescriptorFromPlugin(PLUGIN_ID, path);
 	}
 	
-	public ActiveSnapshotModel 
-	getActiveSnapshotModel() 
+	public void 
+	persistTreeContentProvider
+	( Object missing ) 
 	{
-		return this.active_snapshot_model;
+		this.file_tree_content_provider
+			= missing;
 	}
 	
-	public EventLogActionHandler
-	getActionHandler()
+	public Object
+	getTreeContentProvider()
 	{
-		return this.action_handler;
-	}
-	
-	public EventLogListModel
-	getEventLogListModel()
-	{
-		return this.event_log_list_model;
-	}
-	
-	public SnapshotsListModel
-	getSnapshotsListModel()
-	{
-		return this.snapshots_list_model;
+		return this.file_tree_content_provider;
 	}
 }

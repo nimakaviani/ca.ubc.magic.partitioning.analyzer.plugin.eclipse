@@ -13,6 +13,7 @@ import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.ModulePairHostPair;
 import ca.ubc.magic.profiler.dist.model.TwoHostHelper;
+import ca.ubc.magic.profiler.dist.transform.IColocationFilter;
 import ca.ubc.magic.profiler.dist.transform.IInteractionFilter;
 import ca.ubc.magic.profiler.dist.transform.IModuleFilter;
 import ca.ubc.magic.profiler.partitioning.control.alg.AbstractPartitioner;
@@ -146,4 +147,9 @@ public class MetisPartitioner extends AbstractPartitioner {
     protected void filterHostInteraction(IInteractionFilter filter, ModulePairHostPair mhp) {
         throw new UnsupportedOperationException();
     }
+
+	@Override
+	protected void filterHostColocation(IColocationFilter filter, ModuleHost mh) {
+		throw new UnsupportedOperationException();
+	}
 }

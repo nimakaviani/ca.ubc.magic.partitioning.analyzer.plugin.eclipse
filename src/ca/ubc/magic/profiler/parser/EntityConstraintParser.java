@@ -37,7 +37,11 @@ public class EntityConstraintParser extends DefaultHandler {
         FileReader r = new FileReader(filename);
         xr.parse(new InputSource(r));          
         
-        return mHandler.getConstraintModel();
+        EntityConstraintModel return_value = mHandler.getConstraintModel();
+        
+        assert return_value != null : "The parsing should not return a null";
+        
+        return return_value;
     }   
     
     @Override
@@ -65,6 +69,8 @@ public class EntityConstraintParser extends DefaultHandler {
             if (name.equals("constraints")){
             }else if (name.equals("root")){
                 mHandler.setConstraintType(name);
+            }else if (name.equals("entry")){
+                mHandler.startEntry();
             }else if (name.equals("expose")){
                 mHandler.setConstraintType(name);
             }else if (name.equals("ignore")){
@@ -84,10 +90,17 @@ public class EntityConstraintParser extends DefaultHandler {
             }
             else if (name.equals("target")){
                 mHandler.startTarget();
+            }else if (name.equals("filters")){
+            	mHandler.setConstraintType(name);
+            }else if (name.equals("filter")){
+            	mHandler.startFilter(
+            			getAttrString(atts, "type"), 
+            			getAttrString(atts, "name"),
+            			getAttrLong(atts, "host"));
             }
             
         }catch (Exception e){
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException(e.getMessage() + ": " + name);
         }
     }
 
@@ -96,6 +109,8 @@ public class EntityConstraintParser extends DefaultHandler {
         if (name.equals("constraints")){
             }else if (name.equals("entity")){
                 mHandler.endEntity();
+            }else if (name.equals("entry")){
+                mHandler.endEntry();
             }else if (name.equals("component")){
                 mHandler.endUnit(getText(), CodeUnitType.COMPONENT);
             }else if (name.equals("class")){
@@ -104,6 +119,8 @@ public class EntityConstraintParser extends DefaultHandler {
                 mHandler.endUnit(getText(), CodeUnitType.METHOD);
             }else if (name.equals("target")){
                 mHandler.endTarget(getText());
+            }else if (name.equals("filter")){
+            	mHandler.endFilter();
             }else {
                 mHandler.removeConstraintType();
             }

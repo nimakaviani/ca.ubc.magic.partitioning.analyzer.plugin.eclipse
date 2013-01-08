@@ -12,10 +12,10 @@
             name="Snapshot View">
       </view>
       <view
-            class="partitioner.views.ModelView"
+            class="partitioner.views.PartitionerConfigurationView"
             icon="icons/sample.gif"
-            id="plugin.views.model_view"
-            name="Model View"
+            id="plugin.views.partitioner_configuration_view"
+            name="Configuration View"
             restorable="true">
       </view>
    </extension>
@@ -44,11 +44,6 @@
             allPopups="false"
             locationURI="popup:plugin.views.snapshot_view">
          <command
-               commandId="plugin.addSnapshotFolder"
-               id="AddSnapshotFolder"
-               style="push">
-         </command>
-         <command
                commandId="plugin.ClearFolders"
                id="ClearFolders"
                style="push">
@@ -58,8 +53,61 @@
                id="RemoveSnapshotsFolder"
                style="push">
          </command>
+         <command
+               commandId="plugin.addSnapshotFolder"
+               id="AddSnapshotFolder"
+               style="push">
+         </command>
+         <command
+               commandId="plugin.RemoveModel"
+               id="RemoveModel"
+               style="push">
+            <visibleWhen
+                  checkEnabled="true">
+               <and>
+                  <with
+                        variable="selection">
+                     <count
+                           value="1">
+                     </count>
+                  </with>
+                  <iterate
+                        ifEmpty="false"
+                        operator="and">
+                     <instanceof
+                           value="snapshots.views.VirtualModelFileInput">
+                     </instanceof>
+                  </iterate>
+               </and>
+            </visibleWhen>
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="popup:plugin.views.model_creation_editor">
+         <command
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.add_simulation"
+               id="AddSimulation"
+               style="push">
+         </command>
+         <command
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation"
+               id="ModifySimulation"
+               style="push">
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="org.eclipse.debug.ui.contextualLaunch.run.submenu">
+         <command
+               commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.run_on_profiler"
+               label="Run on Profiler"
+               style="push">
+         </command>
       </menuContribution>
    </extension>
+   
+   
    <extension
          point="org.eclipse.ui.handlers">
       <handler
@@ -74,9 +122,26 @@
             class="ClearFolders"
             commandId="plugin.ClearFolders">
       </handler>
+      <handler
+            class="RemoveModel"
+            commandId="plugin.RemoveModel">
+      </handler>
+      <handler
+            class="AddSimulation"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.add_simulation">
+      </handler>
+      <handler
+            class="ModifySimulation"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation">
+      </handler>
+      <handler
+            class="RunOnProfiler"
+            commandId="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.run_on_profiler">
+      </handler>
    </extension>
-   <extension
-         point="org.eclipse.ui.commands">
+   
+   
+   <extension point="org.eclipse.ui.commands">
       <command
             id="plugin.addSnapshotFolder"
             name="Add Snapshot Folder">
@@ -89,6 +154,56 @@
             id="plugin.ClearFolders"
             name="Clear Contents">
       </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.add_simulation"
+            name="Add Simulation">
+      </command>
+      <command
+            id="plugin.RemoveModel"
+            name="RemoveModel">
+      </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.modify_simulation"
+            name="Create Modified Simulation">
+      </command>
+      <command
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.run_on_profiler"
+            name="Run On Profiler">
+      </command>
    </extension>
-
+   <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="LocalProfiledApplicationDelegate"
+            id="plugin.profiled_application"
+            modes="run, debug"
+            name="Java Profile"
+            public="true">
+      </launchConfigurationType>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      <launchConfigurationTypeImage
+            configTypeID="plugin.profiled_application"
+            icon="icons/disconnect_co2.gif"
+            id="plugin.javaProfile">
+      </launchConfigurationTypeImage>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchShortcuts">
+      <shortcut
+            class="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.LaunchShortcut1"
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.java_profile"
+            label="Java Profile"
+            modes="run, debug">
+      </shortcut>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.LaunchConfigurationTabGroup"
+            id="ca.ubc.magic.partitioning.analyzer.plugin.eclipse.launchConfigurationTabGroup2"
+            type="plugin.profiled_application">
+      </launchConfigurationTabGroup>
+   </extension>
 </plugin>

@@ -31,29 +31,13 @@ package snapshots.com.mentorgen.tools.util.profile;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.Socket;
+import java.net.Socket;import plugin.LogUtilities;
 
 public class ClientHelper {
 
   public static void send(String command, String server, String port) {
     try {
-      doSend(command, server, port);
-    }
-    catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
+      doSend(command, server, port);    }    catch (IOException e) {      e.printStackTrace();      LogUtilities.logError(e);
+    }  }
 
-  static void doSend(String command,
-                     String server,
-                     String port)
-      throws IOException {
-    Socket socket = new Socket(server, Integer.parseInt(port));
-    OutputStream os = socket.getOutputStream();
-    BufferedOutputStream out = new BufferedOutputStream(os);
-    out.write(command.getBytes());
-    out.write('\r');
-    out.flush();
-    socket.close();
-  }
-}
+  static void   doSend  ( String command,    String server,    String port)  throws IOException  {    Socket socket = new Socket(server, Integer.parseInt(port));    OutputStream os = socket.getOutputStream();    BufferedOutputStream out = new BufferedOutputStream(os);    out.write(command.getBytes());    out.write('\r');    out.flush();    socket.close();  }}

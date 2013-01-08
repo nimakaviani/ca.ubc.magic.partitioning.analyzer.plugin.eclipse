@@ -17,11 +17,11 @@ public class InteractionFactory {
         SIMPLE_MONETARY ("Simple Monetary Cost"),
         CLOUD_MONETARY ("Cloud Monetary Cost");
         
-        private String text;
+         private String text;
 
-        InteractionCostType(String text) {
-        	this.text = text;
-        }
+         InteractionCostType(String text) {
+            this.text = text;
+         }
 
          public String getText() {
             return this.text;

@@ -52,7 +52,7 @@ public class SimulationFramework implements ISimulatorListener {
     }
     
     public void addUnit(SimulationUnit unit, boolean isRandom){
-        // checks to see wether the template needs to be checked
+        // checks to see whether the template needs to be checked
         // against the submitted unit.
         if (mCheckWithTemplate && mTemplate == null)
             throw new RuntimeException("No template is set to check the unit against.");
@@ -63,7 +63,7 @@ public class SimulationFramework implements ISimulatorListener {
             unit.applySignature(mTemplate);
         
         // when checking the availability of a unit in the list, check for the
-        // key of the unit(its name plys its algorithm) as well as the signature
+        // key of the unit(its name plus its algorithm) as well as the signature
         // of the two. Maybe the same algorithm for the same profiler is used on
         // a different module placement signature.
         if (mSimulationMap.get(unit.getKey()) != null)
@@ -79,9 +79,9 @@ public class SimulationFramework implements ISimulatorListener {
     
     public void removeUnit(SimulationUnit unit){
         mSimulationMap.remove(unit.getKey());
-//        for (IFrameworkListener l : listenerList){
-//            l.simulationRemoved(unit);
-//        }
+        for (IFrameworkListener l : listenerList){
+            l.simulationRemoved(unit);
+        }
     }
     
     public Map<String, SimulationUnit> getSimulationMap(){
@@ -155,44 +155,74 @@ public class SimulationFramework implements ISimulatorListener {
         listenerList.remove(listener);
     }
     
-    public void run(ISimulator simulator){        
+    public void run(ISimulator simulator){   
+    	System.err.println("Running Simulation Framework");
+    	// problem: the msSimulationMap has a unit
+    	// that the unitMap in the TestFramework does not
+    	for(SimulationUnit unit : mSimulationMap.values()){
+    		System.err.println(unit.getKey());
+    	}
+    	int count = 0;
         for (SimulationUnit unit : mSimulationMap.values()){
             runSimulationForUnit(simulator, unit);
+            System.err.println("Count: " + ++count);
         }
+        System.err.println("Finished running simulation framework");
     }
     
-    private synchronized void runSimulationForUnit(ISimulator simulator, SimulationUnit unit){
+    private synchronized void
+    runSimulationForUnit
+    ( ISimulator simulator, SimulationUnit unit )
+    {
         try{       
-            mCurrentUnit = unit;            
+            this.mCurrentUnit = unit;            
             simulator.addListener(this);  
             simulator.simulate(unit);
             Thread t = new Thread((Runnable) simulator);
-            mCurrentSimThread= t;
+            
+            this.mCurrentSimThread= t;
             t.start();        
-            t.join();            
+            t.join();    
+            
+            // try
+            //simulator.removeListener(this);
         }catch(Exception e){
             e.printStackTrace();
         }
     }
     
     public void valueChanged(ReportModel report) {
-        for (IFrameworkListener l : listenerList)                       
-            l.updateSimulationReport(mCurrentUnit, report);                    
+    	int count = 0;
+        for (IFrameworkListener l : listenerList){          
+        	System.err.println("Value changed list count: " + ++count);
+            l.updateSimulationReport(mCurrentUnit, report); 
+        }
     }
     
     public void unitSimulationOver(ReportModel report){
-        mCurrentUnit.setUnitCost(report.getCostModel().getTotalCost());
-        if (mBestSimUnit == null || mCurrentUnit.getUnitCost() < mBestSimUnit.getUnitCost() )
-            mBestSimUnit = mCurrentUnit;
-        for (IFrameworkListener l : listenerList)
+    	System.err.println("Inside simulation over");
+    	
+        this.mCurrentUnit.setUnitCost(
+        	report.getCostModel().getTotalCost()
+        );
+        if (this.mBestSimUnit == null || this.mCurrentUnit.getUnitCost() < this.mBestSimUnit.getUnitCost() ){
+            this.mBestSimUnit = this.mCurrentUnit;
+        }
+        for( IFrameworkListener l : listenerList ){
             l.updateBestSimReport(mBestSimUnit);
+        }
     }
     
-    private void checkAgainstTemplate(SimulationUnit unit){
+    private void 
+    checkAgainstTemplate
+    ( SimulationUnit unit )
+    {
         if (!mCheckWithTemplate)
             return;
+        
         if (!mTemplate.getDistModel().getHostModel().equals(unit.getDistModel().getHostModel()))
             throw new RuntimeException("Template host model does not match unit host model");
+        
         Set<String> moduleNameSet = mTemplate.getDistModel().getModuleMap().keySet();
         for (String key : unit.getDistModel().getModuleMap().keySet())
             if (!moduleNameSet.contains(key))

@@ -55,11 +55,6 @@ public class RequestBasedBundleModuleCoarsener extends ThreadBasedBundleModuleCo
            // ignored.
            boolean descendentIgnoreImmediate = recursiveWriteNode(childNode, id);
            
-//           if (descendentIgnoreImmediate){
-//               node.add(childNode);
-//               node.getChildSet().remove(childNode);
-//           }
-           
            descendentIgnore =  descendentIgnoreImmediate && descendentIgnore;
            
            // if the node is a replicable node that should be added to the graph, make a 
@@ -88,6 +83,7 @@ public class RequestBasedBundleModuleCoarsener extends ThreadBasedBundleModuleCo
             m = new Module(name, node.getType());
             m.setExecutionCost(node.getVertexWeight());
             m.setExecutionCount(node.getCount());
+            m.setNonReplicable(isNonReplicable(node.getName()));
             mModuleModel.getModuleMap().put(m.getName(), m);
         }else {
             m.addExecutionCost(node.getVertexWeight());
@@ -106,10 +102,6 @@ public class RequestBasedBundleModuleCoarsener extends ThreadBasedBundleModuleCo
             
             if (shouldIgnore(node))
                 return true;
-            
-//            Module m1 = new Module(node.getName()+"_"+node.getId()+"_"+node.getInteractionId());
-//            Module m2 = new Module(mEnd.getName());
-//            addDataExchange(new ModulePair(m1, m2), 0L , 0L, 0L);	
             return false;
         }
         
@@ -131,11 +123,6 @@ public class RequestBasedBundleModuleCoarsener extends ThreadBasedBundleModuleCo
         if (shouldIgnore(node) && descendentIgnoreAll)
             return true;
         
-        if (!shouldIgnore(node) && descendentIgnoreAll){
-//            Module m1 = new Module(node.getName()+"_"+node.getId()+"_"+node.getInteractionId());
-//            Module m2 = new Module(mEnd.getName());
-//            addDataExchange(new ModulePair(m1, m2), 0L , 0L, 0L);	
-        }
         return false;
     }
     
@@ -174,42 +161,12 @@ public class RequestBasedBundleModuleCoarsener extends ThreadBasedBundleModuleCo
     protected void applyRecursion(NodeObj rootNode) {
 
         int i = 0;
-        for (NodeObj child : rootNode.getChildSet()){
-            
-//            StringBuffer b = new StringBuffer(i + " :: " + child.getName()+ "visit: " + child.getNodeVisit() + "\n");
+//            StringBuffer b = new StringBuffer(i + " :: " + child.getName()+ " visit: " + child.getNodeVisit() + "\n");
 //            printTree(child, 0, b);
 //            System.out.println(b.toString()+"\n\n\n");
 
-            recursiveWriteNode(child, i);
-            recursiveWriteEdge(child, i);
-
-//          The following few lines are just debugging code for printing the results of
-//          a request-based dependency graph design.
-            
-//            StringBuffer b = new StringBuffer(i + " :: " + child.getName()+"\n");
-//            printTree(child, 0, b);
-//            System.out.println(b.toString()+"\n\n\n");
-
-            i++;
-        }
-    }
-    
-    protected boolean isNonReplicable(String nodeName){
-        return isNodeNameMatchedInEntitySet(mConstraintModel.getNonReplicableSet(), nodeName);
-    }
-    
-    protected boolean isReplicable(String nodeName){
-        boolean isReplicable = isNodeNameMatchedInEntitySet(mConstraintModel.getReplicableSet(), nodeName);
-        if (isNonReplicable(nodeName) && isReplicable)
-            throw new RuntimeException("Node cannot be both replicable and non-replicable: " + nodeName);
-        return isReplicable;
-    }
-    
-    protected boolean isNodeNameMatchedInEntitySet(Set<CodeEntity> entitySet, String nodeName){
-        for (CodeEntity entity : entitySet)
-            if (entity.getEntityPattern().matches(nodeName, null, null))
-                return true;
-        return false;
+        recursiveWriteNode(rootNode, i);
+        recursiveWriteEdge(rootNode, i);
     }
     
     protected String getConstrainedNodeName(NodeObj node, NodeObj childNode, int id){

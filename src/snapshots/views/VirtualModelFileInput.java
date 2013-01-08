@@ -8,19 +8,22 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IPersistableElement;
 import org.eclipse.ui.IStorageEditorInput;
 
-@SuppressWarnings("serial")
-public class 
+final public class 
 VirtualModelFileInput 
 extends File
 implements IStorageEditorInput 
 {
-	private IStorage storage;
+	private static final long serialVersionUID 
+		= 6830081047819279737L;
+	transient private IStorage storage;
+	private String secondary_name;
 	
 	public
 	VirtualModelFileInput
 	( String parent, IStorage storage )
 	{
-		super(parent, parent);
+		super(parent);
+		System.out.println(parent);
 		this.storage
 			= storage;
 	}
@@ -40,10 +43,23 @@ implements IStorageEditorInput
 	}
 
 	@Override
-	public String 
+	synchronized public String 
 	getName() 
 	{
-		return this.storage.getName();
+		if( this.secondary_name == null){
+			return this.storage.getName();
+		}
+		else {
+			return this.secondary_name;
+		}
+	}
+	
+	synchronized public void
+	setSecondaryName
+	( String secondary_name )
+	{
+		this.secondary_name
+			= secondary_name;
 	}
 
 	@Override
@@ -54,17 +70,10 @@ implements IStorageEditorInput
 	}
 
 	@Override
-	public String 
+	synchronized public String 
 	getToolTipText() 
 	{
-		return this.storage.getName() + " " + this.format(this.storage.getFullPath().toString());
-	}
-
-	private String 
-	format
-	( String string ) 
-	{
-		return string.replace("\\", "/");
+		return this.storage.getName() + " " + this.storage.getFullPath().toString();
 	}
 
 	@Override
@@ -97,18 +106,13 @@ implements IStorageEditorInput
 		return false;
 	}
 	
+	// this must be overriden as below in order for the
+	// application to work
 	@Override
 	public boolean
 	equals
-	( Object file)
-	// this is used by the IWorkBenchPage.openEditor function
-	// to determine when two editors are the same
+	( Object file )
 	{
-		if(file instanceof VirtualModelFileInput){
-			return file == this;
-		}
-		else {
-			return false;
-		}
+		return file == this;
 	}
 }

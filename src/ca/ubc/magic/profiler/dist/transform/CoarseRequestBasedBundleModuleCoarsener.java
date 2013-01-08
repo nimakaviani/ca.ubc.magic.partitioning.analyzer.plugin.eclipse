@@ -19,8 +19,9 @@ import java.util.Set;
 public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleModuleCoarsener {
     
     private static final String ARIES_HEAD_DATA_ROOT = "org.apache.aries.samples.ariestrader.core";
+    private static final String ARIES_HEAD_DATA_ROOT_TOMCAT = "jdbcwrapper";
     private static final String RUBIS_HEAD_DATA_ROOT = "com.notehive.osgi.hibernate-samples.hibernate-classes";
-    private static final String HEAD_DATA_ROOT = ARIES_HEAD_DATA_ROOT;
+    private static final String HEAD_DATA_ROOT = ARIES_HEAD_DATA_ROOT_TOMCAT;
     
     private static final Set<String> ARIES_FIXED_DATA_NODE_SET = new HashSet<String>(
             Arrays.asList(new String[]{
@@ -29,6 +30,15 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
                 "AccountProfileDataBeanImpl",
                 "OrderDataBeanImpl",
                 "HoldingDataBeanImpl"
+            }));
+    private static final Set<String> ARIES_FIXED_DATA_NODE_SET_TOMCAT = new HashSet<String>(
+            Arrays.asList(new String[]{
+//                "accountejb",
+//                "quoteejb",
+//                "accountprofileejb",
+//                "orderejb",
+//                "holdingejb"
+            	"DBBundle:MySQL"
             }));
     private static final Set<String> RUBIS_FIXED_DATA_NODE_SET = new HashSet<String>(
             Arrays.asList(new String[]{
@@ -41,7 +51,7 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
                 "buy-session",
                 "hibernate-classes"
             }));
-    private static final Set<String> FIXED_DATA_NODE_SET = ARIES_FIXED_DATA_NODE_SET;
+    private static final Set<String> FIXED_DATA_NODE_SET = ARIES_FIXED_DATA_NODE_SET_TOMCAT;
     
     private static final Set<String> ARIES_FIXED_LOGIC_NODE_SET = new HashSet<String>(
             Arrays.asList(new String[]{
@@ -148,15 +158,16 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
         super.printTree(parentNode, level, b);
     }
 
+    private static int i = 0;
     @Override
     protected void applyRecursion(NodeObj rootNode) {
 
-        int i = 0;
+        
         try {
             if (rootNode == null || rootNode.getChildSet() == null)
                 return;
             
-            for (NodeObj child : rootNode.getChildSet()){
+//            for (NodeObj child : rootNode.getChildSet()){
 
     //          The following few lines are just debugging code for printing the results of
     //          a request-based dependency graph design.
@@ -165,10 +176,10 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
 //                printTree(child, 0, b);
 //                System.out.println(b.toString()+"\n");
                 
-                preprocessing(child);
+                preprocessing(rootNode);
 
                 // The following line does the coarsening for the modules
-                ExtendedNodeObj returnedNode = recursiveCoarsener(child, i);
+                ExtendedNodeObj returnedNode = recursiveCoarsener(rootNode, i);
 
                 if (returnedNode != null){
 //                    System.out.println(returnedNode.getName());
@@ -189,7 +200,7 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
                 }
                 
                 postprocessing();
-            }
+//            }
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -233,7 +244,7 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
         return false;
     }
     
-    class ExtendedNodeObj extends NodeObj {
+    protected class ExtendedNodeObj extends NodeObj {
         
         protected NodeType  mNodetype  = NodeType.NULL;
         protected NodeState mNodeState = NodeState.LOOSE;
@@ -317,7 +328,7 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
             for (ExtendedNodeObj tmpObj : tmpChildNonDataSet)
                 this.merge(tmpObj);
             
-            if (tmpChildDataSet.size() > 0 && tmpChildDataSet.size() < 2)
+            if (tmpChildDataSet.size() > 0 && tmpChildDataSet.size() < 2 && !this.getName().contains(HEAD_DATA_ROOT))
                 for (ExtendedNodeObj childObj : tmpChildDataSet){
                     
 //                    Printouts for the purpose of testing node merges

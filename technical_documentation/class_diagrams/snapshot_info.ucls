@@ -1,0 +1,80 @@
+<class-diagram version="1.0.9" icons="true" always-add-relationships="false" generalizations="true" realizations="true" 
+  associations="true" dependencies="false" nesting-relationships="true">  
+  <interface id="1" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.ISnapshotInfoModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/ISnapshotInfoModel.java" binary="false">    
+    <position height="-1" width="-1" x="246" y="293"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <interface id="2" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.IModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/IModel.java" binary="false">    
+    <position height="112" width="325" x="78" y="33"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </interface>  
+  <class id="3" corner="BOTTOM_RIGHT" language="java" name="snapshots.model.ActiveSnapshotModel" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/model/ActiveSnapshotModel.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="246" y="688"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="4" corner="BOTTOM_RIGHT" language="java" name="snapshots.controller.PropertyChangeDelegate" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" 
+    file="/ca.ubc.magic.partitioning.analyzer.plugin.eclipse/src/snapshots/controller/PropertyChangeDelegate.java" 
+    binary="false">    
+    <position height="-1" width="-1" x="779" y="690"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true"/>      
+      <operations public="true" package="true" protected="true" private="true"/>    
+    </display>  
+  </class>  
+  <class id="5" corner="BOTTOM_RIGHT" language="java" name="java.beans.PropertyChangeSupport" 
+    project="ca.ubc.magic.partitioning.analyzer.plugin.eclipse" file="C:/Program Files/Java/jre7/lib/rt.jar" 
+    binary="true">    
+    <position height="-1" width="-1" x="773" y="349"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" visibility="true">      
+      <attributes public="false" package="false" protected="false" private="false"/>      
+      <operations public="true" package="false" protected="true" private="false"/>    
+    </display>  
+  </class>  
+  <association id="6">    
+    <end type="SOURCE" refId="4" navigable="false">      
+      <attribute id="7" name="listeners"/>      
+      <multiplicity id="8" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="5" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <generalization id="9">    
+    <end type="SOURCE" refId="1"/>    
+    <end type="TARGET" refId="2"/>  
+  </generalization>  
+  <realization id="10">    
+    <end type="SOURCE" refId="3"/>    
+    <end type="TARGET" refId="1"/>  
+  </realization>  
+  <association id="11">    
+    <end type="SOURCE" refId="3" navigable="false">      
+      <attribute id="12" name="property_change_delegate"/>      
+      <multiplicity id="13" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="4" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    visibility="true">    
+    <attributes public="true" package="true" protected="true" private="true"/>    
+    <operations public="true" package="true" protected="true" private="true"/>  
+  </classifier-display>  
+  <association-display labels="true" multiplicity="true"/>
+</class-diagram>

@@ -29,8 +29,6 @@ public class InteractionRate {
      */
     public static double getTransmissionTime(long bytes, long count, 
             double bandwidth, double handshakeCost, double liftingLoweringCost, double latency){
-        if (bytes == 0)
-            return 0.0;       
         
         double poissonQueueingDelay = ((bytes * BYTE_2_BIT_RATE) / bandwidth) /
                 (Math.pow(bandwidth / count, 2) + ((bandwidth * bytes) / (Math.pow(count, 2))));
@@ -41,8 +39,6 @@ public class InteractionRate {
     }
     
     public static double getCloudDataMonetaryCost(long bytes, long count, double interactionCost){
-        if (bytes == 0 || count == 0)
-            return 0.0;   
         
         double dataCost = CostConversionSingleton.getInstance().interactionConvert(bytes, count) * interactionCost;
         
@@ -53,9 +49,6 @@ public class InteractionRate {
             double bandwidth, double handshakeCost, double liftingLoweringCost, double latency,   
             double executionCost, double executionScale,
             double interactionCost){
-        
-        if (bytes == 0 || count == 0)
-            return 0.0;   
         
         double cpuIdleTime = getTransmissionTime(bytes, count, bandwidth, handshakeCost,
                 liftingLoweringCost, latency);

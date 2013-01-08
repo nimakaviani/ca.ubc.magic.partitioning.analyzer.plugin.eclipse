@@ -402,7 +402,8 @@ public class DistSimulatorView extends FrameView {
                 .addGap(3, 3, 3))
         );
 
-        fileChooser.setCurrentDirectory(new java.io.File("/home/nima"));
+        // fileChooser.setCurrentDirectory(new java.io.File("/home/nima"));
+        fileChooser.setCurrentDirectory(null);
         fileChooser.setName("fileChooser"); // NOI18N
 
         setComponent(mainPanel);

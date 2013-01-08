@@ -4,11 +4,13 @@
  */
 package ca.ubc.magic.profiler.dist.model.granularity;
 
-import ca.ubc.magic.profiler.parser.JipFrame;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
+import ca.ubc.magic.profiler.parser.JipFrame;
 
 /**
  *
@@ -22,7 +24,9 @@ public class EntityConstraintModel {
     private Set<CodeEntity> mIgnoreSet;
     private Set<CodeEntity> mReplicableSet;
     private Set<CodeEntity> mNonReplicableSet;
-    private List<CodeEntity> mRootEntityList;
+    private List<List<CodeEntity>> mRootEntityList;
+    
+    private FilterConstraintModel mFilterConstraintModel;
     
     private ConstraintSwitches mConstraintSwitches;
     
@@ -33,13 +37,19 @@ public class EntityConstraintModel {
         mIgnoreSet = new HashSet<CodeEntity>();
         mReplicableSet = new HashSet<CodeEntity>();
         mNonReplicableSet = new HashSet<CodeEntity>();
-        mRootEntityList = new ArrayList<CodeEntity>();
+        mRootEntityList = new ArrayList<List<CodeEntity>>();
+        
+        mFilterConstraintModel = new FilterConstraintModel();
         
         mConstraintSwitches = new ConstraintSwitches();
     }
     
-    public List<CodeEntity> getRootEntityList(){
-        return mRootEntityList;
+    public void addRootEntityList(List<CodeEntity> list){
+    	mRootEntityList.add(list);
+    }
+    
+    public final List<List<CodeEntity>> getRootEntityList(){
+    	return mRootEntityList;
     }
     
     
@@ -52,6 +62,10 @@ public class EntityConstraintModel {
             default:
                 throw new RuntimeException("Unsupported CodeUnitTye");
         }
+    }
+    
+	public FilterConstraintModel getFilterConstraintModel(){
+    	return mFilterConstraintModel;
     }
     
     public Set<CodeEntity> getIgnoreSet(){

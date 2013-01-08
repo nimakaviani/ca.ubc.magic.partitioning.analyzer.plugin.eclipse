@@ -65,7 +65,7 @@ public class ModuleModel {
         return mIsModelPartitioned;
     }
     
-    public void setParitioned(boolean partitioned){
+    public void setPartitioned(boolean partitioned){
         mIsModelPartitioned = partitioned;
     }
     

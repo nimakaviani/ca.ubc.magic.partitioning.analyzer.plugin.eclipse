@@ -3,114 +3,102 @@ package partitioner.views;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Frame;
-import java.beans.PropertyChangeEvent;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.util.Map;
 
 import javax.swing.JFrame;
-import javax.swing.ProgressMonitorInputStream;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jface.dialogs.IPageChangedListener;
-import org.eclipse.jface.dialogs.PageChangedEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
-import org.eclipse.ui.IPropertyListener;
+import org.eclipse.ui.IPartListener2;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.forms.events.ExpansionAdapter;
-import org.eclipse.ui.forms.events.ExpansionEvent;
-import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
-import org.eclipse.ui.forms.widgets.Section;
-import org.eclipse.ui.forms.widgets.TableWrapData;
-import org.eclipse.ui.forms.widgets.TableWrapLayout;
 import org.eclipse.ui.part.MultiPageEditorPart;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventConstants;
-import org.osgi.service.event.EventHandler;
 
-import EDU.oswego.cs.dl.util.concurrent.misc.SwingWorker;
+import partitioner.models.PartitionerModel;
+import partitioner.models.PartitionerModelMessages;
+import plugin.LogUtilities;
+import plugin.mvc.DefaultTranslator;
+import plugin.mvc.IPublisher.Publications;
+import plugin.mvc.ITranslator;
+import plugin.mvc.IPublisher;
+import plugin.mvc.DefaultPublisher;
+import plugin.mvc.ITranslator.IModel;
+import plugin.mvc.ITranslator.IView;
+import plugin.mvc.adapter.AdapterDelegate;
+import plugin.mvc.adapter.Callback;
+import plugin.mvc.adapter.DefaultAdapter;
+import plugin.mvc.adapter.EmptyAdapter;
+import plugin.mvc.adapter.IAdapter;
+import snapshots.views.VirtualModelFileInput;
 
-import partitioner.models.PartitionerGUIStateModel;
-import plugin.Constants;
-import snapshots.controller.ControllerDelegate;
-import snapshots.views.IView;
-
-import ca.ubc.magic.profiler.dist.model.execution.ExecutionFactory.ExecutionCostType;
-import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory;
-import ca.ubc.magic.profiler.dist.model.interaction.InteractionFactory.InteractionCostType;
-import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory;
+import ca.ubc.magic.profiler.dist.model.ModulePair;
+import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
 import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
 	.ModuleCoarsenerType;
-import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory;
+import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
 
 public class 
-ModelCreationEditor 
+ 
+ModelCreationEditor
 extends MultiPageEditorPart 
 implements IView
 {
-	private static final int MODEL_CONFIGURATION_PAGE 	
+	protected static final int MODEL_ANALYSIS_PAGE 
 		= 0;
-	private static final int MODEL_ANALYSIS_PAGE 		
-		= 1;
-	
+
 	private FormToolkit toolkit;
-	private Form form;
 	
     VisualizePartitioning currentVP;
-    Object current_vp_lock = new Object();
+    Object current_vp_lock 
+    	= new Object();
     
-    private Frame 	frame;
+    private Frame 				frame;
+	private ITranslator 		controller;
+	private IPublisher			publisher;
 	
-	private ControllerDelegate controller;
-	private Label profiler_trace_text;
-	
-	final private PartitionerGUIStateModel partitioner_gui_state_model
-		= new PartitionerGUIStateModel();
-	private Text host_config_text;
-	private Text module_exposer_text;
-	
-	private Section actions_composite;
-	private Button synthetic_node_button;
-	private Button exposure_button;
-	
-	private Button mod_exposer_browse_button;
-	private Button host_config_browse;
-	private Combo set_coarsener_combo;
-	
-	private Button perform_partitioning_button;
-	private Combo partitioning_algorithm_combo;
-	private Combo interaction_model_combo;
-	private Combo execution_model_combo;
+	private String 				algorithm;
+	private String 				solution;
+	private ModelTestPage 		test_page;
 
 	public 
 	ModelCreationEditor() 
-	{}
+	{
+		this.controller 
+			= new DefaultTranslator();
+		this.controller.addView( this );
+		this.controller.registerAdapter(this, getAdapterDelegate() );
+	    
+		this.controller.addModel( new PartitionerModel() );
+		
+		this.publisher	
+			= new DefaultPublisher();
+	}
+	
+	private void 
+	initialize_view_communication() 
+	{
+		IWorkbenchPage page 
+			= this.getSite().getPage();
+		   
+		IPartListener2 pl 
+			= new ModelCreationEditor.ActiveEditorEventListener();
+	
+		page.addPartListener(pl);
+	}
 
 	@Override
 	public void
@@ -130,9 +118,6 @@ implements IView
 	throws PartInitException 
 	{
 		super.init(site, input);
-		this.controller = new ControllerDelegate();
-		this.controller.addModel(this.partitioner_gui_state_model);
-		this.controller.addView(this);
 	}
 
 	@Override
@@ -150,752 +135,52 @@ implements IView
 	}
 
 	@Override
-	public void 
-	setFocus() 
-	// according to the plugins book, the setFocus method
-	// should have the following form
-	// 
-	// this method shows why the primary widgets on each
-	// page need to be class fields
-	{
-		switch(super.getActivePage())
-		{
-		case MODEL_CONFIGURATION_PAGE:
-			//his.inner_composite.setFocus();
-			break;
-		case MODEL_ANALYSIS_PAGE:
-			//this.tv2.setFocus();
-			break;
-		}
-	}
-
-	@Override
 	protected void 
 	createPages() 
 	{
-		this.createModelConfigurationPage();
-		this.createModelAnalysisPage();
-		this.updateTitle();
-		
-		// the following code is a view-communication solution
-		// found in:
-		// http://tomsondev.bestsolution.at/2011/01/03/enhanced-rcp-how-views-can-communicate/
-		// it may not work given that this is not a view but an editor
-		BundleContext context 
-			= FrameworkUtil.getBundle(ModelCreationEditor.class).getBundleContext();
-		EventHandler handler 
-			= new EventHandler() {
-				public void handleEvent
-				( final Event event )
-				{
-					System.out.println("Calling event handler");
-					
-					Display parent 
-						= Display.getCurrent();
-					if( parent.getThread() == Thread.currentThread() ){
-						String profiler_trace 
-							= (String) event.getProperty("PROFILER_TRACE");
-						ModelCreationEditor.this.controller.setModelProperty(
-							Constants.GUI_PROFILER_TRACE, 
-							profiler_trace
-						);
-					}
-					else {
-						parent.syncExec( 
-							new Runnable() {
-								public void 
-								run()
-								{
-									String profiler_trace 
-										= (String) event.getProperty("PROFILER_TRACE");
-									ModelCreationEditor.this.controller.setModelProperty(
-										Constants.GUI_PROFILER_TRACE, 
-										profiler_trace
-									);
-								}
-							}
-						);
-					}
-				}
-			};
-			
-			Dictionary<String,String> properties 
-				= new Hashtable<String, String>();
-			properties.put(EventConstants.EVENT_TOPIC, "viewcommunication/*");
-			context.registerService(EventHandler.class, handler, properties);
-			
-			this.addPageChangedListener( new IPageChangedListener(){
-				@Override
-				public void 
-				pageChanged
-				( PageChangedEvent event ) 
-				{
-				}
-			});
-	}
-
-	private void 
-	createModelConfigurationPage() 
-	// the following code follows the example provide in 
-	// http://www.eclipse.org/articles/Article-Forms/article.html
-	// it is my first stab at working with eclipse forms
-	{
 		Composite parent 
-			= super.getContainer();
-		
+			= ModelCreationEditor.super.getContainer();
 		this.toolkit 
-			= new FormToolkit(parent.getDisplay());
-		this.form 
-			= this.toolkit.createForm(parent);
-		this.form.setText("Configure and Create a Model");
-		this.toolkit.decorateFormHeading( this.form );
+			= new FormToolkit( parent.getDisplay() );
 		
-		TableWrapLayout layout 
-			= new TableWrapLayout();
-		layout.numColumns = 1;
-		this.form.getBody().setLayout(layout);
-		
-		Section set_paths_composite
-			= this.toolkit.createSection(
-				this.form.getBody(),
-				Section.TITLE_BAR 
-					|Section.EXPANDED 
-					| Section.DESCRIPTION 
-					| Section.TWISTIE
-			);
-		set_paths_composite.setText("Set the File Paths");
-		set_paths_composite.setDescription(
-			"Set the files from which the model shall be built."
-		);
-		
-		Composite set_paths_client
-			= this.toolkit.createComposite(set_paths_composite);
-		this.initializeSetPathsBarGrid(set_paths_client);
-		this.initializeSetPathsBarWidgets( set_paths_client );
-		
-		TableWrapData td 
-			= new TableWrapData(TableWrapData.FILL);
-		set_paths_composite.setLayoutData(td);
-		set_paths_composite.addExpansionListener(
-			new ExpansionAdapter() {
-				public void 
-				expansionStateChanged
-				( ExpansionEvent e ) 
-				{
-					//form.reflow(true);
-				}
-			}
-		);
-		
-		set_paths_composite.setClient(set_paths_client);
-		
-		Section configure_composite
-			= this.toolkit.createSection(
-				form.getBody(),
-				Section.TITLE_BAR 
-					|Section.EXPANDED 
-					| Section.DESCRIPTION 
-					| Section.TWISTIE
-			);
-		configure_composite.setText("Configure");
-		configure_composite.setDescription(
-			"Configure the settings for the model."
-		);
-		
-		Composite configure_client
-			= this.toolkit.createComposite(configure_composite);
-		this.initializeConfigurationGrid(configure_client);
-		this.initializeConfigurationWidgets( configure_client );
-		td 
-			= new TableWrapData(TableWrapData.FILL);
-		configure_composite.setLayoutData(td);
-		configure_composite.setClient(configure_client);
-		
-		Section partitioning_composite
-			= this.toolkit.createSection(
-				form.getBody(),
-				Section.TITLE_BAR 
-					|Section.EXPANDED 
-					| Section.DESCRIPTION 
-					| Section.TWISTIE
-			);
-		partitioning_composite.setText("Partition");
-		partitioning_composite.setDescription(
-			"Configure the cost model and the partitioning algorithm."
-		);
-		
-		Composite partitioning_client
-			= this.toolkit.createComposite(partitioning_composite);
-		this.initializePartitioningGrid(partitioning_client);
-		this.initializePartitioningWidgets( partitioning_client );
-		td 
-			= new TableWrapData(TableWrapData.FILL);
-		partitioning_composite.setLayoutData(td);
-		partitioning_composite.setClient(partitioning_client);
-		
-		this.actions_composite
-			= this.toolkit.createSection(
-				form.getBody(),
-				Section.TITLE_BAR 
-					| Section.EXPANDED 
-					| Section.DESCRIPTION
-					| Section.TWISTIE
-			);
-		actions_composite.setText("Activate");
-		actions_composite.setDescription(
-			"Activate the model"
-		);
-		
-		Composite actions_client
-			= this.toolkit.createComposite(actions_composite);
-		td 
-			= new TableWrapData(TableWrapData.FILL);
-		actions_composite.setLayoutData(td);
-		actions_composite.setClient(actions_client);	
-		
-		this.initializeActionsGrid(actions_client);
-		this.initializeActionsWidgets(actions_client);
-		
-		int index
-			= super.addPage( form );
-		super.setPageText( index, "Model Configuration" );
-		
-		this.set_partitioning_widgets_enabled(false);
-	}
-
-	private void 
-	initializeSetPathsBarGrid
-	(Composite parent) 
-	{
-		final GridLayout model_configuration_page_grid_layout
-			= new GridLayout();
-		model_configuration_page_grid_layout.numColumns = 3;
-		parent.setLayout( model_configuration_page_grid_layout );
-	}
-	
-	private void 
-	initializeSetPathsBarWidgets
-	( Composite parent ) 
-	{
-		toolkit.createLabel(parent, "Profiler Trace XML: " );
-		
-		this.profiler_trace_text 
-			= toolkit.createLabel( 
-				parent, 
-				PartitionerGUIStateModel.AbbreviatePath(
-					this.partitioner_gui_state_model.getProfilerTracePath()
-				)
-			);
-		toolkit.createLabel(parent, "");
-		
-		toolkit.createLabel(parent, "Mod Exposer XML: " );
-		this.module_exposer_text 
-			= toolkit.createText( 
-				parent, 
-				PartitionerGUIStateModel.AbbreviatePath(
-					partitioner_gui_state_model
-						.getModuleExposerPath() 
-				)
-			);
-		this.module_exposer_text.setEditable(false);
-		GridData grid_data 
-			= new GridData( SWT.FILL, SWT.FILL, true, false, 1, 1);
-		
-		grid_data.grabExcessHorizontalSpace = true;
-		// hack: will need to fix
-		grid_data.widthHint = 300;
-		this.module_exposer_text.setLayoutData(grid_data);
-		
-		mod_exposer_browse_button 
-			= toolkit.createButton(parent, "Browse", SWT.PUSH);
-		mod_exposer_browse_button.addSelectionListener( 
-				new SelectionAdapter(){
-					public void widgetSelected
-					( SelectionEvent event )
-					{
-						FileDialog file_dialog 
-							= new FileDialog( 
-								PlatformUI.getWorkbench()
-									.getActiveWorkbenchWindow().getShell(), 
-								SWT.OPEN
-							);
-						file_dialog.setText("Select File");
-						file_dialog.setFilterPath( 
-							ModelCreationEditor.this.profiler_trace_text.getText() 
-						);
-						String selected
-							= file_dialog.open();
-						if(selected != null){
-							ModelCreationEditor.this.module_exposer_text.setText(selected);
-							ModelCreationEditor.this.controller
-								.setModelProperty(
-									Constants.GUI_MODULE_EXPOSER, 
-									selected
-								);
-						}
-					}
-			}
-		);
-		
-		this.toolkit.createLabel(parent, "Host Config. XML: " );
-		this.host_config_text
-			=  toolkit.createText( 
-				parent, 
-				PartitionerGUIStateModel.AbbreviatePath(
-					this.partitioner_gui_state_model.getHostConfigurationPath()
-				)
-			);
-		host_config_text.setEditable(false);
-		grid_data 
-			= new GridData( SWT.FILL, SWT.FILL, true, false, 1, 1);
-		
-		grid_data.grabExcessHorizontalSpace = true;
-		// hack: will need to fix
-		grid_data.widthHint = 300;
-		host_config_text.setLayoutData(grid_data);
-		
-		this.host_config_browse 
-			= toolkit.createButton(parent, "Browse", SWT.PUSH);
-		
-		host_config_browse.addSelectionListener( new SelectionAdapter(){
-			public void widgetSelected( SelectionEvent event ){
-				FileDialog file_dialog 
-					= new FileDialog( 
-						PlatformUI.getWorkbench()
-							.getActiveWorkbenchWindow().getShell(), 
-						SWT.OPEN
-					);
-				file_dialog.setText("Select File");
-				file_dialog.setFilterPath( profiler_trace_text.getText() );
-				String selected
-					= file_dialog.open();
-				if(selected != null){
-					host_config_text.setText(selected);
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_HOST_CONFIGURATION, 
-						selected
-					);
-				}
-			}
-		});
-		
-		this.addPropertyListener(
-			new IPropertyListener(){
-				@Override
-				public void 
-				propertyChanged
-				( Object source, int propId ) {
-					switch( propId ){
-					case MultiPageEditorPart.PROP_TITLE:
-						ModelCreationEditor.this.controller.setModelProperty(
-							Constants.GUI_PROFILER_TRACE, 
-							ModelCreationEditor.this.getTitleToolTip()
-						);
-					default:
-						System.out.println(
-							"ModelCreationEditor is swallowing the event."
-						);
-					}
-				}
-			});
-	}
-	
-	private void 
-	initializeConfigurationGrid
-	( Composite parent ) 
-	{
-		final GridLayout model_configuration_page_grid_layout
-			= new GridLayout();
-		model_configuration_page_grid_layout.numColumns 
-			= 2;
-		parent.setLayout( model_configuration_page_grid_layout );
-	}
-	
-	private void 
-	initializeConfigurationWidgets
-	( Composite parent ) 
-	{
-		toolkit.createLabel(parent, "Coarsener: " );
-
-		this.initialize_coarsener_combo_box(parent);
-		
-		this.exposure_button
-			= toolkit.createButton(
-				parent, 
-				"Activate Module Exposure", 
-				SWT.CHECK
-			);
-		GridData grid_data 
-			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
-		grid_data.horizontalSpan = 1;
-		exposure_button.setLayoutData(grid_data);
-		
-		exposure_button.addSelectionListener(
-			new SelectionAdapter()
-			{
-				@Override
-				public void
-				widgetSelected
-				( SelectionEvent e )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_SET_MODULE_EXPOSURE, 
-						new Boolean(exposure_button.getSelection())
-					);
-				}
-			}
-		);
-		
-		this.createDummyLabel(parent);
-		
-		this.synthetic_node_button
-			= toolkit.createButton(parent, "Add Synthetic Node", SWT.CHECK);
-		grid_data 
-			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-		grid_data.horizontalSpan = 1;
-		synthetic_node_button.setLayoutData( grid_data );
-		
-		synthetic_node_button.addSelectionListener(
-			new SelectionAdapter()
-			{
-				@Override
-				public void
-				widgetSelected
-				( SelectionEvent e )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_SET_SYNTHETIC_NODE,
-						new Boolean(synthetic_node_button.getSelection())
-					);
-				}
-			}
-		);
-		/*
-		final Button preset_module_graph_button
-			= toolkit.createButton(parent, "Preset Module Graph", SWT.CHECK);
-		grid_data 
-			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-		grid_data.horizontalSpan = 2;
-		synthetic_node_button.setLayoutData( grid_data );
-		
-		preset_module_graph_button.addSelectionListener(
-			new SelectionAdapter()
-			{
-				@Override
-				public void
-				widgetSelected
-				( SelectionEvent e )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_SET_PRESET_MODULE_GRAPH,
-						new Boolean(
-							preset_module_graph_button.getSelection()
-						)
-					);
-				}
-			}
-		);*/
-	}
-	
-	private Label 
-	createDummyLabel
-	( Composite parent ) 
-	{
-		Label return_value = null;
-		
-		if(this.toolkit != null){
-			return_value
-				= toolkit.createLabel(parent, "", SWT.NONE);
-			GridData grid_data 
-				= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-			grid_data.horizontalSpan = 1;
-			return_value.setLayoutData( grid_data );
-		}
-		
-		return return_value;
-	}
-
-	private void 
-	initializePartitioningGrid
-	( Composite parent ) 
-	{
-		final GridLayout model_configuration_page_grid_layout
-			= new GridLayout();
-		model_configuration_page_grid_layout.numColumns 
-			= 2;
-		parent.setLayout( model_configuration_page_grid_layout );
-	}
-
-	private void 
-	initializePartitioningWidgets
-	( Composite parent ) 
-	{
-		this.perform_partitioning_button
-			= toolkit.createButton(
-				parent, 
-				"Perform Partitioning", 
-				SWT.CHECK
-			);
-		GridData grid_data 
-			= new GridData( SWT.BEGINNING, SWT.FILL, false, false );
-		grid_data.horizontalSpan = 1;
-		perform_partitioning_button.setLayoutData(grid_data);
-		
-		perform_partitioning_button.addSelectionListener(
-			new SelectionAdapter()
-			{
-				@Override
-				public void
-				widgetSelected
-				( SelectionEvent e )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_PERFORM_PARTITIONING, 
-						new Boolean(
-							ModelCreationEditor.this
-								.perform_partitioning_button.getSelection()
-						)
-					);
-				}
-			}
-		);
-		
-		this.createDummyLabel(parent);
-	
-		this.toolkit.createLabel(parent, "Execution Cost Model: ");
-		this.initialize_execution_model_combo_box(parent);
-		
-		this.toolkit.createLabel(parent, "Interaction Cost Model: ");
-		this.initialize_interaction_model_combo_box(parent);
-		
-		this.toolkit.createLabel(parent, "Partitioning Algorithm");
-		this.initilize_partitioning_algorithm_combo_box(parent);
-	}
-	
-	private void 
-	initializeActionsWidgets
-	( Composite parent ) 
-	{
-		final GridLayout model_configuration_page_grid_layout
-			= new GridLayout();
-		model_configuration_page_grid_layout.numColumns 
-			= 2;
-		parent.setLayout( model_configuration_page_grid_layout );
-	}
-
-	private void 
-	initializeActionsGrid
-	( Composite parent ) 
-	{
-		final Button exposure_button
-			= toolkit.createButton(
-				parent, 
-				"Generate Model", 
-				SWT.PUSH
-			);
-		GridData grid_data 
-			= new GridData(SWT.BEGINNING, SWT.FILL, false, false);
-		grid_data.horizontalSpan = 1;
-		exposure_button.setLayoutData(grid_data);
-		
-		exposure_button.addSelectionListener(
-			new SelectionAdapter()
-			{
-				@Override
-				public void
-				widgetSelected
-				( SelectionEvent e )
-				{
-					ModelCreationEditor.this.setVisualizationAction();
-					ModelCreationEditor.this.actions_composite.setVisible(false);
-					
-					ModelCreationEditor.this.synthetic_node_button.setEnabled(false);
-					ModelCreationEditor.this.exposure_button.setEnabled(false);
-					
-					ModelCreationEditor.this.mod_exposer_browse_button.setVisible(false);
-					ModelCreationEditor.this.host_config_browse.setVisible(false);
-					ModelCreationEditor.this.set_coarsener_combo.setEnabled(false);
-					
-					ModelCreationEditor.this
-						.perform_partitioning_button.setEnabled(false);
-					ModelCreationEditor.this.set_partitioning_widgets_enabled(false);
-				}
-			}
-		);
-	}
-	
-	private void
-	set_partitioning_widgets_enabled
-	( boolean enabled )
-	{
-		ModelCreationEditor.this
-			.partitioning_algorithm_combo.setEnabled(enabled);
-		ModelCreationEditor.this
-			.execution_model_combo.setEnabled(enabled);
-		ModelCreationEditor.this
-			.interaction_model_combo.setEnabled(enabled);
-	}
-
-	private void
-	initialize_coarsener_combo_box
-	( Composite parent ) 
-	{
-		this.set_coarsener_combo
-			= new Combo(parent, SWT.NONE);
-		
-        for( final ModuleCoarsenerType mcType 
-        		: ModuleCoarsenerFactory.ModuleCoarsenerType.values())
-        {
-            set_coarsener_combo.add(mcType.getText());
-        }
-		
-		set_coarsener_combo.addSelectionListener( 
-			new SelectionAdapter(){
-				public void 
-				widgetSelected( SelectionEvent se )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_MODULE_COARSENER,
-						ModuleCoarsenerType.fromString(
-							set_coarsener_combo.getText()
-						)
-					);
-				}
-			}
-		);
-		
-		set_coarsener_combo.select(0);
-	}
-	
-	private void 
-	initilize_partitioning_algorithm_combo_box
-	( Composite parent ) 
-	{
-		this.partitioning_algorithm_combo
-			= new Combo(parent, SWT.NONE);
-		
-	    for( final PartitionerType partitioner_type 
-	    		: PartitionerFactory.PartitionerType.values())
-	    {
-	    	this.partitioning_algorithm_combo.add(
-	    		partitioner_type.getText()
-	    	);
-	    }
-		
-	    this.partitioning_algorithm_combo.addSelectionListener( 
-			new SelectionAdapter(){
-				public void 
-				widgetSelected( SelectionEvent se )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_PARTITIONER_TYPE,
-						PartitionerType.fromString(
-							ModelCreationEditor.this.
-								partitioning_algorithm_combo.getText()
-						)
-					);
-				}
-			}
-		);
-		
-	    this.partitioning_algorithm_combo.select(0);
-	}
-
-	private void 
-	initialize_interaction_model_combo_box
-	( Composite parent ) 
-	{
-		this.interaction_model_combo
-			= new Combo(parent, SWT.NONE);
-		
-	    for( final InteractionCostType interaction_cost_type 
-	    		: InteractionFactory.InteractionCostType.values())
-	    {
-	    	this.interaction_model_combo.add(
-	    		interaction_cost_type.getText()
-	    	);
-	    }
-		
-	    this.interaction_model_combo.addSelectionListener( 
-			new SelectionAdapter(){
-				public void 
-				widgetSelected( SelectionEvent se )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_INTERACTION_COST,
-						InteractionCostType.fromString(
-							ModelCreationEditor.this.
-							interaction_model_combo.getText()
-						)
-					);
-				}
-			}
-		);
-	
-	    this.interaction_model_combo.select(0);
-	}
-
-	private void 
-	initialize_execution_model_combo_box
-	( Composite parent ) 
-	{
-		this.execution_model_combo
-			= new Combo(parent, SWT.NONE);
-		
-	    for( final ExecutionCostType execution_cost_type 
-	    		: ExecutionCostType.values())
-	    {
-	    	this.execution_model_combo.add(
-	    		execution_cost_type.getText()
-	    	);
-	    }
-		
-	    this.execution_model_combo.addSelectionListener( 
-			new SelectionAdapter(){
-				public void 
-				widgetSelected( SelectionEvent se )
-				{
-					ModelCreationEditor.this.controller.setModelProperty(
-						Constants.GUI_EXECUTION_COST,
-						ExecutionCostType.fromString(
-							ModelCreationEditor.this.
-								execution_model_combo.getText()
-						)
-					);
-				}
-			}
-		);
-	
-	    this.execution_model_combo.select(0);
-	}
-
-	private void 
-	createModelAnalysisPage() 
-	// example code for dealing with swt/swing integration provided by
-	// http://www.eclipse.org/articles/article.php?file=Article-Swing-SWT-Integration/index.html
-	{
-		Composite parent
-			= super.getContainer();
-		
-		// the following should be set before any SWING widgets are
-		// instantiated it reduces flicker on a resize
-		//System.setProperty("sun.awt.noerasebackground", "true");
-		
-		Composite composite 
+		Composite model_analysis_composite 
 			= new Composite(parent, SWT.EMBEDDED | SWT.NO_BACKGROUND);
-		composite.setLayout(new FillLayout());
+		model_analysis_composite.setLayout(new FillLayout());
 		
 		try {
 			this.setSwingLookAndFeel();
-		} catch( InvocationTargetException | InterruptedException e ) {
-			e.printStackTrace();
+		} catch( InvocationTargetException | InterruptedException ex ) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
 		}
 		
 	    this.frame 
-	    	= SWT_AWT.new_Frame(composite);
-		composite.addControlListener(new CleanResizeListener(frame));
+	    	= SWT_AWT.new_Frame(model_analysis_composite);
 
-		SwingUtilities.invokeLater( 
+	  	try {
+			this.initialize_model_analysis_page( model_analysis_composite );
+		} catch (InvocationTargetException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		}
+		this.updateTitle();
+
+		// this should happen after the controller is assigned
+		// to so we don't get any null pointer surprises
+		this.initialize_view_communication();
+	}
+
+	private void 
+	initialize_model_analysis_page
+	( Composite model_analysis_composite ) 
+	throws InvocationTargetException, InterruptedException 
+	// example code for dealing with swt/swing integration provided by
+	// http://www.eclipse.org/articles/article.php?file=Article-Swing-SWT-Integration/index.html
+	{
+		SwingUtilities.invokeAndWait( 
 			new Runnable(){
 				@Override
 				public void run() {
@@ -911,15 +196,13 @@ implements IView
 					ModelCreationEditor.this.frame.setBackground(
 						Color.white
 					);
-					ModelCreationEditor.this.frame.pack();
-					ModelCreationEditor.this.frame.setVisible(true);
 					SwingUtilities.updateComponentTreeUI(frame);	
 				}
 			}
 		);
 	    
 		int index
-			= super.addPage(composite);
+			= super.addPage( model_analysis_composite );
 		super.setPageText(index, "Model Analysis");
 	}
 	
@@ -934,24 +217,33 @@ implements IView
 						UIManager.setLookAndFeel(
 							UIManager.getSystemLookAndFeelClassName() 
 						);
-					} catch (Exception e) {
-						e.printStackTrace();
+					} catch (Exception ex) {
+						ex.printStackTrace();
+						LogUtilities.logError(ex);
 					}
 				}
 			});
 	}
-
-	private void
+	
+	public void
 	updateTitle()
 	// the following method is recommended by the eclipse
 	// plugins book
 	{
-		IEditorInput input
+		final IEditorInput input
 			= super.getEditorInput();
-		super.setPartName( input.getName() );
 		
-		super.setTitleToolTip(this.getTitleToolTip());
-		
+		Display.getDefault().asyncExec( new Runnable(){
+			@Override
+			public void
+			run()
+			{
+				ModelCreationEditor.super.setPartName( input.getName() );
+				ModelCreationEditor.super.setTitleToolTip( 
+					ModelCreationEditor.this.getTitleToolTip() 
+				);
+			}
+		});
 	}
 	
 	@Override
@@ -960,6 +252,7 @@ implements IView
 	{
 		IEditorInput input
 			= super.getEditorInput();
+		String return_value = null;
 		
 		String path = input.getToolTipText();
 		int count = 0;
@@ -969,170 +262,43 @@ implements IView
 			}
 			if( count == 2){
 				System.out.println(path.substring(i+1));
-				return path.substring(i+1);
+				return_value = path.substring(i+1);
+				break;
 			}
 		}
-		return "";
+		if(return_value == null){
+			return_value = "";
+		}
+		
+		ModelCreationEditor.this.controller.updateModel(
+			PartitionerModelMessages.PROFILER_TRACE, 
+			return_value
+		);
+		
+		return return_value;
 	}
 
-	@Override
-	public void 
-	modelPropertyChange
-	( PropertyChangeEvent evt ) 
+	void 
+	visualizeModuleModel() 
 	{
-		switch(evt.getPropertyName())
-		{
-		case Constants.GUI_MODULE_COARSENER:
-			ModuleCoarsenerType mc 
-				= (ModuleCoarsenerType) evt.getNewValue();
-			System.out.println(
-				"The module coarsener was modified to " + mc.getText()
+		Rectangle bounds 
+			= this.getContainer().getBounds();
+		final int width
+			= bounds.width;
+		final int height
+			= bounds.height;
+
+		ModelCreationEditor.this
+			.controller.requestReply(
+				ModelCreationEditor.this, 
+				create_visualize_partitioning.getName(), 
+				new Object[]{ 
+					ModelCreationEditor.this.frame, 
+					Integer.valueOf(width), 
+					Integer.valueOf(height),
+				}
 			);
-			break;
-		case Constants.GUI_PROFILER_TRACE:
-			this.profiler_trace_text.setText( 
-				PartitionerGUIStateModel.AbbreviatePath(
-					(String) evt.getNewValue()
-				)
-			);
-			break;
-		case Constants.GUI_MODULE_EXPOSER:
-			this.module_exposer_text.setText(
-				PartitionerGUIStateModel.AbbreviatePath(
-					(String) evt.getNewValue()
-				)
-			);
-			break;
-		case Constants.GUI_HOST_CONFIGURATION:
-			this.host_config_text.setText(
-				PartitionerGUIStateModel.AbbreviatePath(
-					(String) evt.getNewValue()
-				)
-			);
-			break;
-		case Constants.GUI_PERFORM_PARTITIONING:
-			boolean enabled 
-				= (boolean) evt.getNewValue();
-			this.set_partitioning_widgets_enabled( enabled );
-			break;
-		default:
-			System.out.println("Swallowing message.");
-		};
-	}
-	
-	public void
-	setVisualizationAction()
-	{
-		// david - make sure we are not in the middle of creating a new model
-		synchronized(ModelCreationEditor.this.current_vp_lock){
-			if(this.currentVP != null){
-				return;
-			}
-		}
-		
-		try{ 
-			// for concurrency, we cache the references we will work with
-			final String profiler_trace_path
-				 = this.partitioner_gui_state_model.getProfilerTracePath();
-			final PartitionerGUIStateModel gui_state_model 
-				= this.partitioner_gui_state_model;
-			
-			if(  	profiler_trace_path == null 
-					|| profiler_trace_path.equals("") )
-			{
-				throw new Exception("No profiler dump data is provided.");   
-			}
-			
-           	if( gui_state_model.getHostConfigurationPath()
-           			.equals("") )
-           	{
-           		throw new Exception ("No host layout is provided.");
-           	}
-           	
-           	gui_state_model.initializeHostModel();
-           
-           	// reading the input stream for the profiling XML document 
-           	// provided to the tool.
-           	SwingWorker worker 
-           		= new SwingWorker()
-           		{
-           			public Object 
-           			construct()
-           			{
-           				try{
-           					System.out.println(profiler_trace_path);
-           					final InputStream in 
-           						=  new BufferedInputStream(
-           							new ProgressMonitorInputStream(
-           								null,
-           								"Reading " 
-           								+  profiler_trace_path,           								
-           								new FileInputStream(
-           									profiler_trace_path
-           								)
-           							)
-           						);
-                        
-           					gui_state_model.createModuleModel(in);
-           					in.close();
-           				} catch(Exception e){
-           					e.printStackTrace();
-           				}
-           				return "Done!";
-           			}
-	               
-					@Override
-					public void finished(){
-						gui_state_model.finished();
-						// visualize the model for the parsed module model
-						visualizeModuleModel();  
-					}
-					
-					private void 
-					visualizeModuleModel() 
-					{
-						SwingUtilities.invokeLater( new Runnable(){
-							@Override
-							public void
-							run()
-							{
-								synchronized(ModelCreationEditor.this.current_vp_lock){
-									ModelCreationEditor.this.currentVP
-										= new VisualizePartitioning( frame );
-		
-									ModelCreationEditor.this.currentVP.drawModules(
-											gui_state_model
-												.getModuleModel().getModuleExchangeMap()
-									);  
-									
-									try {
-										ModelCreationEditor.this.frame.pack();
-										SwingUtilities.updateComponentTreeUI(
-											ModelCreationEditor.this.frame
-										);
-										
-									} catch (Exception e) {
-										e.printStackTrace();
-									};
-									
-							        
-						            //currentVP.redrawModules(mModuleModel.getModuleExchangeMap());
-									if(gui_state_model.isPartitioningEnabled()){
-							            ModelCreationEditor.this.currentVP
-							            	.setAlgorithm(gui_state_model.getAlgorithmString());
-							            ModelCreationEditor.this.currentVP
-							            	.setSolution(gui_state_model.getSolution());
-									}
-								}
-							}
-						});
-					}
-           		};
-	        worker.start();
-        }catch(Exception e){    
-        	e.printStackTrace();
-        }
-	}
+	}	
 	
 	@Override
 	public void 
@@ -1143,5 +309,441 @@ implements IView
 				this.currentVP.destroy();
 			}
 		}
+		
+		// notify peers on the controller
+		this.controller.notifyPeers(
+			PartitionerModelMessages.EDITOR_CLOSED,
+			this, 
+			null
+		);
+		
+		// make system wide publication
+		VirtualModelFileInput input
+			= (VirtualModelFileInput) this.getEditorInput();
+		
+		this.publisher.publish(
+			this.getClass(), 
+			Publications.MODEL_EDITOR_CLOSED, 
+			input
+		);
+		
+		this.controller.removeViewAndAdapter(this);
+	}
+
+	public ITranslator 
+	getController() 
+	// this is going to create problems when we switch references
+	{
+		return this.controller;
+	}
+
+	public void
+	addSimulation()
+	{
+		this.test_page.customSimulationButtonActionPerformed(null);
+	}
+
+	public void 
+	simTableMouseClicked
+	( Integer id ) 
+	{
+		this.test_page.simTableMouseClicked(id);
+	}
+	
+	private class
+	ActiveEditorEventListener
+	implements IPartListener2
+	{
+
+		@Override
+		public void 
+		partActivated
+		( IWorkbenchPartReference part_ref ) 
+		{
+			if(part_ref.getPart(false) instanceof ModelCreationEditor ){
+				ModelCreationEditor editor
+					= (ModelCreationEditor) part_ref.getPart(false);
+				
+				System.out.println( "Active: " + part_ref.getTitle() );
+				
+				ModelCreationEditor.this.publisher.publish( 
+					this.getClass(), 
+					Publications.ACTIVE_EDITOR_CHANGED, 
+					editor.getController()
+				);
+			}
+		}
+
+		@Override
+		public void 
+		partBroughtToTop(IWorkbenchPartReference partRef) {}
+
+		@Override
+		public void 
+		partClosed
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partDeactivated
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partOpened
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partHidden
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partVisible
+		( IWorkbenchPartReference partRef ) {}
+
+		@Override
+		public void 
+		partInputChanged
+		( IWorkbenchPartReference partRef ) {}
+	}
+	
+	///////////////////////////////////////////////////////////////////////////////////
+	///	Code for dealing with adapters
+	///////////////////////////////////////////////////////////////////////////////////
+	
+	private AdapterDelegate adapter_delegate;
+	
+	private static Callback create_visualize_partitioning
+		= new Callback("createVisualizePartitioning", VisualizePartitioning.class);
+	private static Callback activate_test_page
+		= new Callback("activateTestPage", IModel.class);
+	private static Callback create_test_framework
+		= new Callback("createTestFramework");
+	private static Callback model_created
+		= new Callback("modelCreated");
+	private static Callback partitioning_complete
+		= new Callback("partitioningComplete", String.class, String.class);
+	private static Callback set_partitioner_labels
+		= new Callback("setPartitionerLabels", String.class, String.class);
+	
+	private AdapterDelegate
+	getAdapterDelegate()
+	{
+		if(this.adapter_delegate == null){
+			this.adapter_delegate 
+				= new AdapterDelegate();
+			
+			this.adapter_delegate.registerDepositCallback(
+				set_partitioner_labels, 
+				new IAdapter()
+				{
+					String[] keys = new String[]{
+						PartitionerModelMessages.PARTITIONER_TYPE.NAME,
+						PartitionerModelMessages.PARTITIONER.NAME
+					};
+
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						IPartitioner solution
+							= (IPartitioner) objs.get(
+								PartitionerModelMessages.PARTITIONER.NAME
+							);
+						PartitionerType type
+							= (PartitionerType) objs.get(
+								PartitionerModelMessages.PARTITIONER_TYPE.NAME
+							);
+						
+						return new Object[]{ solution.getSolution(), type.getText() };
+					}
+
+					@Override
+					public String[]
+					getKeys()
+					{
+						return this.keys;
+					}
+				}
+			);
+			this.adapter_delegate.registerEventCallback(
+				create_test_framework,
+				new EmptyAdapter(PartitionerModelMessages.VIEW_CREATE_TEST_FRAMEWORK.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				model_created,
+				new EmptyAdapter(PartitionerModelMessages.MODEL_CREATED.NAME)
+			);
+			this.adapter_delegate.registerEventCallback(
+				partitioning_complete, 
+				new IAdapter(){
+					String[] keys 
+						= new String[]{ 
+							PartitionerModelMessages.PARTITIONING_COMPLETE.NAME,
+						};
+					@Override
+					public Object[] 
+					adapt
+					( Map<String, Object> objs, Object arg ) 
+					{
+						// this is an example of a chained request
+						// we have to supply two methods to perform this operation
+						// but we have a cleaner callback that supplies all
+						// the necessary information
+						// the problem is simply that the model cannot
+						// be expected to supply all the necessary information
+						// related to an event...this must be requested or assumed
+						// to have been already updated
+						ModelCreationEditor.this.controller.requestReply(
+							ModelCreationEditor.this, 
+							ModelCreationEditor.set_partitioner_labels.getName(), 
+							null
+						);
+						return new Object[] { 
+							ModelCreationEditor.this.algorithm,
+							ModelCreationEditor.this.solution
+						};
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return this.keys;
+					}
+				}
+			);
+			this.adapter_delegate.registerDepositCallback(
+				activate_test_page, 
+				new DefaultAdapter( PartitionerModelMessages.AFTER_PARTITIONING_COMPLETE_TEST_FRAMEWORK.NAME )
+			);
+			this.adapter_delegate.registerDepositCallback(
+				create_visualize_partitioning, 
+				new IAdapter(){
+					VisualizePartitioning vp = null;
+					
+					String[] keys
+						= new String[]{ 
+							PartitionerModelMessages.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP.NAME,
+							PartitionerModelMessages.MODULE_COARSENER.NAME
+						};
+					
+					@SuppressWarnings("unchecked")
+					@Override
+					public Object[] 
+					adapt
+					( final Map<String, Object> objs, final Object arg )
+					{
+						try {
+							SwingUtilities.invokeAndWait( new Runnable(){
+								@Override
+								public void
+								run()
+								{
+									Object[] args = (Object[]) arg;
+									Frame frame = (Frame) args[0];
+									int width = (int) args[1];
+									int height = (int) args[2];
+									ModuleCoarsenerType coarsener_type 
+										= (ModuleCoarsenerType) objs.get(
+											PartitionerModelMessages.MODULE_COARSENER.NAME
+										);
+									
+									vp = new VisualizePartitioning( 
+											frame, 
+											width, 
+											height, 
+											coarsener_type 
+										);
+
+									vp.drawModules(
+											(Map<ModulePair, InteractionData>) objs.get(
+												PartitionerModelMessages.AFTER_MODEL_CREATION_MODULE_EXCHANGE_MAP.NAME
+											)
+										); 
+									}
+								});
+						} catch (InvocationTargetException ex) {
+							ex.printStackTrace();
+							LogUtilities.logError(ex);
+						} catch (InterruptedException ex) {
+							ex.printStackTrace();
+							LogUtilities.logError(ex);
+						}
+						
+						return new Object[]{ vp };
+					}
+
+					@Override
+					public String[] 
+					getKeys() 
+					{
+						return keys;
+					}
+					
+				}
+			);
+		}
+		
+		return this.adapter_delegate;
+	}
+	
+	public void
+	createVisualizePartitioning
+	( final VisualizePartitioning vp )
+	{
+		SwingUtilities.invokeLater(
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					synchronized( ModelCreationEditor.this.current_vp_lock ){
+						ModelCreationEditor.this.currentVP
+							= vp;
+						
+						try {
+							ModelCreationEditor.this.frame.pack();
+							SwingUtilities.updateComponentTreeUI(
+								ModelCreationEditor.this.frame
+							);
+							
+							Display.getDefault().asyncExec( 
+								new Runnable(){
+									@Override
+									public void run() {
+										ModelCreationEditor.this
+											.getControl(ModelCreationEditor.MODEL_ANALYSIS_PAGE)
+											.pack(true);
+										ModelCreationEditor.this.getContainer().layout();
+									}
+									
+								}
+							);
+						
+						} catch (Exception ex) {
+							ex.printStackTrace();
+							LogUtilities.logError(ex);
+						};
+					}
+				}
+			}
+		);
+	}
+	
+	public void 
+	activateTestPage
+	( final IModel test_framework_model ) 
+	{
+		Display.getDefault().asyncExec( 
+			new Runnable()
+			{
+				@Override
+				public void 
+				run() 
+				{
+					Composite parent 
+						= ModelCreationEditor.super.getContainer();
+					
+					ModelCreationEditor.this.test_page
+						= new ModelTestPage(
+							ModelCreationEditor.this.toolkit, 
+							parent,
+							ModelCreationEditor.this,
+							test_framework_model
+						);
+					ModelCreationEditor.this.toolkit.adapt( ModelCreationEditor.this.test_page );
+					
+					int index
+						= ModelCreationEditor.super.addPage( ModelCreationEditor.this.test_page );
+					ModelCreationEditor.super.setPageText( 
+						index, 
+						"Simulate and Test" 
+					);
+				}
+			}
+		);
+	}
+	
+	public void
+	createTestFramework()
+	{
+		System.err.println("Inside createTestFramework");
+		// this is when the initialization must occur
+		//
+		// the most important thing is to know that the requested
+		// object will not be created until after the partitioning is
+		// performed; we can assume by the property name that the object
+		// will only be non-null after this event fires
+		ModelCreationEditor.this.controller.requestReply(
+			ModelCreationEditor.this, 
+			activate_test_page.getName(), 
+			null
+		);
+		try {
+			SwingUtilities.invokeAndWait( 
+				// the following does not work if we try to pack or make visible
+				new Runnable(){
+					@Override
+					public void run() {
+						SwingUtilities.updateComponentTreeUI(frame);	
+					}
+					
+				}
+			);
+		} catch (InvocationTargetException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+			LogUtilities.logError(ex);
+		}
+	}
+	
+	public void
+	modelCreated()
+	{
+		Display.getDefault().asyncExec( 
+			new Runnable(){
+				@Override
+				public void 
+				run() 
+				{
+					System.err.println("Inside ModelCreated");
+					ModelCreationEditor.this.visualizeModuleModel();
+				}
+			}
+		);
+	}
+	
+	public void
+	setPartitionerLabels
+	( String solution, String algorithm )
+	{
+		this.solution = solution;
+		this.algorithm = algorithm;
+	}
+	
+	public void
+	partitioningComplete
+	( final String solution, final String algorithm )
+	{
+		System.err.println("Inside partitioningComplete");
+		Display.getDefault().syncExec(
+				new Runnable(){
+					@Override
+					public void 
+					run() 
+					{
+						ModelCreationEditor.this.currentVP
+							.setAlgorithm(algorithm);
+						ModelCreationEditor.this.currentVP
+							.setSolution(solution);
+					}
+				}
+			);
 	}
 }

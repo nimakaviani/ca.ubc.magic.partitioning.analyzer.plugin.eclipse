@@ -4,12 +4,14 @@
  */
 package ca.ubc.magic.profiler.dist.transform;
 
+import ca.ubc.magic.profiler.dist.control.Constants;
 import ca.ubc.magic.profiler.dist.model.Module;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeEntity;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeUnitType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
+import ca.ubc.magic.profiler.dist.transform.CoarseRequestBasedBundleModuleCoarsener.ExtendedNodeObj;
 import ca.ubc.magic.profiler.dist.transform.model.NodeObj;
 import ca.ubc.magic.profiler.parser.JipFrame;
 import ca.ubc.magic.profiler.parser.JipRun;
@@ -37,6 +39,9 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
     
     @Override
     public ModuleModel getModuleModelFromParser(JipRun jipRun) {
+        
+        if (mConstraintModel == null)
+            throw new RuntimeException("No constraint model is defined. Make sure you active module exposing!");
         
         mIgnoreSet = mConstraintModel.getIgnoreSet();
         
@@ -80,7 +85,7 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
     }
     
     protected String populateFrame(JipFrame f, NodeObj rootNode, Long threadId, Long interactionId, int level, StringBuffer b) {
-		
+        
         Iterator<JipFrame> itr = f.getChildren().iterator();
 
         while (itr.hasNext()){
@@ -91,6 +96,20 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
             JipFrame childFrame = itr.next();
             NodeObj childNode = new NodeObj(getFrameModuleName(childFrame), 
                     getFrameModuleType(childFrame), threadId, interactionId);
+            
+            
+            // the following few lines makes sure we do not consider the time spent on compiling
+            // the jsp files as part of the time needed to respond to application requests. It 
+            // ignores all calls compiling JSP documents.
+            boolean ignoreCompiler = Boolean.FALSE;
+            for (String filter : Constants.JSP_COMPILER_FILTER_SET)
+                if (childFrame.getMethod().toString().contains(filter)){
+                    ignoreCompiler = Boolean.TRUE;
+                    break;
+                }
+            if (ignoreCompiler)
+                continue;
+            
             if (!childNode.equals(rootNode)){
 
                 // going one level deeper in the tree.
@@ -133,8 +152,10 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
         for (int i=0; i<level; i++) 
                 b.append("| ");
         b.append("+--"); 			
-        b.append(childNode.toString()).append( " :: t=").append(childNode.getId()).append(" :: i=").append(
-                childNode.getInteractionId()).append(" --> w:").append(childNode.getVertexWeight()).append( 
+        b.append(childNode.toString()).append( 
+        		((childNode.getId() != null) ? (" :: t=" + childNode.getId()) : "")).append(
+        		((childNode.getInteractionId() != null) ? (" :: i=" + childNode.getInteractionId()) : "")).append(
+        		" --> w:").append(childNode.getVertexWeight()).append( 
                 ", count:").append(childNode.getCount()).append( 
                 ", dfp:").append(childNode.getEdge4ParentWeight()).append( 
                 ", dtp:").append(childNode.getEdge2ParentWeight()).append(
@@ -180,11 +201,6 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
            // ignored.
            boolean descendentIgnoreImmediate = recursiveWriteNode(childNode, id);
            
-//           if (descendentIgnoreImmediate){
-//               node.add(childNode);
-//               node.getChildSet().remove(childNode);
-//           }
-           
            descendentIgnore =  descendentIgnoreImmediate && descendentIgnore;
         }
         descendentIgnore = shouldIgnore(node) && descendentIgnore;
@@ -213,10 +229,6 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
             
             if (shouldIgnore(node))
                 return true;
-            
-//            Module m1 = new Module(node.getName()+"_"+node.getId()+"_"+node.getInteractionId());
-//            Module m2 = new Module(mEnd.getName());
-//            addDataExchange(new ModulePair(m1, m2), 0L , 0L, 0L);	
             return false;
         }
         
@@ -232,6 +244,8 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
             if (!descendentIgnore){
                 Module m1 = mModuleModel.getModuleMap().get(node.getName()+"_"+id);
                 Module m2 = mModuleModel.getModuleMap().get(childNode.getName()+"_"+id);
+                if (m1 == null || m2 == null)
+                	continue;
                 addDataExchange(new ModulePair(m1, m2), childNode.getEdge4ParentWeight().longValue(), 
                     childNode.getEdge2ParentWeight().longValue(), 
                     childNode.getEdge4ParentCount().longValue(),
@@ -240,12 +254,6 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
         }
         if (shouldIgnore(node) && descendentIgnoreAll)
             return true;
-        
-        if (!shouldIgnore(node) && descendentIgnoreAll){
-//            Module m1 = new Module(node.getName()+"_"+node.getId()+"_"+node.getInteractionId());
-//            Module m2 = new Module(mEnd.getName());
-//            addDataExchange(new ModulePair(m1, m2), 0L , 0L, 0L);	
-        }
         return false;
     }
     
@@ -272,28 +280,82 @@ public class ThreadBasedBundleModuleCoarsener extends BundleModuleCoarsener impl
     protected void initializeModels(){
         NodeObj rootNode = mStart;
         
-        if (mConstraintModel.getRootEntityList() != null)
-            rootNode = extractChildNode(rootNode, mConstraintModel.getRootEntityList(), 0);
-        applyRecursion(rootNode);
-    }
-
-    protected void applyRecursion(NodeObj rootNode) {
-        final int i = 0;
-       
-        recursiveWriteNode(rootNode, i);
-        recursiveWriteEdge(rootNode, i);
+        try {
+	        if (!mConstraintModel.getRootEntityList().isEmpty())
+	        	for (List<CodeEntity> l : mConstraintModel.getRootEntityList()){
+	        		for (NodeObj node : rootNode.getChildSet()) {
+			            extractChildNodeAndApplyRecursion(node, l);
+	        		}
+	        	}
+	        else
+	        	applyRecursion(rootNode);
+        }catch (Exception e){
+        	e.printStackTrace();
+        	throw new RuntimeException("Initializing the module models failed");
+        }
+        
+        postRecursion();
     }
     
-    private NodeObj extractChildNode(NodeObj rtNode, List<CodeEntity> rootEntityList, int depth){
-        NodeObj rootNode = null;
-        if (depth > rootEntityList.size() - 1)
-            return rtNode;
+    /**
+     * A method allowing for post analysis of the NodeObj model generated
+     * from the set of all frame coming into the model.
+     */
+    protected void postRecursion(){}
+
+    protected void applyRecursion(NodeObj rootNode) {
+        int i = 0;
         
-        for (NodeObj node : rtNode.getChildSet())
-            if (rootEntityList.get(depth).getEntityPattern().matches(node.getName(), null, null)){
-                rootNode = extractChildNode(node, rootEntityList, depth + 1);
-                break;
-            }
-        return rootNode;
+//        StringBuffer b = new StringBuffer(i + " :: " + rootNode.getName()+ " visit: " + rootNode.getNodeVisit() + "\n");
+//        printTree(rootNode, 0, b);
+//        System.out.println(b.toString()+"\n\n\n");
+        
+        rootNode = checkForAddingSyntheticNode(i++, rootNode);
+       
+        recursiveWriteNode(rootNode, 0);
+        recursiveWriteEdge(rootNode, 0);
+    }
+    
+    protected NodeObj checkForAddingSyntheticNode(int i, NodeObj returnedNode) {
+        if (mConstraintModel.getConstraintSwitches().isSyntheticNodeActivated()){
+        	NodeObj syntheticNodeObj = new NodeObj(Constants.SYNTHETIC_NODE + "_" + i, 
+                    CodeUnitType.DEFAULT, 0L, 0L);
+            syntheticNodeObj.getChildSet().add(returnedNode);
+            returnedNode.addEdge(0.0, 0.0, 1L, 1L);
+            returnedNode = syntheticNodeObj;
+        }
+        return returnedNode;
+    }
+    
+    private NodeObj extractChildNodeAndApplyRecursion(NodeObj rtNode, List<CodeEntity> rootEntityList){
+        
+        if (rootEntityList.get(0).getEntityPattern().matches(rtNode.getName(), null, null))
+        	return rtNode;
+        
+        NodeObj rootNode = null;
+        for (NodeObj node : rtNode.getChildSet()){
+        	rootNode = extractChildNodeAndApplyRecursion(node, rootEntityList);
+        	if (rootNode != null)
+        		applyRecursion(rootNode);;
+        }
+        return null;
+    }
+    
+    protected boolean isNonReplicable(String nodeName){
+        return isNodeNameMatchedInEntitySet(mConstraintModel.getNonReplicableSet(), nodeName);
+    }
+    
+    protected boolean isReplicable(String nodeName){
+        boolean isReplicable = isNodeNameMatchedInEntitySet(mConstraintModel.getReplicableSet(), nodeName);
+        if (isNonReplicable(nodeName) && isReplicable)
+            throw new RuntimeException("Node cannot be both replicable and non-replicable: " + nodeName);
+        return isReplicable;
+    }
+    
+    protected boolean isNodeNameMatchedInEntitySet(Set<CodeEntity> entitySet, String nodeName){
+        for (CodeEntity entity : entitySet)
+            if (entity.getEntityPattern().matches(nodeName, null, null))
+                return true;
+        return false;
     }
 }

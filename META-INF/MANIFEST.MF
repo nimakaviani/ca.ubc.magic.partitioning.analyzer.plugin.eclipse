@@ -7,9 +7,22 @@ Bundle-Activator: plugin.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.ui.forms,
+<<<<<<< HEAD
  org.eclipse.osgi.services,
  org.eclipse.core.resources,
  org.eclipse.ui.ide
+=======
+ org.eclipse.ui.views.log;bundle-version="1.0.200",
+ org.eclipse.osgi.services;bundle-version="3.3.0",
+ org.eclipse.equinox.event;bundle-version="1.2.100",
+ org.eclipse.core.resources;bundle-version="3.7.101",
+ org.eclipse.ui.ide;bundle-version="3.7.0",
+ org.eclipse.core.filesystem;bundle-version="1.3.100",
+ org.eclipse.core.expressions;bundle-version="3.4.300",
+ org.eclipse.core.databinding;bundle-version="1.4.0",
+ org.eclipse.debug.core,
+ org.eclipse.debug.ui
+>>>>>>> bckend_stable_branch
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ClassPath: lib/commons-math/commons-math-2.2.jar,
@@ -34,4 +47,27 @@ Bundle-ClassPath: lib/commons-math/commons-math-2.2.jar,
  lib/AbsoluteLayout.jar,
  lib/appframework-1.0.3.jar,
  lib/swing-layout-1.0.2.jar,
- lib/swing-worker-1.1.jar
+ lib/swing-worker-1.1.jar,
+ lib/lpsolve55j.jar
+Import-Package: org.eclipse.core.databinding.beans,
+ org.eclipse.core.databinding.observable.list,
+ org.eclipse.core.databinding.property.value,
+ org.eclipse.jdt.core,
+ org.eclipse.jdt.debug.ui,
+ org.eclipse.jdt.debug.ui.launchConfigurations,
+ org.eclipse.jdt.internal.launching,
+ org.eclipse.jdt.launching,
+ org.eclipse.jface.databinding.viewers
+Bundle-NativeCode: /lib/lpsolve/lpsolve55.dll;
+ /lib/lpsolve/lpsolve55j.dll;
+ osname=win32; processor=x86,
+ /lib/lpsolve/lpsolve55.dll;
+ /lib/lpsolve/lpsolve55j.dll;
+ osname=win32; processor=x86_64,
+ /lib/lpsolve/linux/liblpsolve55j.so;
+ /lib/lpsolve/linux/liblpsolve55.so;
+ osname=linux; processor=x86,
+ /lib/lpsolve/linux/liblpsolve55j.so;
+ /lib/lpsolve/linux/liblpsolve55.so;
+ osname=linux; processor=x86_64,
+ *

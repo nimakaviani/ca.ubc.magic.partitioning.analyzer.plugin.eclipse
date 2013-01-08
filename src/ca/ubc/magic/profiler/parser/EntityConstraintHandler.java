@@ -4,12 +4,17 @@
  */
 package ca.ubc.magic.profiler.parser;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ca.ubc.magic.profiler.dist.control.Constants;
-import ca.ubc.magic.profiler.dist.model.granularity.CodeUnitType;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeEntity;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeUnit;
+import ca.ubc.magic.profiler.dist.model.granularity.CodeUnitType;
 import ca.ubc.magic.profiler.dist.model.granularity.ConstraintType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraint;
+import ca.ubc.magic.profiler.dist.model.granularity.FilterConstraintModel.FilterType;
 
 /**
  *
@@ -24,6 +29,10 @@ public class EntityConstraintHandler {
     private CodeUnit   mCodeUnit;
     
     private ConstraintType mConstraintType;
+    
+    private List<CodeEntity> mEntryList = null;
+    
+    private FilterConstraint filter;
     
     public EntityConstraintHandler(){
          mConstraintModel = new EntityConstraintModel();
@@ -69,8 +78,30 @@ public class EntityConstraintHandler {
         }
     }
     
+    public void startFilter(String type, String name, Long hostId){
+    	filter = mConstraintModel.getFilterConstraintModel().newInstanceForType(
+    			FilterType.valueOf(type));
+    	filter.setName(name);
+    	filter.setHostId(hostId);
+    	mConstraintModel.getFilterConstraintModel().getFilterSet(
+    			FilterType.valueOf(type)).add(filter);
+    }
+    
+    public void endFilter(){
+    	filter = null;
+    }
+    
     public void startTarget(){
         
+    }
+    
+    public void startEntry(){
+    	mEntryList = new ArrayList<CodeEntity>();
+    }
+    
+    public void endEntry(){
+    	mConstraintModel.addRootEntityList(mEntryList);
+    	mEntryList = null;
     }
     
     public void endTarget(String type){
@@ -94,6 +125,9 @@ public class EntityConstraintHandler {
             case NON_REPLICABLE:
                 setNonReplicableEntity();
                 break;
+            case FILTERS:
+            	setFilterEntity();
+            	break;
             case NULL:
             default:
                 throw new RuntimeException("Invalid entity");
@@ -101,7 +135,9 @@ public class EntityConstraintHandler {
     }    
     
     private void setRootEntity(){
-        mConstraintModel.getRootEntityList().add(mEntity);
+    	if (mEntryList == null)
+    		throw new RuntimeException("Invalid entry Id");
+        mEntryList.add(mEntity);
     }
     
     private void setExposeEntity(){
@@ -118,5 +154,9 @@ public class EntityConstraintHandler {
     
     private void setNonReplicableEntity(){
         mConstraintModel.getNonReplicableSet().add(mEntity);
+    }
+    
+    private void setFilterEntity(){
+    	filter.addEntity(mEntity);
     }
 }

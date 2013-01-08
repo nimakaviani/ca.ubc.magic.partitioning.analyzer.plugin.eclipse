@@ -6,6 +6,7 @@ package ca.ubc.magic.profiler.dist.model.interaction;
 
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.HostPair;
+import ca.ubc.magic.profiler.dist.model.TwoHostHelper;
 
 /**
  *
@@ -22,23 +23,7 @@ public class CloudMonetaryCostModel implements IInteractionCostModel {
               iData.getToParentData(), iData.getToParentCount(), 
               model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost2(), hp.getHost1()).getValue()); 
                 
-        // cost of having h2 waiting during the time of data transfer
-        h2h1Cost += InteractionRate.getCloudCPUMonetaryCost(
-              iData.getToParentData(), iData.getToParentCount(), 
-              model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost2(), hp.getHost1()).getValue(),
-              model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
-              model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost2(), hp.getHost1()).getValue(),             
-              hp.getHost2().getCpu().getCost().getValue(), hp.getHost2().getCpu().getCost().getScale(),
-              model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost2(), hp.getHost1()).getValue()); 
-        
-        // cost of having h1 waiting during the time of data transfer
-        h2h1Cost += InteractionRate.getCloudCPUMonetaryCost(
-              iData.getToParentData(), iData.getToParentCount(), 
-              model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost2(), hp.getHost1()).getValue(),
-              model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
-              model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost2(), hp.getHost1()).getValue(),             
-              hp.getHost1().getCpu().getCost().getValue(), hp.getHost1().getCpu().getCost().getScale(),
-              model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost2(), hp.getHost1()).getValue()); 
+   
         
         /* Measuring cost for data going from h1 to h2 */
         
@@ -47,23 +32,45 @@ public class CloudMonetaryCostModel implements IInteractionCostModel {
               iData.getFromParentData(), iData.getFromParentCount(), 
               model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost1(), hp.getHost2()).getValue());
         
-        // cost of having h2 waiting during the time of data transfer
-        h1h2Cost += InteractionRate.getCloudCPUMonetaryCost(
-              iData.getFromParentData(), iData.getFromParentCount(), 
-              model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost1(), hp.getHost2()).getValue(),
-              model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
-              model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost1(), hp.getHost2()).getValue(),             
-              hp.getHost2().getCpu().getCost().getValue(), hp.getHost2().getCpu().getCost().getScale(),
-              model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost1(), hp.getHost2()).getValue());
-        
-        // cost of having h1 waiting during the time of data transfer
-        h1h2Cost += InteractionRate.getCloudCPUMonetaryCost(
-              iData.getFromParentData(), iData.getFromParentCount(), 
-              model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost1(), hp.getHost2()).getValue(),
-              model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
-              model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost1(), hp.getHost2()).getValue(),             
-              hp.getHost1().getCpu().getCost().getValue(), hp.getHost1().getCpu().getCost().getScale(),
-              model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost1(), hp.getHost2()).getValue());
+        if (TwoHostHelper.getTargetHost(model).equals(hp.getHost2())){
+	        // cost of having h2 waiting during the time of data transfer from h1 to h2
+	        h1h2Cost += InteractionRate.getCloudCPUMonetaryCost(
+		    iData.getFromParentData(), iData.getFromParentCount(), 
+		    model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost1(), hp.getHost2()).getValue(),
+		    model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
+		    model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost1(), hp.getHost2()).getValue(),             
+		    hp.getHost2().getCpu().getCost().getValue(), hp.getHost2().getCpu().getCost().getScale(),
+		    model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost1(), hp.getHost2()).getValue());
+	        
+	        // cost of having h2 waiting during the time of data transfer from h2 to h1
+	        h2h1Cost += InteractionRate.getCloudCPUMonetaryCost(
+	        iData.getToParentData(), iData.getToParentCount(), 
+	        model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost2(), hp.getHost1()).getValue(),
+	        model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
+	        model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost2(), hp.getHost1()).getValue(),             
+	        hp.getHost2().getCpu().getCost().getValue(), hp.getHost2().getCpu().getCost().getScale(),
+	        model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost2(), hp.getHost1()).getValue());
+	        
+        } else if (TwoHostHelper.getTargetHost(model).equals(hp.getHost1())){
+      
+	        // cost of having h1 waiting during the time of data transfer from h2 to h1
+	        h2h1Cost += InteractionRate.getCloudCPUMonetaryCost(
+	        iData.getToParentData(), iData.getToParentCount(), 
+	        model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost2(), hp.getHost1()).getValue(),
+	        model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
+	        model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost2(), hp.getHost1()).getValue(),             
+	        hp.getHost1().getCpu().getCost().getValue(), hp.getHost1().getCpu().getCost().getScale(),
+	        model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost2(), hp.getHost1()).getValue()); 
+	        
+	        // cost of having h1 waiting during the time of data transfer from h1 to h2
+	        h1h2Cost += InteractionRate.getCloudCPUMonetaryCost(
+	        iData.getFromParentData(), iData.getFromParentCount(), 
+	        model.getExchangeRateObj().getInteractionRateForHosts(hp.getHost1(), hp.getHost2()).getValue(),
+	        model.getExchangeRateObj().getHandShakeCost(), model.getExchangeRateObj().getLiftingLoweringCost(),
+	        model.getExchangeRateObj().getInteractionLatencyForHosts(hp.getHost1(), hp.getHost2()).getValue(),             
+	        hp.getHost1().getCpu().getCost().getValue(), hp.getHost1().getCpu().getCost().getScale(),
+	        model.getExchangeRateObj().getInteractionCostForHosts(hp.getHost1(), hp.getHost2()).getValue());
+        }
 
         return new InteractionCost(hp, h1h2Cost, h2h1Cost, Boolean.FALSE);
     }
