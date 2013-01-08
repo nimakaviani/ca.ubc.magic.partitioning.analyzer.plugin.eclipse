@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>ca.ubc.magic.partitioning.analyzer.plugin.eclipse</name>
@@ -44,56 +43,3 @@
 		</link>
 	</linkedResources>
 </projectDescription>
-=======
-<?xml version="1.0" encoding="UTF-8"?>
-<projectDescription>
-	<name>plugin</name>
-	<comment></comment>
-	<projects>
-	</projects>
-	<buildSpec>
-		<buildCommand>
-			<name>org.eclipse.jdt.core.javabuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
-		<buildCommand>
-			<name>org.eclipse.pde.ManifestBuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
-		<buildCommand>
-			<name>org.eclipse.pde.SchemaBuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
-		<buildCommand>
-			<name>edu.umd.cs.findbugs.plugin.eclipse.findbugsBuilder</name>
-			<arguments>
-			</arguments>
-		</buildCommand>
-	</buildSpec>
-	<natures>
-		<nature>org.eclipse.pde.PluginNature</nature>
-		<nature>org.eclipse.jdt.core.javanature</nature>
-		<nature>edu.umd.cs.findbugs.plugin.eclipse.findbugsNature</nature>
-	</natures>
-	<linkedResources>
-		<link>
-			<name>EDU</name>
-			<type>2</type>
-			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego/src/EDU</location>
-		</link>
-		<link>
-			<name>oswego</name>
-			<type>2</type>
-			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego</location>
-		</link>
-		<link>
-			<name>other_src</name>
-			<type>2</type>
-			<location>C:/cygwin/home/dillesca/eece_496_workspace/oswego/src</location>
-		</link>
-	</linkedResources>
-</projectDescription>
->>>>>>> bckend_stable_branch

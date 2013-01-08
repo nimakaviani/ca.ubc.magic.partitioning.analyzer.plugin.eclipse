@@ -149,10 +149,11 @@ implements IView
 		
 		try {
 			this.setSwingLookAndFeel();
-		} catch( InvocationTargetException | InterruptedException ex ) {
+		} catch(Exception ex) {
 			ex.printStackTrace();
 			LogUtilities.logError(ex);
-		}
+		} 
+	
 		
 	    this.frame 
 	    	= SWT_AWT.new_Frame(model_analysis_composite);
@@ -545,8 +546,8 @@ implements IView
 								{
 									Object[] args = (Object[]) arg;
 									Frame frame = (Frame) args[0];
-									int width = (int) args[1];
-									int height = (int) args[2];
+									int width = (Integer) args[1];
+									int height = (Integer) args[2];
 									ModuleCoarsenerType coarsener_type 
 										= (ModuleCoarsenerType) objs.get(
 											PartitionerModelMessages.MODULE_COARSENER.NAME
