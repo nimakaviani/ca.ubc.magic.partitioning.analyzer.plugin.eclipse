@@ -4,7 +4,7 @@
     <root>
     	<entry id="1">
 	        <entity>
-	            <component>^.+(TradeServletAction:do).*$</component>
+	            <component>^.+(TradeServletAction:doLogin).*$</component>
 	            <class/><method/>
 	            <target>component</target>
 	        </entity>
@@ -122,4 +122,39 @@
             <target>component</target>
         </entity> -->
     </non-replicable>
+    
+    <filters>
+    	<!--  list of host filters. The host specifies the Id of the host where
+    		  the specified entity is not allowed to be placed. For every host filter
+    		  the type should be defined as "HOST_CUT" and the name can be chosen
+    		  arbitrarily -->
+    	<filter type="HOST_CUT" name="all-db-on-premise" host="2">
+    		<entity>
+	            <component>^(DBBundle:MySQL_).*$</component>
+	            <class/><method/>        
+	            <target>component</target>
+	        </entity>
+    	</filter>
+    	
+    	<!--  list of interaction filters. The host attribute needs to be there
+    		  and it should have an integer as its value, but the value will be 
+    		  ignored when parsing the filter. The type of the interaction filter
+    		  should be defined as "INTERACTION_CUT" and the name can be chosen
+    		  arbitrarily.  -->
+    	<!-- <filter type="INTERACTION_CUT" name="no-buy-first-cut" host="-1">
+    		<entity>
+	            <component>^.+(TradeServletAction:doBuy).*$</component>
+	            <class/><method/>        
+	            <target>component</target>
+	        </entity>
+	        <entity>
+	            <component>^.+(TradeJdbc:buy).*$</component>
+	            <class/><method/>        
+	            <target>component</target>
+	        </entity>
+    	</filter> -->
+    	
+    	<!-- list of colocation filters. -->
+    </filters>
+    
 </constraints>

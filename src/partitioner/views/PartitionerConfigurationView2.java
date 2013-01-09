@@ -56,7 +56,7 @@ import org.eclipse.swt.widgets.Control;
 import java.util.List;
 
 public class 
-PartitionerConfigurationView 
+PartitionerConfigurationView2 
 extends ViewPart
 implements IView
 {
@@ -108,7 +108,7 @@ implements IView
 						System.out.println("Handling");
 						ITranslator controller 
 							= (ITranslator) obj;
-						PartitionerConfigurationView.this.setDisplayValues(controller);
+						PartitionerConfigurationView2.this.setDisplayValues(controller);
 					}
 				}
 			);
@@ -335,16 +335,16 @@ implements IView
 						);
 					file_dialog.setText("Select File");
 					file_dialog.setFilterPath( 
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.profiler_trace_text.getText() 
 					);
 					String selected
 						= file_dialog.open();
 					if(selected != null){
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.module_exposer_text.setText(selected);
 						
-						PartitionerConfigurationView.this.controller
+						PartitionerConfigurationView2.this.controller
 							.updateModel( 
 								PartitionerModelMessages.MODULE_EXPOSER, 
 								selected 
@@ -382,10 +382,10 @@ implements IView
 				String selected
 					= file_dialog.open();
 				if(selected != null){
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.host_config_text.setText(selected);
 					
-					PartitionerConfigurationView.this.controller
+					PartitionerConfigurationView2.this.controller
 						.updateModel( 
 							PartitionerModelMessages.HOST_CONFIGURATION, 
 							selected 
@@ -433,10 +433,10 @@ implements IView
 				widgetSelected
 				( SelectionEvent e )
 				{
-					PartitionerConfigurationView.this.controller.updateModel(
+					PartitionerConfigurationView2.this.controller.updateModel(
 						PartitionerModelMessages.SET_MODULE_EXPOSURE, 
 						Boolean.valueOf(
-							PartitionerConfigurationView.this
+							PartitionerConfigurationView2.this
 								.exposure_button.getSelection()
 							)
 					);
@@ -484,10 +484,10 @@ implements IView
 				public void 
 				widgetSelected( SelectionEvent se )
 				{
-					PartitionerConfigurationView.this.controller.updateModel(
+					PartitionerConfigurationView2.this.controller.updateModel(
 						PartitionerModelMessages.MODULE_COARSENER,
 						ModuleCoarsenerType.fromString(
-							PartitionerConfigurationView.this
+							PartitionerConfigurationView2.this
 								.set_coarsener_combo.getText()
 						)
 					);
@@ -551,18 +551,18 @@ implements IView
 				widgetSelected
 				( SelectionEvent e )
 				{
-					PartitionerConfigurationView.this.controller.updateModel(
+					PartitionerConfigurationView2.this.controller.updateModel(
 						PartitionerModelMessages.HOST_CONFIGURATION, 
-						PartitionerConfigurationView.this.host_config_text.getText()
+						PartitionerConfigurationView2.this.host_config_text.getText()
 					);
-					PartitionerConfigurationView.this.controller.updateModel(
+					PartitionerConfigurationView2.this.controller.updateModel(
 						PartitionerModelMessages.MODULE_EXPOSER, 
-						PartitionerConfigurationView.this.module_exposer_text.getText()
+						PartitionerConfigurationView2.this.module_exposer_text.getText()
 					);
 					
 					// generate a model, and if partitioning is set, also 
 					// initialize the test framework
-					PartitionerConfigurationView.this.controller.notifyModel(
+					PartitionerConfigurationView2.this.controller.notifyModel(
 						PartitionerModelMessages.GENERATE_MODEL
 					);
 				}
@@ -592,7 +592,7 @@ implements IView
 					System.err.println("performing the partition");
 					
 					
-					PartitionerConfigurationView.this.controller.notifyModel(
+					PartitionerConfigurationView2.this.controller.notifyModel(
 						PartitionerModelMessages.GENERATE_PARTITION
 					);
 				}
@@ -656,7 +656,7 @@ implements IView
 				run()
 				{
 					Object editor 
-						= PartitionerConfigurationView.this
+						= PartitionerConfigurationView2.this
 							.getSite().getPage().getActiveEditor();
 					if( editor instanceof ModelCreationEditor ){
 						ModelCreationEditor page 
@@ -668,13 +668,13 @@ implements IView
 							= new SimpleDateFormat("HH:mm:ss")
 								.format( new Date() );
 						String coarsener
-							= PartitionerConfigurationView.this.set_coarsener_combo.getText();
+							= PartitionerConfigurationView2.this.set_coarsener_combo.getText();
 						String new_name
 							= coarsener + "_" + name_suffix;
 						
 						input.setSecondaryName(new_name);
 						
-						PartitionerConfigurationView.this.publisher_delegate.publish(
+						PartitionerConfigurationView2.this.publisher_delegate.publish(
 							this.getClass(), 
 							Publications.REFRESH_SNAPSHOT_TREE,
 							Boolean.valueOf(true)
@@ -750,7 +750,7 @@ implements IView
 					widgetSelected
 					( SelectionEvent e )
 					{
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.controller.updateModel(
 								PartitionerModelMessages.GENERATE_TEST_FRAMEWORK,
 								Boolean.valueOf(
@@ -761,7 +761,7 @@ implements IView
 					}
 				}
 			);
-			PartitionerConfigurationView.this
+			PartitionerConfigurationView2.this
 				.createDummyLabel( parent, toolkit );
 		
 			this.synthetic_node_button
@@ -779,14 +779,14 @@ implements IView
 					widgetSelected
 					( SelectionEvent e )
 					{
-						PartitionerConfigurationView.this.controller.updateModel(
+						PartitionerConfigurationView2.this.controller.updateModel(
 							PartitionerModelMessages.SET_SYNTHETIC_NODE,
 							Boolean.valueOf(synthetic_node_button.getSelection())
 						);
 					}
 				}
 			);
-			PartitionerConfigurationView.this
+			PartitionerConfigurationView2.this
 				.createDummyLabel( parent, toolkit );
 		
 			this.activate_host_filter_button
@@ -812,7 +812,7 @@ implements IView
 					widgetSelected
 					( SelectionEvent e )
 					{
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.controller.updateModel(
 								PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER,
 								Boolean.valueOf(
@@ -823,7 +823,7 @@ implements IView
 					}
 				}
 			);
-			PartitionerConfigurationView.this
+			PartitionerConfigurationView2.this
 				.createDummyLabel( parent, toolkit );
 			
 			this.activate_interaction_filter_button
@@ -850,7 +850,7 @@ implements IView
 					widgetSelected
 					( SelectionEvent e )
 					{
-						PartitionerConfigurationView.this.controller.updateModel(
+						PartitionerConfigurationView2.this.controller.updateModel(
 							PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER,
 							Boolean.valueOf(
 								PartitionerWidgets.this
@@ -861,7 +861,7 @@ implements IView
 					}
 				}
 			);
-			PartitionerConfigurationView.this
+			PartitionerConfigurationView2.this
 				.createDummyLabel( parent, toolkit );
 		
 			toolkit.createLabel( parent, "Execution Cost Model: " );
@@ -947,20 +947,20 @@ implements IView
 							.setSelection( activate_interaction_cost_filter );
 						
 						index 
-							= PartitionerConfigurationView.this.findIndex(
+							= PartitionerConfigurationView2.this.findIndex(
 									PartitionerWidgets.this.execution_model_combo, 
 								execution_cost_type.getText()
 							);
 						PartitionerWidgets.this.execution_model_combo.select( index );
 						
 						index 
-							= PartitionerConfigurationView.this.findIndex(
+							= PartitionerConfigurationView2.this.findIndex(
 									PartitionerWidgets.this.interaction_model_combo, 
 								interaction_cost_type.getText()
 							);
 						PartitionerWidgets.this.interaction_model_combo.select( index );
 						index 
-							= PartitionerConfigurationView.this.findIndex(
+							= PartitionerConfigurationView2.this.findIndex(
 									PartitionerWidgets.this.partitioning_algorithm_combo, 
 								partitioner_type.getText()
 							);
@@ -1006,7 +1006,7 @@ implements IView
 					widgetSelected( SelectionEvent se )
 					{
 						System.out.println("Selected partitioner");
-						PartitionerConfigurationView.this.controller.updateModel(
+						PartitionerConfigurationView2.this.controller.updateModel(
 							PartitionerModelMessages.PARTITIONER_TYPE,
 							PartitionerType.fromString(
 								PartitionerWidgets.this.
@@ -1040,7 +1040,7 @@ implements IView
 					public void 
 					widgetSelected( SelectionEvent se )
 					{
-						PartitionerConfigurationView.this.controller.updateModel(
+						PartitionerConfigurationView2.this.controller.updateModel(
 							PartitionerModelMessages.INTERACTION_COST,
 							InteractionCostType.fromString(
 								PartitionerWidgets.this
@@ -1074,7 +1074,7 @@ implements IView
 					public void 
 					widgetSelected( SelectionEvent se )
 					{
-						PartitionerConfigurationView.this.controller.updateModel(
+						PartitionerConfigurationView2.this.controller.updateModel(
 							PartitionerModelMessages.EXECUTION_COST,
 							ExecutionCostType.fromString(
 								PartitionerWidgets.this
@@ -1229,8 +1229,8 @@ implements IView
 							PartitionerModelMessages.MODULE_COARSENER.NAME,
 							PartitionerModelMessages.SET_MODULE_EXPOSURE.NAME
 						};
-					PartitionerConfigurationView view
-						= PartitionerConfigurationView.this;
+					PartitionerConfigurationView2 view
+						= PartitionerConfigurationView2.this;
 					
 					@Override
 					public Object[] 
@@ -1265,31 +1265,31 @@ implements IView
 				}
 			);
 			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_activate_host_filter, 
+				PartitionerConfigurationView2.set_activate_host_filter, 
 				new DefaultAdapter(
 					PartitionerModelMessages.ACTIVATE_HOST_COST_FILTER.NAME
 				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_activate_interaction_cost_filter, 
+				PartitionerConfigurationView2.set_activate_interaction_cost_filter, 
 				new DefaultAdapter(
 					PartitionerModelMessages.ACTIVATE_INTERACTION_COST_FILTER.NAME
 				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_host_configuration, 
+				PartitionerConfigurationView2.set_host_configuration, 
 				new DefaultAdapter(
 					PartitionerModelMessages.HOST_CONFIGURATION.NAME
 				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_module_exposer, 
+				PartitionerConfigurationView2.set_module_exposer, 
 				new DefaultAdapter(
 					PartitionerModelMessages.MODULE_EXPOSER.NAME
 				)
 			);
 			this.adapter_delegate.registerPropertyCallback(
-				PartitionerConfigurationView.set_profiler_trace, 
+				PartitionerConfigurationView2.set_profiler_trace, 
 				new DefaultAdapter(
 					PartitionerModelMessages.PROFILER_TRACE.NAME
 				)
@@ -1319,22 +1319,22 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.profiler_trace_text.setText( 
 							profiler_trace
 						);
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.profiler_trace_text.setSize(
 							400, 
-							PartitionerConfigurationView.this.profiler_trace_text.getSize().y
+							PartitionerConfigurationView2.this.profiler_trace_text.getSize().y
 						);
 						
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.module_exposer_text.setText( 
 								module_exposer
 							);
 						
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.host_config_text.setText( 
 								host_configuration
 							);
@@ -1353,10 +1353,10 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this.set_coarsener_combo.select( 
+					PartitionerConfigurationView2.this.set_coarsener_combo.select( 
 						coarsener_combo_index
 					);
-					PartitionerConfigurationView.this.exposure_button.setSelection( 
+					PartitionerConfigurationView2.this.exposure_button.setSelection( 
 						activate_module_exposure
 					);
 				}
@@ -1375,7 +1375,7 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.profiler_trace_text.setText( 
 							profiler_trace
 						);
@@ -1395,7 +1395,7 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.module_exposer_text.setText( 
 							module_exposer 
 						);
@@ -1415,7 +1415,7 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.host_config_text.setText( 
 							host_configuration
 						);
@@ -1435,7 +1435,7 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.partitioner_widgets
 						.set_partitioning_controls_enabled( perform );
 				}
@@ -1454,7 +1454,7 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.partitioner_widgets.activate_host_filter_button
 						.setSelection(activate);
 				}
@@ -1473,7 +1473,7 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.partitioner_widgets.activate_interaction_filter_button
 						.setSelection(activate);
 				}
@@ -1525,7 +1525,7 @@ implements IView
 							= true;
 						actions_composite_visible
 							= true;
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.updateModelName();
 						break;
 					case PARTITIONED:
@@ -1544,25 +1544,25 @@ implements IView
 						throw new RuntimeException("This is an impossible case for Partitioner model state");
 					}
 					
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.set_configuration_widgets_enabled(
 							configuration_widgets_enabled
 						);
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.generate_model_button.setVisible(
 							configuration_widgets_enabled
 						);
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.partitioning_composite.setVisible( 
 							partitioning_composite_visible
 						);
-					PartitionerConfigurationView.this	
+					PartitionerConfigurationView2.this	
 						.partition_model_button.setVisible(partition_model_button_visible);
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.partitioner_widgets.set_partitioning_controls_enabled(
 							partitioner_widgets_enabled
 						);
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.actions_composite.setVisible(actions_composite_visible);
 				}
 			}
@@ -1583,25 +1583,25 @@ implements IView
 					// the entire view has been disposed; among the virtues of this
 					// method is that in trying to acquire a control we won't need
 					// to check for a nullpointerexception
-					if( !PartitionerConfigurationView.this.exposure_button.isDisposed() ){
-						PartitionerConfigurationView.this
+					if( !PartitionerConfigurationView2.this.exposure_button.isDisposed() ){
+						PartitionerConfigurationView2.this
 							.clear_all_entries();
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.set_configuration_widgets_enabled( false );
-						PartitionerConfigurationView.this
+						PartitionerConfigurationView2.this
 							.generate_model_button.setVisible(false);
-						if( PartitionerConfigurationView.this.partitioner_widgets != null ){
-							PartitionerConfigurationView.this
+						if( PartitionerConfigurationView2.this.partitioner_widgets != null ){
+							PartitionerConfigurationView2.this
 								.partitioner_widgets
 								.set_partitioning_controls_enabled( false );
-							PartitionerConfigurationView.this
+							PartitionerConfigurationView2.this
 								.partitioning_composite.setVisible(false);
-							PartitionerConfigurationView.this
+							PartitionerConfigurationView2.this
 								.actions_composite.setVisible(false);
 						}
-						if(PartitionerConfigurationView.this.controller != null ){
-							PartitionerConfigurationView.this
-								.controller.unregisterAdapter(PartitionerConfigurationView.this);
+						if(PartitionerConfigurationView2.this.controller != null ){
+							PartitionerConfigurationView2.this
+								.controller.unregisterAdapter(PartitionerConfigurationView2.this);
 						}
 					}
 				}
@@ -1619,9 +1619,9 @@ implements IView
 				public void 
 				run() 
 				{
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.actions_composite.setVisible(false);
-					PartitionerConfigurationView.this
+					PartitionerConfigurationView2.this
 						.partitioner_widgets
 						.set_partitioning_controls_enabled(false);
 				}
@@ -1641,7 +1641,7 @@ implements IView
 				run() 
 				{
 					MessageDialog.openError(
-						PartitionerConfigurationView.this.getViewSite().getShell(), 
+						PartitionerConfigurationView2.this.getViewSite().getShell(), 
 						"Model Exception", 
 						ex.getMessage() 
 					);

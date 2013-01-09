@@ -723,15 +723,16 @@ implements IModel
 		Map<String, IFilter> map = null;
 		if( this.use_synthetic_node_filters ){
 			
-				map = FilterHelper.setFilter(
-					this.mModuleModel, 
-					this.mHostModel, 
-					this.mConstraintModel.getFilterConstraintModel(),
-					FilterType.COLOCATION_CUT
-				);
-				
-			this.mFilterMap.putAll(map);
-			System.err.println("Number of synthetic filters: " + map.size());
+			// not the right place for this filter
+//				map = FilterHelper.setFilter(
+//					this.mModuleModel, 
+//					this.mHostModel, 
+//					this.mConstraintModel.getFilterConstraintModel(),
+//					FilterType.COLOCATION_CUT
+//				);
+//				
+//			this.mFilterMap.putAll(map);
+//			System.err.println("Number of synthetic filters: " + map.size());
 		}
 		
 		if( this.use_host_cost_filter ){
@@ -751,7 +752,7 @@ implements IModel
 					this.mModuleModel, 
 					this.mHostModel, 
 					this.mConstraintModel.getFilterConstraintModel(),
-					FilterType.INTERACTION_CUT
+					FilterType.COLOCATION_CUT
 				);
 				
 			this.mFilterMap.putAll(map);
