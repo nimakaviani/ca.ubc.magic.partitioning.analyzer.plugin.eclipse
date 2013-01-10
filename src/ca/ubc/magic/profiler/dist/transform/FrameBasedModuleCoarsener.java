@@ -88,6 +88,7 @@ public class FrameBasedModuleCoarsener extends ThreadBasedBundleModuleCoarsener 
         return shouldIgnore(node) && descendentIgnore;
     }
 
+	private static int mId = 0;
 	
 	@Override
 	protected void applyRecursion(NodeObj rootNode) {
@@ -100,7 +101,7 @@ public class FrameBasedModuleCoarsener extends ThreadBasedBundleModuleCoarsener 
 		NodeObj modelNodeObj = new NodeObj(rootNode);
 
 		mCurrentHeadNode = modelNodeObj.getNodeVisit();
-		System.out.print("Found refs for " + 
+		System.out.print((++mId) + " Found refs for " + 
 				modelNodeObj.getName() + ": " + mCurrentHeadNode);
 		
 		

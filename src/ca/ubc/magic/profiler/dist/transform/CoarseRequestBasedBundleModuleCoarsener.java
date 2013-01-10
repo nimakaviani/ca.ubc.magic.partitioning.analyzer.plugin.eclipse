@@ -5,6 +5,8 @@
 package ca.ubc.magic.profiler.dist.transform;
 
 import ca.ubc.magic.profiler.dist.control.Constants;
+import ca.ubc.magic.profiler.dist.model.Module;
+import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.granularity.CodeUnitType;
 import ca.ubc.magic.profiler.dist.model.granularity.EntityConstraintModel;
 import ca.ubc.magic.profiler.dist.transform.model.NodeObj;
@@ -22,6 +24,16 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
     private static final String ARIES_HEAD_DATA_ROOT_TOMCAT = "jdbcwrapper";
     private static final String RUBIS_HEAD_DATA_ROOT = "com.notehive.osgi.hibernate-samples.hibernate-classes";
     private static final String HEAD_DATA_ROOT = ARIES_HEAD_DATA_ROOT_TOMCAT;
+    
+    /**
+     * mRequestCount is a field responsible for getting the visit counts for a given head node and then
+     * considering it as the number of times a request has been occurred during the execution of a node.
+     * This allows for us to measure how often a particular request has been executed in the system.
+     */
+    private long mRequestCount  = 0L;
+    private String mRequestName = null;
+    private long mRequestDTCounter = 0L;
+    private long mTotalReqCount = 0L;
     
     private static final Set<String> ARIES_FIXED_DATA_NODE_SET = new HashSet<String>(
             Arrays.asList(new String[]{
@@ -77,7 +89,12 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
                 "web-browsereg",
                 "web-browsecat"
             }));
-    private static final Set<String> FIXED_LOGIC_NODE_SET = ARIES_FIXED_LOGIC_NODE_SET;
+    
+    private static final Set<String> JFORUM_FIXED_LOGIC_NODE_SET = new HashSet<String>(
+            Arrays.asList(new String[]{
+                "Action:"
+            }));
+    private static final Set<String> FIXED_LOGIC_NODE_SET = JFORUM_FIXED_LOGIC_NODE_SET;
     
     protected static boolean mIsDataRoot = Boolean.FALSE;
     
@@ -211,9 +228,14 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
            if (obj instanceof NodeObj)
                ((NodeObj)obj).removeParentEdge();
        }
+       mRequestName  = ((NodeObj) objs[0]).getName();
+       mRequestCount = ((NodeObj) objs[0]).getNodeVisit();
+       mRequestDTCounter = 0;
+       mTotalReqCount ++;
     }
     
     protected void postprocessing(Object... objs){
+    	System.out.println(mTotalReqCount + " >> " + mRequestName + " DataSize: " + mRequestDTCounter);
     }
     
     protected ExtendedNodeObj checkForAddingSyntheticNode(int i, ExtendedNodeObj returnedNode) {
@@ -242,6 +264,26 @@ public class CoarseRequestBasedBundleModuleCoarsener extends RequestBasedBundleM
             if (nodeObj.getName().contains(s))
                 return true;
         return false;
+    }
+    
+    // by overriding the addEdge method, we allow for the edge counts to be normalized
+    // and reflect on only 1 request. This gives us better measures about the amount of
+    // data transferred.
+    @Override
+    protected void addEdge(String m1Name, String m2Name, NodeObj childNode) {
+        Module m1 = mModuleModel.getModuleMap().get(m1Name);
+        Module m2 = mModuleModel.getModuleMap().get(m2Name);
+        addDataExchange(new ModulePair(m1, m2), 
+        		childNode.getEdge4ParentWeight().longValue(), 
+                childNode.getEdge2ParentWeight().longValue(), 
+                (long) Math.max(childNode.getEdge4ParentCount().longValue() / mRequestCount, 1.0),
+                (long) Math.max(childNode.getEdge2ParentCount().longValue() / mRequestCount, 1.0));
+        
+        mRequestDTCounter += 
+        		childNode.getEdge4ParentWeight().longValue() * 
+        		(long) Math.max(childNode.getEdge4ParentCount().longValue() / mRequestCount, 1.0) +
+        		childNode.getEdge2ParentWeight().longValue() * 
+        		(long) Math.max(childNode.getEdge2ParentCount().longValue() / mRequestCount, 1.0);
     }
     
     protected class ExtendedNodeObj extends NodeObj {

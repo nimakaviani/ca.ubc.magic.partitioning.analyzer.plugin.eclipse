@@ -6,6 +6,7 @@ package ca.ubc.magic.profiler.partitioning.control.alg;
 
 import ca.ubc.magic.profiler.dist.model.HostModel;
 import ca.ubc.magic.profiler.dist.model.ModuleModel;
+import ca.ubc.magic.profiler.dist.model.report.ReportModel;
 import ca.ubc.magic.profiler.dist.transform.IFilter;
 import java.util.List;
 
@@ -26,4 +27,10 @@ public interface IPartitioner {
     public void removeFilter(IFilter mFilter);
     
     public String getSolution();
+
+//	public void pinPatternToTarget(String string);
+//
+//	public void pinPatternToSource(String string);
+//
+//	public void pinPatternTogether(String string);
 }

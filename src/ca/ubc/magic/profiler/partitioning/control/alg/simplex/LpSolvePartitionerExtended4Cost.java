@@ -13,6 +13,9 @@ import org.apache.commons.math.optimization.linear.LinearObjectiveFunction;
 import org.apache.commons.math.optimization.linear.Relationship;
 
 import ca.ubc.magic.profiler.dist.model.Module;
+import ca.ubc.magic.profiler.partitioning.control.alg.helper.CutFinderHelper;
+import ca.ubc.magic.profiler.partitioning.control.alg.helper.CutFinderHelper;
+import ca.ubc.magic.profiler.dist.model.ModuleModel;
 
 public class LpSolvePartitionerExtended4Cost extends SimplexPartitionerExtended4Cost {
 	LpSolve solver; 
@@ -53,6 +56,12 @@ public class LpSolvePartitionerExtended4Cost extends SimplexPartitionerExtended4
 				Module m = mModuleModel.getModuleMap().get(mSimplexModel.getNode(i));
 				m.setPartitionId(2 - (new Double(current)).intValue());                    
 			}
+			
+			try {
+            	CutFinderHelper.findCuts(mModuleModel);
+            }catch (Exception e){
+            	System.err.println("Finding cut faied in the model: " + e.getMessage());
+            }
 			
 		}catch(Exception e){
 			throw new RuntimeException(e.getMessage());

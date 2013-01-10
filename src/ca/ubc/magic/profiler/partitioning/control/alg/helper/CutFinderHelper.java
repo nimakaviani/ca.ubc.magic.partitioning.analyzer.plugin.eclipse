@@ -53,10 +53,10 @@ public class CutFinderHelper {
             moduleMap.get(mArray[1]).add(new DefaultKeyValue(mArray[0], entry.getValue()));
         }
         
-        File cutFile = new File("resources/cuts.xml");
-        PrintWriter pw = new PrintWriter(cutFile);
-        pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
-        pw.println("<cuts>");
+//        File cutFile = new File("resources/cuts.xml");
+//        PrintWriter pw = new PrintWriter(cutFile);
+//        pw.println("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>");
+//        pw.println("<cuts>");
         
         System.out.println(" \n -------------- Cuts -------------- ");
         for (Module root : rootSet){
@@ -65,8 +65,8 @@ public class CutFinderHelper {
         }
         System.out.println(" ---------------------------------- \n");
         
-        pw.println("</cuts>");
-        pw.close();
+//        pw.println("</cuts>");
+//        pw.close();
     }
 	
 	private static void printCuts(final Map<Module, Set<DefaultKeyValue<Module, InteractionData>>> moduleMap, 

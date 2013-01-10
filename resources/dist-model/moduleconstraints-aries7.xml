@@ -4,7 +4,7 @@
     <root>
     	<entry id="1">
 	        <entity>
-	            <component>^.+(TradeServletAction:doLogin).*$</component>
+	            <component>^.+(TradeServletAction:do).*$</component>
 	            <class/><method/>
 	            <target>component</target>
 	        </entity>
@@ -35,7 +35,7 @@
         <entity>
             <component>jdbcwrapper</component>
             <class>WrapperPreparedStatement</class>
-            <method>^(executeQuery).*</method>
+            <method>^(execute).*</method>
             <target>method</target>
         </entity>   
 
@@ -65,12 +65,33 @@
             <class>\p{Print}*</class>        
             <target>method</target>
         </entity>
+        <entity>
+            <component>ujdbcwrapper</component>
+            <class>WrapperPreparedStatement</class>
+            <method>^(execute).*</method>
+            <target>method</target>
+        </entity> 
     </expose>
 
     <!-- Ignore list begins here -->
     <ignore>
     	<entity>
+            <component>^.*(ujdbcwrapper).*$</component>
+            <class/><method/>
+            <target>component</target>
+        </entity>
+        <entity>
+            <component>^.*(sniffernetlib).*$</component>
+            <class/><method/>
+            <target>component</target>
+        </entity>
+    	<entity>
             <component>^.*(catalina).*$</component>
+            <class/><method/>
+            <target>component</target>
+        </entity>
+        <entity>
+            <component>^.*(ojdbc).*$</component>
             <class/><method/>
             <target>component</target>
         </entity>
