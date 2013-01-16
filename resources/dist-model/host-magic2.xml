@@ -14,7 +14,7 @@
 		<host id="2">
 			<cpu>
                 <capability scale="GHz">3.3</capability>
-                <cost unit="3600" scale="second">0.16</cost>
+                <cost unit="3600" scale="second">0.12</cost>
             </cpu>
 			<memory>
                 <capability scale="GB">3.75</capability>
@@ -27,13 +27,13 @@
 		<exchange-rate from-host="1" to-host="2">                    
             <capability scale="MB">100</capability>
             <latency scale="second">0.03</latency>
-            <cost unit="1" scale="GB">0.12</cost>
+            <cost unit="1" scale="GB">0.0</cost>
         </exchange-rate>
                 
 		<exchange-rate from-host="2" to-host="1">
             <capability scale="MB">100</capability>
             <latency scale="second">0.03</latency>
-            <cost unit="1" scale="GB">0.12</cost>
+            <cost unit="1" scale="GB">0.30</cost>
         </exchange-rate>
 	</exchange-rates>
 </capabilities>
