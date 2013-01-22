@@ -11,6 +11,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.awt.SWT_AWT;
 import org.eclipse.swt.graphics.Rectangle;
@@ -29,11 +30,11 @@ import org.eclipse.ui.part.MultiPageEditorPart;
 import partitioner.models.PartitionerModel;
 import partitioner.models.PartitionerModelMessages;
 import plugin.LogUtilities;
+import plugin.mvc.DefaultPublisher;
 import plugin.mvc.DefaultTranslator;
+import plugin.mvc.IPublisher;
 import plugin.mvc.IPublisher.Publications;
 import plugin.mvc.ITranslator;
-import plugin.mvc.IPublisher;
-import plugin.mvc.DefaultPublisher;
 import plugin.mvc.ITranslator.IModel;
 import plugin.mvc.ITranslator.IView;
 import plugin.mvc.adapter.AdapterDelegate;
@@ -42,11 +43,9 @@ import plugin.mvc.adapter.DefaultAdapter;
 import plugin.mvc.adapter.EmptyAdapter;
 import plugin.mvc.adapter.IAdapter;
 import snapshots.views.VirtualModelFileInput;
-
 import ca.ubc.magic.profiler.dist.model.ModulePair;
 import ca.ubc.magic.profiler.dist.model.interaction.InteractionData;
-import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory
-	.ModuleCoarsenerType;
+import ca.ubc.magic.profiler.dist.transform.ModuleCoarsenerFactory.ModuleCoarsenerType;
 import ca.ubc.magic.profiler.partitioning.control.alg.IPartitioner;
 import ca.ubc.magic.profiler.partitioning.control.alg.PartitionerFactory.PartitionerType;
 import ca.ubc.magic.profiler.partitioning.view.VisualizePartitioning;
@@ -215,9 +214,13 @@ implements IView
 			new Runnable(){
 				public void run(){
 					try {
-						UIManager.setLookAndFeel(
-							UIManager.getSystemLookAndFeelClassName() 
-						);
+						if (Platform.WS_GTK.equals(Platform.getWS())) {
+					        // Eclipse Bug 341799 workaround
+					        UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
+					      }
+					      else {
+					        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+					      }
 					} catch (Exception ex) {
 						ex.printStackTrace();
 						LogUtilities.logError(ex);
